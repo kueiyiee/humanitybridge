@@ -1,0 +1,46 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: humanitybridge-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-humanitybridge}
+      MYSQL_USER: ${MYSQL_USER:-humanitybridge}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-change_me_db_password}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-change_me_root_password}
+    ports:
+      - '3306:3306'
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: humanitybridge-app
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - '3000:3000'
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      USE_MYSQL: 'true'
+      DATABASE_URL: mysql://${MYSQL_USER:-humanitybridge}:${MYSQL_PASSWORD:-change_me_db_password}@mysql:3306/${MYSQL_DATABASE:-humanitybridge}
+      SESSION_SECRET: ${SESSION_SECRET}
+      CSRF_SECRET: ${CSRF_SECRET}
+      SIGNED_URL_SECRET: ${SIGNED_URL_SECRET}
+      PAYMENT_WEBHOOK_SECRET: ${PAYMENT_WEBHOOK_SECRET}
+    volumes:
+      - app_storage:/app/storage
+
+volumes:
+  mysql_data:
+  app_storage:

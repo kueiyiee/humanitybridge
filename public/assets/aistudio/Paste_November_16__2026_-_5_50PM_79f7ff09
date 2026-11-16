@@ -1,0 +1,1404 @@
+# MASTER DEVELOPMENT PROMPT: HUMANITYBRIDGE
+## Complete Full-Stack Humanitarian Technology Platform
+
+Act as a world-class multidisciplinary software engineering team consisting of a Principal Software Architect, Senior Full-Stack Developer, UI/UX Designer, Database Architect, Cybersecurity Engineer, DevOps Engineer and Humanitarian Technology Consultant.
+
+Your assignment is to architect, design and implement a complete, modern, scalable, secure and production-oriented humanitarian web platform called **HUMANITYBRIDGE**.
+
+This is not a basic website, static landing page, UI demonstration or collection of disconnected frontend components. It must be a fully functional, database-driven full-stack application with a professional public website, two distinct role-based dashboards, a secure backend API, a relational database, authentication, authorisation, content management, humanitarian case management, campaign management and transparent financial reporting.
+
+Build a system that can evolve into an internationally recognised humanitarian technology platform.
+
+---
+
+# 1. OFFICIAL PROJECT IDENTITY
+
+**Organisation / Platform Name:** HumanityBridge
+
+**Official Tagline:**
+"Together for a Dignified and Hopeful Tomorrow."
+
+**Brand Positioning:**
+HumanityBridge is a humanitarian storytelling, community assistance and social-impact platform that connects vulnerable individuals and communities with compassionate people, responsible contributors and humanitarian partners.
+
+Its purpose is to give communities a voice, document humanitarian needs responsibly, connect verified cases with assistance, and demonstrate how support creates meaningful change.
+
+**Core Mission:**
+To connect vulnerable communities with opportunities, resources and compassionate assistance while preserving human dignity, privacy, transparency and accountability.
+
+**Core Values:**
+- Human dignity.
+- Compassion.
+- Integrity.
+- Transparency.
+- Accountability.
+- Community empowerment.
+- Inclusion.
+- Trust.
+- Responsible humanitarian action.
+
+**Brand Personality:**
+Professional, compassionate, trustworthy, internationally credible, modern, transparent and technologically advanced.
+
+Do not make HumanityBridge look like a generic charity template. Develop a distinctive visual identity that can support a serious humanitarian organisation.
+
+---
+
+# 2. REQUIRED TECHNOLOGY STACK
+
+Use modern, stable and mutually compatible versions of the following technologies. Check the latest stable documentation and package compatibility before implementation. Avoid deprecated APIs and abandoned dependencies.
+
+## Frontend
+- React.js.
+- TypeScript.
+- Vite.
+- Tailwind CSS.
+- Modern CSS architecture.
+- React Router.
+- TanStack Query for server-state management.
+- React Hook Form.
+- Zod for client-side validation.
+- Lucide React icons.
+- Recharts for analytics and visual reporting.
+- Framer Motion or an actively maintained compatible motion library.
+
+## Backend
+- Node.js.
+- Express.js.
+- TypeScript.
+- RESTful API architecture.
+- Zod request validation.
+- Secure authentication and authorisation.
+- Centralised error handling.
+- Structured logging.
+- Rate limiting.
+- API documentation using OpenAPI/Swagger.
+
+## Database
+- MySQL 8 or a newer compatible stable release.
+- Drizzle ORM.
+- Drizzle Kit.
+- Proper relational database design.
+- Foreign-key constraints.
+- Database migrations.
+- Transaction management.
+- Indexed queries.
+- Soft deletion where appropriate.
+
+## Security
+- Argon2id password hashing.
+- Secure HTTP-only cookies.
+- CSRF protection where applicable.
+- Role-based access control.
+- Helmet security headers.
+- Rate limiting.
+- Input validation and sanitisation.
+- Secure file upload validation.
+- Audit logging.
+- Session management.
+- MFA support for administrative accounts.
+
+## Infrastructure
+- Environment-based configuration.
+- Docker and Docker Compose.
+- Separate development and production environments.
+- Private file/object storage.
+- Database backups.
+- Deployment-ready configuration.
+- Health-check endpoints.
+
+Do not use Firebase or Supabase as substitutes for the requested Node.js and MySQL backend.
+
+Do not replace Drizzle ORM with Prisma or Sequelize.
+
+Do not use localStorage as the primary storage for authentication tokens or sensitive information.
+
+---
+
+# 3. SYSTEM ARCHITECTURE
+
+Build a modular full-stack monorepo with clearly separated frontend and backend responsibilities.
+
+Recommended structure:
+
+humanitybridge/
+|
+|-- apps/
+|   |
+|   |-- frontend/
+|   |   |-- public/
+|   |   |-- src/
+|   |       |-- assets/
+|   |       |-- components/
+|   |       |-- layouts/
+|   |       |-- pages/
+|   |       |-- features/
+|   |       |-- hooks/
+|   |       |-- services/
+|   |       |-- contexts/
+|   |       |-- routes/
+|   |       |-- utils/
+|   |       |-- types/
+|   |       |-- styles/
+|   |       |-- App.tsx
+|   |       |-- main.tsx
+|   |
+|   |-- backend/
+|       |-- src/
+|           |-- config/
+|           |-- database/
+|           |-- middleware/
+|           |-- modules/
+|           |-- routes/
+|           |-- controllers/
+|           |-- services/
+|           |-- validators/
+|           |-- utils/
+|           |-- types/
+|           |-- jobs/
+|           |-- app.ts
+|           |-- server.ts
+|
+|-- packages/
+|   |-- shared/
+|   |-- validation/
+|   |-- types/
+|
+|-- database/
+|   |-- migrations/
+|   |-- seeds/
+|   |-- schema/
+|
+|-- docs/
+|   |-- architecture/
+|   |-- api/
+|   |-- security/
+|   |-- database/
+|
+|-- docker/
+|-- scripts/
+|-- .env.example
+|-- .gitignore
+|-- docker-compose.yml
+|-- package.json
+|-- README.md
+
+Improve this structure where necessary without creating unnecessary complexity.
+
+Use modular architecture, separation of concerns, reusable components and maintainable code.
+
+---
+
+# 4. ONLY TWO DASHBOARD TYPES
+
+The application must contain exactly TWO dashboard types.
+
+Do not create additional dashboard roles.
+
+## DASHBOARD ONE: ADMIN DASHBOARD
+
+Role identifier: PLATFORM_ADMIN
+
+Display name: Platform Administrator
+
+This role controls the entire platform.
+
+Administrative modules:
+
+### A. Executive Overview
+- Total registered users.
+- Total verified humanitarian cases.
+- Pending case submissions.
+- Active campaigns.
+- Completed campaigns.
+- Confirmed donations.
+- Total funds distributed.
+- Outstanding assistance requests.
+- Recent administrative activities.
+- Important alerts.
+- Monthly and yearly statistics.
+
+All statistics must come from actual database records. Do not hardcode demonstration statistics into production interfaces.
+
+### B. User Management
+- View registered accounts.
+- Search and filter users.
+- Activate or deactivate accounts.
+- Review account information.
+- Manage Community Coordinator access.
+- Reset account access through secure procedures.
+- View account activity.
+- Review access history.
+
+### C. Humanitarian Case Management
+- View all submitted cases.
+- Review case information.
+- Verify submitted evidence.
+- Approve or reject cases.
+- Request additional information.
+- Assign case reference numbers.
+- Set verification status.
+- Manage assistance requirements.
+- Monitor case progress.
+- Maintain confidential internal notes.
+
+Only administrators can approve or publish cases.
+
+### D. Story Management
+- Review submitted stories.
+- Edit approved editorial content.
+- Manage photographs and videos.
+- Review consent status.
+- Approve or reject publications.
+- Schedule publications.
+- Manage story categories.
+- Publish and archive stories.
+
+### E. Campaign Management
+- Create humanitarian campaigns.
+- Edit campaign information.
+- Set fundraising targets.
+- Set campaign start and end dates.
+- Link campaigns to approved cases.
+- Monitor verified donations.
+- Pause or close campaigns.
+- Publish campaign progress.
+- Generate campaign reports.
+
+### F. Donation and Financial Management
+- View confirmed transactions.
+- Monitor payment status.
+- Reconcile transactions.
+- Manage donation records.
+- Generate financial statements.
+- Review refunds and disputes.
+- Track campaign-level financial activity.
+- Record approved fund distributions.
+- Export financial reports.
+
+Never allow an administrator interface to mark an unverified payment as a confirmed external payment without an authorised reconciliation process and an audit record.
+
+### G. Community Coordinator Management
+- Create coordinator accounts.
+- Review coordinator profiles.
+- Assign and revoke coordinator access.
+- Monitor submitted cases.
+- Review field reports.
+- Monitor activities.
+- Suspend access when necessary.
+
+### H. Volunteers and Partners
+- Review volunteer applications.
+- Manage approved volunteers.
+- Review partnership enquiries.
+- Manage organisational partner information.
+- Approve or reject submissions.
+
+### I. News and Publications
+- Create articles.
+- Edit articles.
+- Publish announcements.
+- Manage categories.
+- Upload approved media.
+- Schedule content.
+- Archive publications.
+
+### J. Safeguarding and Privacy Centre
+- Review sensitive reports with restricted access.
+- Monitor consent records.
+- Handle privacy requests.
+- Review reported content.
+- Restrict access to confidential records.
+- Record moderation decisions.
+
+### K. Reports and Analytics
+- Donation analytics.
+- Campaign performance.
+- Case verification statistics.
+- Assistance distribution reports.
+- Community activity reports.
+- Volunteer statistics.
+- Publication analytics.
+- Financial reconciliation reports.
+
+### L. System Settings
+- Organisation profile.
+- Platform configuration.
+- Notification settings.
+- Security settings.
+- Audit logs.
+- Session management.
+- Backup status.
+- API health.
+- Storage health.
+
+---
+
+## DASHBOARD TWO: COMMUNITY DASHBOARD
+
+Role identifier: COMMUNITY_COORDINATOR
+
+Display name: Community Coordinator
+
+This dashboard is intended for authorised people who work directly with communities and identify individuals or families requiring assistance.
+
+It should have a significantly simpler interface than the administration dashboard while retaining professional design and functionality.
+
+### A. Community Overview
+- Personal activity summary.
+- Submitted cases.
+- Pending verification.
+- Approved submissions.
+- Rejected submissions.
+- Active cases.
+- Recent administrative feedback.
+- Notifications.
+
+### B. Individual and Family Case Registration
+Allow coordinators to submit humanitarian assistance cases.
+
+Information may include:
+- Case title.
+- General community or region.
+- Type of assistance required.
+- Description of the situation.
+- Number of affected individuals.
+- Urgency level.
+- Required assistance.
+- Supporting evidence.
+- Consent confirmation.
+- Relevant contact information, stored privately.
+
+Provide draft saving and submission tracking.
+
+### C. Story Submission
+- Submit written stories.
+- Upload photographs.
+- Upload videos.
+- Select categories.
+- Provide community context.
+- Request anonymous publication.
+- Record consent.
+- Submit for editorial review.
+
+Stories must not become publicly visible until authorised approval.
+
+### D. Assistance Requests
+- Submit assistance requests.
+- Select the relevant case.
+- Describe the required support.
+- Upload supporting documents.
+- Monitor review status.
+- Receive feedback.
+
+### E. Field Activity Reports
+- Record community visits.
+- Submit field reports.
+- Document assistance delivered.
+- Record relevant dates.
+- Upload supporting evidence.
+- Update case progress.
+
+### F. My Submissions
+Provide a searchable table showing:
+- Reference number.
+- Submission type.
+- Submission date.
+- Verification status.
+- Last update.
+- Administrative feedback.
+- Available actions.
+
+### G. Notifications
+- Case approved.
+- Case rejected.
+- Additional information requested.
+- Story approved.
+- Campaign update.
+- Administrative announcement.
+
+### H. Account Settings
+- Profile information.
+- Password management.
+- Session management.
+- Notification preferences.
+- Security settings.
+
+IMPORTANT PERMISSION RESTRICTIONS:
+
+Community Coordinators must never:
+- Approve their own cases.
+- Publish unapproved stories.
+- Modify confirmed financial transactions.
+- Access administrative financial reports.
+- Create administrator accounts.
+- Modify platform-wide settings.
+- Access another coordinator's confidential submissions without explicit authorisation.
+
+All permissions must be enforced by the backend, not merely hidden in the frontend.
+
+---
+
+# 5. PUBLIC WEBSITE
+
+Build a stunning, fully responsive public website.
+
+The website must feel like a premium international humanitarian organisation's digital presence.
+
+## Main Navigation
+
+- Home
+- Our Stories
+- People in Need
+- Campaigns
+- Impact Centre
+- About Us
+- Get Involved
+- Contact
+
+Prominent action button: DONATE NOW.
+
+Include accessible navigation, dropdown menus, mobile navigation and a theme switcher.
+
+## A. Homepage
+
+Design an exceptional homepage containing:
+
+### Hero Section
+
+Headline:
+
+"Every Story Matters. Every Life Deserves Hope."
+
+Supporting text:
+
+"HumanityBridge connects vulnerable communities with compassionate individuals and meaningful assistance. Together, we can turn stories into action and build a more dignified future."
+
+Primary CTA: Explore Our Stories.
+
+Secondary CTA: Make a Difference.
+
+Use a carefully selected humanitarian photograph or cinematic visual background.
+
+Avoid stereotypical or exploitative representations of vulnerable people.
+
+### Impact Statistics
+
+Display live database-driven statistics:
+- People supported.
+- Verified cases.
+- Active campaigns.
+- Completed assistance projects.
+
+Show clear empty states when the platform has no real records.
+
+### Featured Humanitarian Stories
+
+Display approved stories in attractive editorial cards.
+
+Each card should include:
+- Cover photograph.
+- Story title.
+- Category.
+- Short introduction.
+- Publication date.
+- Read More link.
+
+### Featured Campaigns
+
+Display approved active campaigns.
+
+Each card should include:
+- Campaign photograph.
+- Campaign title.
+- Description.
+- Funding target.
+- Confirmed amount raised.
+- Progress indicator.
+- View Campaign link.
+
+### How HumanityBridge Works
+
+Present four stages:
+
+1. Discover: Learn about community needs.
+2. Verify: Review responsibly verified cases.
+3. Support: Contribute to meaningful assistance.
+4. Transform: Follow the impact of delivered support.
+
+### Impact and Transparency
+
+Create an engaging section that explains how the platform verifies cases, handles contributions and publishes accountability reports.
+
+### Call to Action
+
+Headline:
+
+"Together, We Can Make a Difference."
+
+CTA: Become Part of the Change.
+
+### Footer
+
+Include:
+- Brand identity.
+- Official tagline.
+- Navigation links.
+- Contact information.
+- Privacy policy.
+- Terms of service.
+- Safeguarding policy.
+- Donation transparency.
+- Social media links.
+
+Do not invent official addresses, registration numbers, partner organisations or contact details. Make these configurable.
+
+---
+
+# 6. OTHER PUBLIC WEBSITE PAGES
+
+Implement all of the following:
+
+1. Our Stories
+2. Story Details
+3. People in Need
+4. Humanitarian Case Details
+5. Campaigns
+6. Campaign Details
+7. Donation Page
+8. Impact Centre
+9. About Us
+10. Mission and Vision
+11. How It Works
+12. Get Involved
+13. Volunteer Registration
+14. Partnership Enquiries
+15. Community News
+16. News Details
+17. Contact Us
+18. Frequently Asked Questions
+19. Privacy Policy
+20. Terms and Conditions
+21. Safeguarding Policy
+22. Donation Transparency Policy
+23. Login
+24. Forgot Password
+25. Reset Password
+26. Account Verification
+
+All public content must be connected to backend APIs and database records where applicable.
+
+---
+
+# 7. VISUAL DESIGN SYSTEM AND BRAND IDENTITY
+
+This is a critical requirement.
+
+Create an internationally credible and visually distinctive humanitarian technology brand.
+
+### Official Brand
+
+Name: HumanityBridge
+
+Tagline: Together for a Dignified and Hopeful Tomorrow.
+
+### Colour Direction
+
+Primary:
+- Deep midnight navy.
+- Professional royal blue.
+- Cyan accents.
+
+Secondary:
+- Emerald green.
+- Soft white.
+- Cool silver.
+- Muted slate.
+
+Use gradients sparingly and intentionally.
+
+Suggested design tokens:
+
+--color-primary: #0B1F3A;
+--color-secondary: #123F69;
+--color-accent: #00BCEB;
+--color-success: #16865D;
+--color-background: #F7F9FC;
+--color-surface: #FFFFFF;
+--color-text: #152238;
+--color-muted: #748196;
+
+Dark theme:
+- Deep navy backgrounds.
+- Layered dark surfaces.
+- Soft white typography.
+- Restrained cyan highlights.
+
+### Design Characteristics
+
+Use:
+- Modern glassmorphism where appropriate.
+- Premium editorial layouts.
+- Subtle gradients.
+- Sophisticated typography.
+- Soft shadows.
+- Carefully designed card surfaces.
+- Consistent border radii.
+- Smooth micro-interactions.
+- Elegant transitions.
+- Professional data visualisations.
+- Spacious layouts.
+- High-quality humanitarian photography.
+
+Avoid:
+- Excessive gradients.
+- Excessive glowing effects.
+- Unnecessary animations.
+- Generic template layouts.
+- Overcrowded dashboards.
+- Excessive rounded cards.
+- Inconsistent spacing.
+- Decorative elements that interfere with readability.
+
+### Typography
+
+Use a modern professional font such as Inter, Manrope or another suitable contemporary typeface.
+
+Create a clear hierarchy for:
+- Hero headings.
+- Section headings.
+- Body text.
+- Labels.
+- Navigation.
+- Dashboard statistics.
+
+### Responsive Design
+
+The entire system must work correctly on:
+- Desktop computers.
+- Laptops.
+- Tablets.
+- Android smartphones.
+- iPhones.
+
+Mobile layouts must be deliberately designed rather than simply shrinking desktop components.
+
+### Accessibility
+
+Follow WCAG 2.2 AA principles:
+- Keyboard navigation.
+- Visible focus indicators.
+- Accessible forms.
+- Screen-reader support.
+- Appropriate colour contrast.
+- Semantic HTML.
+- Accessible modal dialogs.
+- Reduced-motion support.
+
+---
+
+# 8. DATABASE ARCHITECTURE: MYSQL + DRIZZLE ORM
+
+Design a normalised relational database with appropriate indexes, foreign keys and constraints.
+
+Create modular Drizzle schema files.
+
+Required entities include:
+
+### Identity and Access
+- users
+- user_profiles
+- roles
+- permissions
+- user_sessions
+- password_reset_tokens
+- email_verification_tokens
+- mfa_settings
+- login_attempts
+
+### Humanitarian Operations
+- humanitarian_cases
+- case_categories
+- case_requirements
+- case_documents
+- case_verifications
+- case_status_history
+- community_locations
+- assistance_requests
+- assistance_distributions
+
+### Storytelling
+- stories
+- story_categories
+- story_media
+- story_consents
+- story_reviews
+- story_publications
+
+### Fundraising
+- campaigns
+- campaign_cases
+- donations
+- payment_transactions
+- payment_webhook_events
+- refunds
+- financial_records
+- financial_reconciliations
+
+### Community Operations
+- field_reports
+- field_activities
+- volunteers
+- volunteer_applications
+- partnerships
+- partnership_enquiries
+
+### Communication
+- notifications
+- announcements
+- articles
+- article_categories
+- contact_messages
+
+### Governance and Security
+- audit_logs
+- consent_records
+- safeguarding_reports
+- privacy_requests
+- moderation_actions
+- system_settings
+
+### System
+- media_files
+- activity_logs
+- backup_records
+
+Database requirements:
+
+1. Use appropriate MySQL data types.
+2. Use BIGINT or suitable identifiers for scalable records.
+3. Use DECIMAL for financial amounts.
+4. Store monetary currency explicitly.
+5. Store dates in UTC.
+6. Use appropriate indexes.
+7. Implement foreign-key constraints.
+8. Prevent duplicate transactions through unique provider references.
+9. Use database transactions for financial operations.
+10. Maintain audit trails for sensitive operations.
+11. Implement soft deletion carefully.
+12. Avoid storing unnecessary sensitive information.
+13. Never store passwords in plain text.
+14. Do not store payment card details.
+
+Create Drizzle migration files and seed scripts.
+
+Provide a complete database relationship design and document important relationships.
+
+---
+
+# 9. BACKEND API ARCHITECTURE
+
+Implement modular REST APIs.
+
+Use a consistent API response structure.
+
+Example:
+
+{
+  "success": true,
+  "message": "Operation completed successfully",
+  "data": {},
+  "meta": {}
+}
+
+Create endpoints for:
+
+### Authentication
+POST /api/v1/auth/register
+POST /api/v1/auth/login
+POST /api/v1/auth/logout
+GET /api/v1/auth/me
+POST /api/v1/auth/forgot-password
+POST /api/v1/auth/reset-password
+POST /api/v1/auth/verify-email
+
+### Public Stories
+GET /api/v1/stories
+GET /api/v1/stories/:slug
+
+### Humanitarian Cases
+GET /api/v1/cases
+GET /api/v1/cases/:reference
+
+### Campaigns
+GET /api/v1/campaigns
+GET /api/v1/campaigns/:slug
+
+### Donations
+POST /api/v1/donations
+GET /api/v1/donations/:reference/status
+
+### Community Coordinator
+GET /api/v1/coordinator/dashboard
+POST /api/v1/coordinator/cases
+GET /api/v1/coordinator/cases
+PATCH /api/v1/coordinator/cases/:id
+POST /api/v1/coordinator/stories
+POST /api/v1/coordinator/reports
+
+### Administrator
+GET /api/v1/admin/dashboard
+GET /api/v1/admin/users
+GET /api/v1/admin/cases
+PATCH /api/v1/admin/cases/:id/verify
+PATCH /api/v1/admin/stories/:id/review
+POST /api/v1/admin/campaigns
+GET /api/v1/admin/donations
+GET /api/v1/admin/reports
+GET /api/v1/admin/audit-logs
+
+These are the initial API contracts. Expand them to cover all implemented modules.
+
+For every endpoint:
+- Validate input.
+- Authenticate when required.
+- Enforce role permissions.
+- Handle errors consistently.
+- Use pagination.
+- Prevent unauthorised data exposure.
+- Document the request and response format.
+
+Do not expose internal database records directly.
+
+---
+
+# 10. AUTHENTICATION AND AUTHORISATION
+
+Implement secure authentication.
+
+Two dashboard roles only:
+
+PLATFORM_ADMIN
+COMMUNITY_COORDINATOR
+
+Public visitors do not need a dashboard account to read publicly approved content.
+
+Requirements:
+- Secure login.
+- Password hashing using Argon2id.
+- Email verification.
+- Password reset.
+- Secure session management.
+- HTTP-only cookies.
+- Session expiration.
+- CSRF protection.
+- Login rate limiting.
+- Account suspension.
+- MFA support for administrators.
+- Server-side permission middleware.
+
+Do not allow public registration to create administrative accounts.
+
+Community Coordinator accounts must require administrator approval or invitation.
+
+Create protected frontend routes and corresponding backend authorisation middleware.
+
+Frontend route protection is not a substitute for backend access control.
+
+---
+
+# 11. DONATION AND FINANCIAL ACCOUNTABILITY
+
+Create a secure donation architecture.
+
+Support a provider-independent payment integration layer so that approved payment gateways can be connected later.
+
+Possible future providers include:
+- Mobile money providers.
+- Regional payment processors.
+- International payment gateways.
+
+Do not assume that any particular provider is available in every target country.
+
+For the initial development environment, use a clearly labelled sandbox payment adapter or mock payment provider.
+
+Requirements:
+- Generate unique donation references.
+- Record payment status.
+- Verify payments through trusted provider callbacks.
+- Verify webhook signatures.
+- Implement idempotent webhook processing.
+- Prevent duplicate transaction processing.
+- Maintain donation receipts.
+- Support refunds where applicable.
+- Reconcile transactions.
+- Maintain financial audit records.
+
+Never claim that a payment is successful merely because a frontend form was submitted.
+
+Do not process or store card details directly.
+
+Do not activate real fundraising until the organisation's legal status, payment arrangements and financial responsibilities have been properly established.
+
+---
+
+# 12. HUMANITARIAN PRIVACY AND SAFEGUARDING
+
+This is one of the most important parts of the platform.
+
+People using this platform may be affected by conflict, displacement, poverty, violence or other sensitive circumstances.
+
+Protect their dignity and safety.
+
+Implement:
+
+### Consent Management
+- Explicit consent before publishing stories.
+- Separate consent for photographs and videos.
+- Separate consent for public identification.
+- Anonymous publication options.
+- Consent withdrawal procedures.
+- Consent records with timestamps.
+
+### Privacy Protection
+- Do not publish private telephone numbers.
+- Do not publish residential addresses.
+- Do not expose precise locations of vulnerable people.
+- Do not expose confidential documents.
+- Restrict access to sensitive information.
+- Use private file storage.
+- Use signed, expiring file-access links.
+- Keep public and confidential case data separate.
+
+### Child Safeguarding
+- Special restrictions for children's information.
+- Appropriate guardian consent.
+- No public exposure of identifying information.
+- No direct public contact functionality targeting children.
+- Restrict sensitive child-related records to authorised reviewers.
+- Provide a procedure to reject unsafe publication requests.
+
+### Case Verification
+- Separate submitted, under-review, verified, rejected and closed statuses.
+- Require evidence appropriate to the type of case.
+- Record who verified each case.
+- Record verification timestamps.
+- Maintain a complete decision history.
+
+Never automatically classify a person as vulnerable or a case as genuine based solely on an AI-generated assessment.
+
+Human review is mandatory.
+
+---
+
+# 13. MEDIA MANAGEMENT
+
+Build a proper media management system.
+
+Support:
+- Images.
+- Videos.
+- Documents.
+- Campaign covers.
+- Story photographs.
+- Profile photographs.
+
+Requirements:
+- Validate file extensions and actual file types.
+- Enforce file-size limits.
+- Generate safe random filenames.
+- Restrict executable uploads.
+- Scan uploaded files where infrastructure permits.
+- Store private documents separately from public media.
+- Use image optimisation.
+- Generate thumbnails.
+- Support modern image formats.
+- Provide accessible image descriptions.
+
+Do not expose private uploaded files through public static URLs.
+
+---
+
+# 14. NOTIFICATIONS AND COMMUNICATION
+
+Implement an extensible notification architecture.
+
+Notification events include:
+- New case submission.
+- Case verification.
+- Case rejection.
+- Additional information request.
+- Story approval.
+- Campaign publication.
+- Donation confirmation.
+- Refund update.
+- Administrative announcement.
+- Coordinator account updates.
+
+Support in-app notifications initially.
+
+Design email notifications as a configurable service that can be connected to a verified email provider.
+
+---
+
+# 15. SEARCH, FILTERING AND ANALYTICS
+
+Implement a reusable search and filtering system.
+
+Support:
+- Story search.
+- Campaign search.
+- Case category filtering.
+- Region filtering.
+- Campaign status filtering.
+- Date filtering.
+- Donation reporting.
+- Coordinator activity reporting.
+
+Implement pagination, sorting and server-side filtering.
+
+Use charts and visualisations to communicate actual data.
+
+Do not fabricate financial or humanitarian impact statistics.
+
+---
+
+# 16. ADVANCED FEATURES
+
+Prepare the architecture for future capabilities:
+
+### Multilingual Support
+English as the initial language.
+
+Prepare localisation infrastructure for:
+- Nuer.
+- Arabic.
+- Amharic.
+- Additional languages.
+
+Support translated content while preserving the original story.
+
+### QR Verification
+Generate QR codes for approved public case references.
+
+The QR code must lead to a public verification page without exposing confidential case information.
+
+### Geographic Impact
+Display aggregated community impact information.
+
+Never publish precise locations that could endanger vulnerable people.
+
+### AI-Assisted Translation
+Prepare an optional translation service with human editorial review.
+
+AI must not automatically approve humanitarian cases, determine eligibility for assistance or publish stories.
+
+### Offline Field Reporting
+Prepare a future capability for coordinators to draft reports offline and synchronise them securely when connectivity returns.
+
+---
+
+# 17. PERFORMANCE AND OPTIMISATION
+
+Implement:
+- Lazy loading.
+- Code splitting.
+- Route-based loading.
+- Optimised images.
+- Database query optimisation.
+- Efficient API responses.
+- Caching for appropriate public content.
+- Server-side pagination.
+- Error boundaries.
+- Loading skeletons.
+- Empty states.
+- Responsive tables.
+- Optimised production builds.
+
+The application should remain usable on lower-end Android devices and slower internet connections.
+
+---
+
+# 18. TESTING AND QUALITY ASSURANCE
+
+Create a proper testing strategy.
+
+### Frontend
+- Component tests.
+- Form validation tests.
+- Route protection tests.
+- Responsive layout tests.
+
+### Backend
+- API integration tests.
+- Authentication tests.
+- Role permission tests.
+- Validation tests.
+- Error-handling tests.
+
+### Database
+- Migration tests.
+- Relationship integrity tests.
+- Transaction tests.
+- Duplicate payment prevention tests.
+
+### Security
+- Unauthorised access tests.
+- IDOR protection tests.
+- CSRF tests.
+- XSS protection tests.
+- SQL injection protection tests.
+- File upload security tests.
+- Session security tests.
+
+### Critical Acceptance Tests
+
+Verify that:
+
+1. A Community Coordinator cannot access administrator endpoints.
+2. A Community Coordinator cannot approve their own case.
+3. Unapproved stories never appear publicly.
+4. Unverified payments never count as confirmed donations.
+5. Duplicate payment callbacks cannot duplicate donations.
+6. Private beneficiary information is never exposed publicly.
+7. Administrative actions generate audit records.
+8. Public pages remain accessible without login.
+9. Invalid and expired sessions are rejected.
+10. The system works correctly on mobile and desktop.
+
+---
+
+# 19. DOCUMENTATION AND PROJECT DELIVERY
+
+Create a professional README.md containing:
+
+- Project overview.
+- Mission and objectives.
+- Technology stack.
+- Architecture.
+- Folder structure.
+- Prerequisites.
+- Installation instructions.
+- Environment configuration.
+- Database creation.
+- Drizzle migrations.
+- Database seeding.
+- Frontend startup.
+- Backend startup.
+- API documentation.
+- Testing instructions.
+- Production build.
+- Deployment guide.
+- Security considerations.
+
+Create:
+
+.env.example
+
+Include all required environment variable names but never include real secrets.
+
+Create scripts for:
+
+- Development startup.
+- Production build.
+- Database migration.
+- Database seeding.
+- Database inspection.
+- Test execution.
+
+Create Docker Compose configuration for local development with MySQL and the application services.
+
+Provide a documented process for creating the first administrator account securely. Never hardcode default production administrator credentials.
+
+---
+
+# 20. DEVELOPMENT EXECUTION STRATEGY
+
+Do not attempt to generate the entire system as one giant unstructured code response.
+
+Work systematically.
+
+### Stage 1: Architecture and Planning
+- Inspect the existing project if one exists.
+- Establish the architecture.
+- Define modules.
+- Design the database.
+- Define the API contracts.
+- Define role permissions.
+- Document the implementation plan.
+
+### Stage 2: Project Foundation
+- Initialise the monorepo.
+- Configure TypeScript.
+- Configure React and Vite.
+- Configure Express.
+- Configure Drizzle ORM.
+- Connect MySQL.
+- Configure shared validation and types.
+
+### Stage 3: Database and Authentication
+- Implement schemas.
+- Generate migrations.
+- Implement secure authentication.
+- Implement role-based access.
+- Implement session handling.
+
+### Stage 4: Public Website
+- Build the homepage.
+- Build navigation.
+- Build stories.
+- Build cases.
+- Build campaigns.
+- Build donations.
+- Build about and contact pages.
+- Connect public pages to APIs.
+
+### Stage 5: Admin Dashboard
+Implement all administrator modules and connect them to actual backend services.
+
+### Stage 6: Community Dashboard
+Implement all coordinator modules and connect them to actual backend services.
+
+### Stage 7: Financial and Humanitarian Workflows
+Implement payment integration architecture, verification, case approval, reporting and safeguarding.
+
+### Stage 8: Testing and Refinement
+- Test all workflows.
+- Fix errors.
+- Review responsive layouts.
+- Review security.
+- Optimise performance.
+
+### Stage 9: Production Readiness
+- Build deployment configuration.
+- Prepare database backup procedures.
+- Document environment configuration.
+- Produce deployment instructions.
+
+---
+
+# 21. STRICT DEVELOPMENT RULES
+
+These requirements are mandatory:
+
+1. Build real, working functionality, not decorative interfaces.
+2. Do not use fake buttons that do nothing.
+3. Do not leave important modules as placeholder pages.
+4. Do not hardcode production statistics.
+5. Do not use mock data as a substitute for backend integration.
+6. Do not create a fake authentication system.
+7. Do not create additional dashboard roles.
+8. Do not mix administrator and coordinator permissions.
+9. Do not expose confidential beneficiary information.
+10. Do not use an unrelated database or ORM.
+11. Do not put database queries directly inside React components.
+12. Do not duplicate business logic across controllers.
+13. Do not ignore errors.
+14. Do not leave broken routes.
+15. Do not use deprecated packages or APIs.
+16. Do not overwrite existing project files without inspecting them first.
+17. Do not delete existing user data or project functionality without explicit approval.
+18. Keep the code readable, modular, typed and maintainable.
+19. Use reusable components and consistent design tokens.
+20. Ensure all important operations have appropriate validation and audit records.
+
+If an external service requires credentials, build its integration interface and clearly document the required configuration rather than pretending that the service is already connected.
+
+---
+
+# 22. FINAL EXPECTED RESULT
+
+The finished HumanityBridge platform must include:
+
+**PUBLIC WEBSITE**
+- Premium homepage.
+- Complete navigation.
+- Humanitarian stories.
+- Verified cases.
+- Campaigns.
+- Donation interface.
+- Impact centre.
+- About and contact pages.
+- Responsive design.
+- Light and dark themes.
+
+**ADMIN DASHBOARD**
+- Executive overview.
+- User management.
+- Case verification.
+- Story moderation.
+- Campaign management.
+- Donation administration.
+- Financial reporting.
+- Volunteer and partnership management.
+- Safeguarding.
+- Analytics.
+- System settings.
+- Audit logs.
+
+**COMMUNITY DASHBOARD**
+- Community overview.
+- Case registration.
+- Story submission.
+- Assistance requests.
+- Field reporting.
+- Submission tracking.
+- Notifications.
+- Account settings.
+
+**BACKEND**
+- Node.js.
+- Express.js.
+- TypeScript.
+- REST API.
+- Secure authentication.
+- Role-based permissions.
+- Validation.
+- Logging.
+- Error handling.
+- Documentation.
+
+**DATABASE**
+- MySQL.
+- Drizzle ORM.
+- Relational schemas.
+- Migrations.
+- Seed scripts.
+- Indexes.
+- Foreign-key constraints.
+- Transaction management.
+
+**QUALITY**
+- Responsive design.
+- Accessibility.
+- Performance optimisation.
+- Security testing.
+- Automated tests.
+- Deployment documentation.
+
+The final product should look and operate like a mature international humanitarian technology platform.
+
+## YOUR FIRST TASK
+
+Begin by examining the existing project environment.
+
+If an existing repository is available, inspect its complete structure and preserve useful work. If the environment is empty, initialise the project correctly.
+
+Then produce:
+
+1. The complete system architecture.
+2. The complete folder structure.
+3. The database entity relationship design.
+4. The two-dashboard permission matrix.
+5. The development roadmap.
+6. The initial project configuration.
+
+After presenting the architecture, begin implementation systematically.
+
+Do not stop at recommendations or architectural explanations. The objective is to create the actual working application, with real frontend components, backend APIs, database schemas and functional workflows.
+
+**PROJECT IDENTITY: HUMANITYBRIDGE**
+
+**OFFICIAL TAGLINE: TOGETHER FOR A DIGNIFIED AND HOPEFUL TOMORROW.**
+
+**ENGINEERING PRINCIPLE: TECHNOLOGY WITH HUMANITY, INTEGRITY AND ACCOUNTABILITY.**

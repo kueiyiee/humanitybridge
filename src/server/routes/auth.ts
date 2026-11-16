@@ -1,0 +1,601 @@
+import { Router } from 'express';
+import { and, desc, eq, isNull } from 'drizzle-orm';
+import rateLimit from 'express-rate-limit';
+import { db, schema, nowUtc } from '../../db/index';
+import {
+  forgotPasswordSchema,
+  loginSchema,
+  registerCoordinatorSchema,
+  resetPasswordSchema,
+} from '../../../packages/shared/validation';
+import { DASHBOARD_ROLES, ROLE_PERMISSIONS } from '../../../packages/shared/types';
+import {
+  generateRandomToken,
+  generateTotpSecret,
+  hashPasswordArgon2id,
+  hashToken,
+  verifyPasswordArgon2id,
+  verifyTotpCode,
+} from '../utils/crypto';
+import {
+  type AuthenticatedRequest,
+  clearAuthCookies,
+  requireAuth,
+  setAuthCookies,
+} from '../middleware/auth';
+import { AppError, asyncHandler } from '../middleware/errorHandler';
+import { writeAuditLog } from '../services/auditService';
+import { env } from '../config/env';
+
+const router = Router();
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many authentication attempts. Try again shortly.', data: null },
+});
+
+router.post(
+  '/login',
+  authLimiter,
+  asyncHandler(async (req, res) => {
+    const parsed = loginSchema.parse(req.body);
+    const email = parsed.email.toLowerCase();
+    const ip = req.ip || 'unknown';
+    const ts = nowUtc();
+
+    const userRows = await db
+      .select()
+      .from(schema.users)
+      .where(and(eq(schema.users.email, email), isNull(schema.users.deletedAt)))
+      .limit(1);
+    const user = userRows[0];
+
+    if (!user || !verifyPasswordArgon2id(parsed.password, user.passwordHash)) {
+      await db.insert(schema.loginAttempts).values({
+        email,
+        ipAddress: ip,
+        success: false,
+        reason: 'INVALID_CREDENTIALS',
+        attemptedAt: ts,
+      });
+      throw new AppError(401, 'Invalid email or password');
+    }
+
+    if (user.status !== 'ACTIVE') {
+      await db.insert(schema.loginAttempts).values({
+        email,
+        ipAddress: ip,
+        success: false,
+        reason: `ACCOUNT_${user.status}`,
+        attemptedAt: ts,
+      });
+      throw new AppError(
+        403,
+        user.status === 'PENDING_APPROVAL'
+          ? 'Your Community Coordinator application is awaiting Administrator approval.'
+          : 'Your account is currently suspended. Contact Platform Administration.',
+      );
+    }
+
+    if (user.mfaEnabled) {
+      const mfaRows = await db
+        .select()
+        .from(schema.mfaSettings)
+        .where(eq(schema.mfaSettings.userId, user.id))
+        .limit(1);
+      const mfa = mfaRows[0];
+      if (!mfa || !mfa.enabled) {
+        throw new AppError(500, 'MFA configuration mismatch');
+      }
+      if (!parsed.mfaCode) {
+        return res.status(200).json({
+          success: true,
+          message: 'MFA verification code required',
+          data: { mfaRequired: true },
+        });
+      }
+      if (!verifyTotpCode(mfa.totpSecret, parsed.mfaCode)) {
+        await db.insert(schema.loginAttempts).values({
+          email,
+          ipAddress: ip,
+          success: false,
+          reason: 'INVALID_MFA',
+          attemptedAt: ts,
+        });
+        throw new AppError(401, 'Invalid authenticator verification code');
+      }
+    }
+
+    const rawSessionToken = generateRandomToken(32);
+    const sessionTokenHash = hashToken(rawSessionToken);
+    const ttlMs = env.sessionTtlHours * 3600 * 1000;
+    const expiresAt = new Date(Date.now() + ttlMs).toISOString();
+
+    await db.insert(schema.userSessions).values({
+      sessionTokenHash,
+      userId: user.id,
+      ipAddress: ip,
+      userAgent: String(req.headers['user-agent'] || '').slice(0, 290),
+      expiresAt,
+      createdAt: ts,
+    });
+
+    await db.update(schema.users).set({ lastLoginAt: ts, updatedAt: ts }).where(eq(schema.users.id, user.id));
+    await db.insert(schema.loginAttempts).values({
+      email,
+      ipAddress: ip,
+      success: true,
+      attemptedAt: ts,
+    });
+
+    const profileRows = await db
+      .select()
+      .from(schema.userProfiles)
+      .where(eq(schema.userProfiles.userId, user.id))
+      .limit(1);
+    const profile = profileRows[0];
+
+    const csrfToken = setAuthCookies(res, rawSessionToken, ttlMs);
+    await writeAuditLog({
+      actorUserId: user.id,
+      actorRole: user.role,
+      action: 'AUTH_LOGIN_SUCCESS',
+      resourceType: 'user',
+      resourceId: user.id,
+      ipAddress: ip,
+    });
+
+    return res.json({
+      success: true,
+      message: 'Signed in successfully',
+      data: {
+        mfaRequired: false,
+        csrfToken,
+        user: {
+          id: user.id,
+          email: user.email,
+          role: user.role,
+          displayName: profile?.displayName || user.email,
+          region: profile?.region || null,
+          status: user.status,
+          emailVerified: Boolean(user.emailVerified),
+          mfaEnabled: Boolean(user.mfaEnabled),
+        },
+      },
+    });
+  }),
+);
+
+router.post(
+  '/register',
+  authLimiter,
+  asyncHandler(async (req, res) => {
+    const parsed = registerCoordinatorSchema.parse(req.body);
+    const email = parsed.email.toLowerCase();
+    const ts = nowUtc();
+
+    const existing = await db.select().from(schema.users).where(eq(schema.users.email, email)).limit(1);
+    if (existing.length > 0) {
+      throw new AppError(409, 'An account with this email already exists');
+    }
+
+    // Security invariant: public registration can NEVER create PLATFORM_ADMIN accounts.
+    // All coordinator registrations require explicit Platform Administrator approval.
+    const passwordHash = hashPasswordArgon2id(parsed.password);
+    await db.insert(schema.users).values({
+      email,
+      passwordHash,
+      role: DASHBOARD_ROLES.COMMUNITY_COORDINATOR,
+      status: 'PENDING_APPROVAL',
+      emailVerified: false,
+      mfaEnabled: false,
+      createdAt: ts,
+      updatedAt: ts,
+    });
+
+    const createdRows = await db.select().from(schema.users).where(eq(schema.users.email, email)).limit(1);
+    const createdUser = createdRows[0];
+
+    await db.insert(schema.userProfiles).values({
+      userId: createdUser.id,
+      displayName: parsed.displayName,
+      region: parsed.region,
+      organization: parsed.organization || null,
+      bio: parsed.motivation,
+      preferredLanguage: 'en',
+      createdAt: ts,
+      updatedAt: ts,
+    });
+
+    const verificationToken = generateRandomToken(24);
+    await db.insert(schema.emailVerificationTokens).values({
+      userId: createdUser.id,
+      tokenHash: hashToken(verificationToken),
+      expiresAt: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
+      createdAt: ts,
+    });
+
+    await writeAuditLog({
+      actorUserId: createdUser.id,
+      actorRole: DASHBOARD_ROLES.COMMUNITY_COORDINATOR,
+      action: 'COORDINATOR_APPLICATION_SUBMITTED',
+      resourceType: 'user',
+      resourceId: createdUser.id,
+      details: { region: parsed.region },
+      ipAddress: req.ip,
+    });
+
+    return res.status(201).json({
+      success: true,
+      message:
+        'Coordinator application submitted. An administrator must verify and approve your account before dashboard access is enabled.',
+      data: {
+        email,
+        status: 'PENDING_APPROVAL',
+        ...(env.isProduction ? {} : { devVerificationToken: verificationToken }),
+      },
+    });
+  }),
+);
+
+router.post(
+  '/logout',
+  asyncHandler(async (req: AuthenticatedRequest, res) => {
+    if (req.sessionId) {
+      await db
+        .update(schema.userSessions)
+        .set({ revokedAt: nowUtc() })
+        .where(eq(schema.userSessions.id, req.sessionId));
+    }
+    clearAuthCookies(res);
+    return res.json({ success: true, message: 'Signed out cleanly', data: null });
+  }),
+);
+
+router.get(
+  '/me',
+  requireAuth,
+  asyncHandler(async (req: AuthenticatedRequest, res) => {
+    const user = req.user!;
+    const permissions = ROLE_PERMISSIONS[user.role] || [];
+    const profileRows = await db
+      .select()
+      .from(schema.userProfiles)
+      .where(eq(schema.userProfiles.userId, user.id))
+      .limit(1);
+
+    return res.json({
+      success: true,
+      message: 'Session verified',
+      data: {
+        user: {
+          ...user,
+          organization: profileRows[0]?.organization || null,
+          bio: profileRows[0]?.bio || null,
+          preferredLanguage: profileRows[0]?.preferredLanguage || 'en',
+        },
+        permissions,
+      },
+    });
+  }),
+);
+
+router.post(
+  '/forgot-password',
+  authLimiter,
+  asyncHandler(async (req, res) => {
+    const parsed = forgotPasswordSchema.parse(req.body);
+    const email = parsed.email.toLowerCase();
+    const rows = await db.select().from(schema.users).where(eq(schema.users.email, email)).limit(1);
+    const user = rows[0];
+
+    let devToken: string | undefined;
+    if (user) {
+      const token = generateRandomToken(24);
+      devToken = token;
+      await db.insert(schema.passwordResetTokens).values({
+        userId: user.id,
+        tokenHash: hashToken(token),
+        expiresAt: new Date(Date.now() + 3600 * 1000).toISOString(),
+        createdAt: nowUtc(),
+      });
+      await writeAuditLog({
+        actorUserId: user.id,
+        actorRole: user.role,
+        action: 'AUTH_PASSWORD_RESET_REQUESTED',
+        resourceType: 'user',
+        resourceId: user.id,
+        ipAddress: req.ip,
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: 'If an account matches that email, password reset instructions have been issued.',
+      data: env.isProduction ? null : { devResetToken: devToken },
+    });
+  }),
+);
+
+router.post(
+  '/reset-password',
+  authLimiter,
+  asyncHandler(async (req, res) => {
+    const parsed = resetPasswordSchema.parse(req.body);
+    const tokenHash = hashToken(parsed.token);
+    const ts = nowUtc();
+
+    const rows = await db
+      .select()
+      .from(schema.passwordResetTokens)
+      .where(and(eq(schema.passwordResetTokens.tokenHash, tokenHash), isNull(schema.passwordResetTokens.usedAt)))
+      .limit(1);
+    const record = rows[0];
+    if (!record || record.expiresAt <= ts) {
+      throw new AppError(400, 'Reset token is invalid or expired');
+    }
+
+    await db.transaction(async (tx) => {
+      await tx
+        .update(schema.users)
+        .set({ passwordHash: hashPasswordArgon2id(parsed.password), updatedAt: ts })
+        .where(eq(schema.users.id, record.userId));
+      await tx
+        .update(schema.passwordResetTokens)
+        .set({ usedAt: ts })
+        .where(eq(schema.passwordResetTokens.id, record.id));
+      await tx
+        .update(schema.userSessions)
+        .set({ revokedAt: ts })
+        .where(eq(schema.userSessions.userId, record.userId));
+    });
+
+    await writeAuditLog({
+      actorUserId: record.userId,
+      action: 'AUTH_PASSWORD_RESET_COMPLETED',
+      resourceType: 'user',
+      resourceId: record.userId,
+      ipAddress: req.ip,
+    });
+
+    return res.json({ success: true, message: 'Password updated. Please sign in with your new credentials.', data: null });
+  }),
+);
+
+router.post(
+  '/verify-email',
+  asyncHandler(async (req, res) => {
+    const token = String(req.body?.token || '').trim();
+    if (!token) throw new AppError(400, 'Verification token is required');
+    const tokenHash = hashToken(token);
+    const ts = nowUtc();
+
+    const rows = await db
+      .select()
+      .from(schema.emailVerificationTokens)
+      .where(
+        and(eq(schema.emailVerificationTokens.tokenHash, tokenHash), isNull(schema.emailVerificationTokens.verifiedAt)),
+      )
+      .limit(1);
+    const record = rows[0];
+    if (!record || record.expiresAt <= ts) {
+      throw new AppError(400, 'Email verification token is invalid or expired');
+    }
+
+    await db.transaction(async (tx) => {
+      await tx
+        .update(schema.users)
+        .set({ emailVerified: true, updatedAt: ts })
+        .where(eq(schema.users.id, record.userId));
+      await tx
+        .update(schema.emailVerificationTokens)
+        .set({ verifiedAt: ts })
+        .where(eq(schema.emailVerificationTokens.id, record.id));
+    });
+
+    return res.json({ success: true, message: 'Email verified successfully', data: null });
+  }),
+);
+
+router.patch(
+  '/profile',
+  requireAuth,
+  asyncHandler(async (req: AuthenticatedRequest, res) => {
+    const displayName = String(req.body?.displayName || '').trim();
+    const region = String(req.body?.region || '').trim();
+    const organization = String(req.body?.organization || '').trim();
+    const bio = String(req.body?.bio || '').trim();
+
+    if (displayName.length < 2) {
+      throw new AppError(400, 'Display name must be at least 2 characters');
+    }
+
+    await db
+      .update(schema.userProfiles)
+      .set({
+        displayName,
+        region: region || null,
+        organization: organization || null,
+        bio: bio || null,
+        updatedAt: nowUtc(),
+      })
+      .where(eq(schema.userProfiles.userId, req.user!.id));
+
+    return res.json({ success: true, message: 'Profile updated', data: null });
+  }),
+);
+
+router.post(
+  '/change-password',
+  requireAuth,
+  asyncHandler(async (req: AuthenticatedRequest, res) => {
+    const currentPassword = String(req.body?.currentPassword || '');
+    const newPassword = String(req.body?.newPassword || '');
+    if (newPassword.length < 10) {
+      throw new AppError(400, 'New password must be at least 10 characters');
+    }
+
+    const rows = await db.select().from(schema.users).where(eq(schema.users.id, req.user!.id)).limit(1);
+    const user = rows[0];
+    if (!user || !verifyPasswordArgon2id(currentPassword, user.passwordHash)) {
+      throw new AppError(401, 'Current password is incorrect');
+    }
+
+    await db
+      .update(schema.users)
+      .set({ passwordHash: hashPasswordArgon2id(newPassword), updatedAt: nowUtc() })
+      .where(eq(schema.users.id, user.id));
+
+    await writeAuditLog({
+      actorUserId: user.id,
+      actorRole: user.role,
+      action: 'AUTH_PASSWORD_CHANGED',
+      resourceType: 'user',
+      resourceId: user.id,
+      ipAddress: req.ip,
+    });
+
+    return res.json({ success: true, message: 'Password updated cleanly', data: null });
+  }),
+);
+
+router.get(
+  '/sessions',
+  requireAuth,
+  asyncHandler(async (req: AuthenticatedRequest, res) => {
+    const sessions = await db
+      .select({
+        id: schema.userSessions.id,
+        ipAddress: schema.userSessions.ipAddress,
+        userAgent: schema.userSessions.userAgent,
+        expiresAt: schema.userSessions.expiresAt,
+        revokedAt: schema.userSessions.revokedAt,
+        createdAt: schema.userSessions.createdAt,
+      })
+      .from(schema.userSessions)
+      .where(eq(schema.userSessions.userId, req.user!.id))
+      .orderBy(desc(schema.userSessions.createdAt))
+      .limit(15);
+
+    return res.json({
+      success: true,
+      message: 'Active and recent sessions',
+      data: sessions.map((s) => ({ ...s, isCurrent: s.id === req.sessionId })),
+    });
+  }),
+);
+
+router.delete(
+  '/sessions/:id',
+  requireAuth,
+  asyncHandler(async (req: AuthenticatedRequest, res) => {
+    const sessionId = Number(req.params.id);
+    await db
+      .update(schema.userSessions)
+      .set({ revokedAt: nowUtc() })
+      .where(and(eq(schema.userSessions.id, sessionId), eq(schema.userSessions.userId, req.user!.id)));
+
+    return res.json({ success: true, message: 'Session revoked', data: null });
+  }),
+);
+
+router.post(
+  '/mfa/setup',
+  requireAuth,
+  asyncHandler(async (req: AuthenticatedRequest, res) => {
+    const secret = generateTotpSecret();
+    const ts = nowUtc();
+    const existing = await db
+      .select()
+      .from(schema.mfaSettings)
+      .where(eq(schema.mfaSettings.userId, req.user!.id))
+      .limit(1);
+
+    if (existing.length > 0) {
+      await db
+        .update(schema.mfaSettings)
+        .set({ totpSecret: secret, enabled: false, updatedAt: ts })
+        .where(eq(schema.mfaSettings.userId, req.user!.id));
+    } else {
+      await db.insert(schema.mfaSettings).values({
+        userId: req.user!.id,
+        totpSecret: secret,
+        enabled: false,
+        updatedAt: ts,
+      });
+    }
+
+    const otpauthUri = `otpauth://totp/HumanityBridge:${encodeURIComponent(req.user!.email)}?secret=${secret}&issuer=HumanityBridge`;
+    return res.json({
+      success: true,
+      message: 'MFA secret generated. Verify a 6-digit code from your authenticator app to enable.',
+      data: { secret, otpauthUri },
+    });
+  }),
+);
+
+router.post(
+  '/mfa/enable',
+  requireAuth,
+  asyncHandler(async (req: AuthenticatedRequest, res) => {
+    const code = String(req.body?.code || '');
+    const rows = await db
+      .select()
+      .from(schema.mfaSettings)
+      .where(eq(schema.mfaSettings.userId, req.user!.id))
+      .limit(1);
+    const mfa = rows[0];
+    if (!mfa) throw new AppError(400, 'Initialize MFA setup first');
+    if (!verifyTotpCode(mfa.totpSecret, code)) {
+      throw new AppError(400, 'Invalid 6-digit verification code');
+    }
+
+    const ts = nowUtc();
+    await db.transaction(async (tx) => {
+      await tx.update(schema.mfaSettings).set({ enabled: true, updatedAt: ts }).where(eq(schema.mfaSettings.id, mfa.id));
+      await tx.update(schema.users).set({ mfaEnabled: true, updatedAt: ts }).where(eq(schema.users.id, req.user!.id));
+    });
+
+    await writeAuditLog({
+      actorUserId: req.user!.id,
+      actorRole: req.user!.role,
+      action: 'AUTH_MFA_ENABLED',
+      resourceType: 'user',
+      resourceId: req.user!.id,
+      ipAddress: req.ip,
+    });
+
+    return res.json({ success: true, message: 'Two-factor authentication enabled', data: null });
+  }),
+);
+
+router.post(
+  '/mfa/disable',
+  requireAuth,
+  asyncHandler(async (req: AuthenticatedRequest, res) => {
+    const ts = nowUtc();
+    await db.transaction(async (tx) => {
+      await tx
+        .update(schema.mfaSettings)
+        .set({ enabled: false, updatedAt: ts })
+        .where(eq(schema.mfaSettings.userId, req.user!.id));
+      await tx.update(schema.users).set({ mfaEnabled: false, updatedAt: ts }).where(eq(schema.users.id, req.user!.id));
+    });
+
+    await writeAuditLog({
+      actorUserId: req.user!.id,
+      actorRole: req.user!.role,
+      action: 'AUTH_MFA_DISABLED',
+      resourceType: 'user',
+      resourceId: req.user!.id,
+      ipAddress: req.ip,
+    });
+
+    return res.json({ success: true, message: 'Two-factor authentication disabled', data: null });
+  }),
+);
+
+export default router;

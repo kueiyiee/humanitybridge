@@ -1,0 +1,60 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --color-primary: #0B1F3A;
+  --color-secondary: #123F69;
+  --color-accent: #00BCEB;
+  --color-success: #16865D;
+  --color-background: #F7F9FC;
+  --color-surface: #FFFFFF;
+  --color-text: #152238;
+  --color-muted: #748196;
+}
+
+.dark {
+  --color-primary: #071324;
+  --color-secondary: #123F69;
+  --color-accent: #00BCEB;
+  --color-success: #1FA977;
+  --color-background: #071324;
+  --color-surface: #0D223D;
+  --color-text: #F1F5F9;
+  --color-muted: #94A3B8;
+}
+
+@layer base {
+  html {
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-text);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, .font-editorial {
+    font-family: 'Fraunces', Georgia, serif;
+    text-wrap: balance;
+  }
+
+  .font-mono-tabular {
+    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
