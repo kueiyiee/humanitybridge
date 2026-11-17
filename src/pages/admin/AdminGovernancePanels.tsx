@@ -272,9 +272,6 @@ export function AdminFinancialsPanel() {
 
 export function AdminSafeguardingAndSettingsPanel({ mode }: { mode: 'safeguarding' | 'settings' }) {
   const qc = useQueryClient();
-  const [mfaSecret, setMfaSecret] = useState<string | null>(null);
-  const [mfaCode, setMfaCode] = useState('');
-  const [msg, setMsg] = useState<string | null>(null);
 
   const { data: safeData } = useQuery({
     queryKey: ['admin-safeguarding'],
@@ -348,7 +345,6 @@ export function AdminSafeguardingAndSettingsPanel({ mode }: { mode: 'safeguardin
   return (
     <div className="space-y-6">
       <h2 className="font-editorial text-2xl font-semibold">System Settings, MFA & Audit Logs</h2>
-      {msg && <p className="text-xs text-[#16865D]">{msg}</p>}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="lg:col-span-2"><MfaSettingsPanel /></div>
