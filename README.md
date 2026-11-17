@@ -2,56 +2,73 @@
 
 > **Together for a Dignified and Hopeful Tomorrow.**
 
-HumanityBridge is a full-stack humanitarian storytelling, community assistance, and social-impact platform engineered to connect vulnerable communities with verified relief while preserving human dignity, privacy, safeguarding, and financial transparency.
+HumanityBridge is a community-centred humanitarian coordination and social-impact platform. It helps document genuine community needs, protect beneficiary privacy, review cases responsibly and connect people in need with well-wishers who are willing to help.
+
+## Our Origin
+
+HumanityBridge began as a personal gift from **Kuei Poch Kuei**, a fourth-year Computer Science student at **Dilla University**, to **Paul Ruot Bayoch Gtaluak**.
+
+The initiative was conceived in recognition of Paul's dedication to community service. He has devoted considerable time to listening to people, understanding the difficulties they face, identifying those in need and documenting their circumstances so that potential supporters can understand where help is needed.
+
+On **Monday, 16 November 2026, at 2:55 p.m.**, Kuei communicated the initiative to Paul and presented HumanityBridge as a gift intended to help organise, strengthen and facilitate this work.
+
+The platform provides a structured way to register people in need, document their circumstances, organise cases and connect them with well-wishers, individuals and organisations willing to contribute. Its purpose is to support a service-driven vision: **listen to the community, document genuine needs and connect people who need assistance with those willing to provide it.**
+
+*Built through technology. Inspired by service. Connected by humanity.*
 
 ## Technology Stack
 
-- **Frontend**: React 19, TypeScript, Vite, Tailwind CSS v4, React Router, TanStack Query, React Hook Form, Zod, Recharts, Lucide Icons, QRCode.
-- **Backend**: Node.js 22, Express.js, TypeScript, Argon2id (`@noble/hashes`), HTTP-only cookies, double-submit CSRF, Helmet, Rate Limiting, Multer upload validation, OpenAPI/Swagger (`/api-docs`).
-- **Database**: MySQL 8 + Drizzle ORM + Drizzle Kit (`src/db/schema/mysql/*`, migrations in `database/migrations/`), with an automatic embedded relational SQLite mirror (`node:sqlite` + Drizzle proxy) when `USE_MYSQL` is not enabled in local sandbox mode.
+- **Frontend**: React 19, TypeScript, Vite, Tailwind CSS v4, React Router, TanStack Query, React Hook Form, Zod, Recharts and Lucide Icons.
+- **Backend**: Node.js 22, Express.js, TypeScript, Argon2id password hashing, HTTP-only cookies, double-submit CSRF protection, Helmet, rate limiting, Multer upload validation and OpenAPI/Swagger.
+- **Database**: MySQL 8 with Drizzle ORM and Drizzle Kit. Local development can use the embedded SQLite database.
 
-## Two-Role Access Model
+## Access Model
 
-1. **`PLATFORM_ADMIN`** (`/admin`): Full executive overview, user & coordinator management, case verification, story moderation, campaign management, donation reconciliation & refunds, safeguarding centre, system settings, MFA, and audit logs.
-2. **`COMMUNITY_COORDINATOR`** (`/coordinator`): Focused field workspace for case registration (with private contact vault & drafts), story submission (unpublished until approved), assistance requests, field reports, submission tracking, and notifications.
+1. **Platform Administrator** (/admin): Reviews cases and beneficiary records, manages coordinators, moderates stories, reviews external bank-transfer evidence, oversees safeguarding and accesses audit records.
+2. **Community Coordinator** (/coordinator): Registers community needs, records beneficiary information, submits stories and field reports, and records external bank transfers for administrative review.
 
-## Prerequisites & Local Startup
+## External Contributions — No Online Payment Processing
 
-```bash
-npm install
-cp .env.example .env
-npm run db:seed
-npm run dev
-```
+HumanityBridge does **not** provide a payment gateway, process card payments or accept online payments through the platform.
 
-Visit `http://localhost:3000` for the web platform and `http://localhost:3000/api-docs` for Swagger API documentation.
+Where a contribution is arranged externally, authorised staff may record the completed bank transfer and submit its supporting bank evidence. An administrator reviews the record before an organisational acknowledgement receipt is issued. The HumanityBridge receipt is not a bank-issued receipt and does not independently prove settlement.
 
-## Production MySQL 8 + Docker Compose
+Contributors should independently confirm the organisation's authorised banking details before making any transfer. Do not send funds to an unverified personal account.
 
-1. Configure `.env` with strong secrets (`SESSION_SECRET`, `CSRF_SECRET`, `SIGNED_URL_SECRET`, `PAYMENT_WEBHOOK_SECRET`) and MySQL credentials.
-2. Start MySQL 8 and HumanityBridge:
-   ```bash
-   docker compose up -d --build
-   ```
-3. Push schema / apply migrations and bootstrap the first administrator securely via environment variables:
-   ```bash
-   USE_MYSQL=true npm run db:push
-   ADMIN_BOOTSTRAP_EMAIL="director@yourdomain.org" ADMIN_BOOTSTRAP_PASSWORD="StrongPassword#2026" USE_MYSQL=true npm run db:seed
-   ```
+## Local Development
 
-## Automated Security & Acceptance Tests
+Requirements: Node.js 22 and npm.
 
-Run the acceptance suite covering all 10 mandatory security and workflow invariants:
+    npm install
+    cp .env.example .env
+    npm run dev
 
-```bash
-npm test
-```
+Visit http://localhost:3000 for the platform and http://localhost:3000/api-docs for the API documentation.
 
-## Security Highlights
+For local database setup, use the repository's documented SQLite development configuration. For production, configure MySQL 8 and apply the database migrations:
 
-- Passwords hashed with RFC 9106 **Argon2id**.
-- Sessions stored in `user_sessions` via hashed tokens inside **HTTP-only** cookies (no `localStorage` auth tokens).
-- Double-submit HMAC **CSRF** protection on authenticated mutations.
-- **RFC 6238 TOTP MFA** supported for Platform Administrators.
-- Strict separation between public case summaries and private beneficiary contact records.
-- Idempotent, HMAC-SHA256-verified payment webhook processing (`payment_webhook_events` + `payment_transactions` unique provider references).
+    npm run db:migrate
+
+## Automated Tests
+
+Run the acceptance and security regression suites:
+
+    npm test
+    npm run test:security
+    npm run lint
+    npm run build
+
+## Security and Safeguarding Principles
+
+- Passwords are hashed using Argon2id.
+- Authenticated sessions use HTTP-only cookies; authentication tokens are not stored in browser local storage.
+- Authenticated mutations use server-side CSRF validation.
+- Multi-factor authentication is supported for privileged access.
+- Public case summaries are separated from private beneficiary contact records and sensitive evidence.
+- Case publication requires appropriate consent and administrative review.
+- External bank-transfer evidence is private and subject to role-based access and administrative review.
+- Audit records support accountability for sensitive administrative actions.
+
+## Project Status
+
+HumanityBridge is an evolving software platform. A successful build or automated test run does not, by itself, constitute a security certification or confirmation that the organisation is legally registered. Production deployment should follow staging validation, operational readiness checks and an independent security review.
