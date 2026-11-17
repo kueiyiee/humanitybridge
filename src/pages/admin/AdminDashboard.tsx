@@ -14,6 +14,7 @@ import {
   DollarSign,
   FileCheck2,
   Handshake,
+  Landmark,
   LayoutDashboard,
   Megaphone,
   Settings,
@@ -22,6 +23,7 @@ import {
 } from 'lucide-react';
 import { DashboardLayout, type DashboardNavItem } from '../../layouts/DashboardLayout';
 import { apiRequest } from '../../services/api';
+import { AdminBankTransfersPanel } from './AdminBankTransfersPanel';
 import {
   AdminCampaignsPanel,
   AdminCasesPanel,
@@ -59,6 +61,7 @@ const ADMIN_NAV: DashboardNavItem[] = [
   { id: 'stories', label: 'Story Moderation', icon: <BookOpen className="w-4 h-4" /> },
   { id: 'campaigns', label: 'Campaigns', icon: <Megaphone className="w-4 h-4" /> },
   { id: 'financials', label: 'Donations & Ledger', icon: <DollarSign className="w-4 h-4" /> },
+  { id: 'bank-transfers', label: 'Bank Transfers & Receipts', icon: <Landmark className="w-4 h-4" /> },
   { id: 'outreach', label: 'Outreach & News', icon: <Handshake className="w-4 h-4" /> },
   { id: 'safeguarding', label: 'Safeguarding & Privacy', icon: <ShieldAlert className="w-4 h-4" /> },
   { id: 'settings', label: 'Settings & Audit Logs', icon: <Settings className="w-4 h-4" /> },
@@ -153,6 +156,7 @@ export function AdminDashboard() {
       {activeTab === 'stories' && <AdminStoriesPanel />}
       {activeTab === 'campaigns' && <AdminCampaignsPanel />}
       {activeTab === 'financials' && <AdminFinancialsPanel />}
+      {activeTab === 'bank-transfers' && <AdminBankTransfersPanel />}
       {activeTab === 'outreach' && <AdminOutreachAndNewsPanel />}
       {activeTab === 'safeguarding' && <AdminSafeguardingAndSettingsPanel mode="safeguarding" />}
       {activeTab === 'settings' && <AdminSafeguardingAndSettingsPanel mode="settings" />}

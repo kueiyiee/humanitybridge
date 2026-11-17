@@ -19,6 +19,12 @@ export function AdminCasesPanel() {
           isPublic: boolean;
           urgencyLevel: string;
           affectedCount: number;
+          beneficiaryFullName: string;
+          beneficiaryAgeBand: string;
+          beneficiaryGender: string;
+          householdSize: number;
+          beneficiaryPreferredLanguage: string | null;
+          beneficiaryNeedsNotes: string | null;
           privateContactName: string;
           privateContactPhone: string;
           privateLocationNotes: string;
@@ -67,6 +73,9 @@ export function AdminCasesPanel() {
 
             <div className="p-3.5 rounded-lg bg-[#F7F9FC] dark:bg-[#071324] border border-slate-200 dark:border-slate-800 text-xs space-y-1">
               <p className="font-semibold text-slate-700 dark:text-slate-200">Confidential Verification Vault (Admin Only):</p>
+              <p>Beneficiary: {c.beneficiaryFullName} · {c.beneficiaryAgeBand} · {c.beneficiaryGender}</p>
+              <p>Household size: {c.householdSize} · Preferred language: {c.beneficiaryPreferredLanguage || 'Not recorded'}</p>
+              {c.beneficiaryNeedsNotes && <p>Priority/accessibility notes: {c.beneficiaryNeedsNotes}</p>}
               <p>Contact: {c.privateContactName} ({c.privateContactPhone})</p>
               <p>Notes: {c.privateLocationNotes}</p>
             </div>

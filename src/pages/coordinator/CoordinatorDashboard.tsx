@@ -7,12 +7,14 @@ import {
   FilePlus2,
   HandHeart,
   LayoutDashboard,
+  Landmark,
   MapPin,
   Settings,
 } from 'lucide-react';
 import { DashboardLayout, type DashboardNavItem } from '../../layouts/DashboardLayout';
 import { apiRequest } from '../../services/api';
 import { MfaSettingsPanel } from '../../components/security/MfaSettingsPanel';
+import { CoordinatorBankTransfersPanel } from './CoordinatorBankTransfersPanel';
 import { useAuth } from '../../contexts/AuthContext';
 import {
   CoordinatorAssistanceAndReports,
@@ -47,6 +49,7 @@ const NAV_ITEMS: DashboardNavItem[] = [
   { id: 'register-case', label: 'Register Case', icon: <FilePlus2 className="w-4 h-4" /> },
   { id: 'submit-story', label: 'Submit Story', icon: <BookOpen className="w-4 h-4" /> },
   { id: 'assistance', label: 'Assistance Requests', icon: <HandHeart className="w-4 h-4" /> },
+  { id: 'bank-transfers', label: 'Bank Transfer Evidence', icon: <Landmark className="w-4 h-4" /> },
   { id: 'reports', label: 'Field Reports', icon: <MapPin className="w-4 h-4" /> },
   { id: 'submissions', label: 'My Submissions', icon: <ClipboardList className="w-4 h-4" /> },
   { id: 'notifications', label: 'Notifications', icon: <Bell className="w-4 h-4" /> },
@@ -347,6 +350,8 @@ export function CoordinatorDashboard() {
           </div>
         </div>
       )}
+
+      {activeTab === 'bank-transfers' && <CoordinatorBankTransfersPanel />}
 
       {activeTab === 'reports' && (
         <div className="space-y-6">
