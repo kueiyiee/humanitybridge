@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { DashboardLayout, type DashboardNavItem } from '../../layouts/DashboardLayout';
 import { apiRequest } from '../../services/api';
+import { MfaSettingsPanel } from '../../components/security/MfaSettingsPanel';
 import { useAuth } from '../../contexts/AuthContext';
 import {
   CoordinatorAssistanceAndReports,
@@ -505,6 +506,9 @@ export function CoordinatorDashboard() {
               </ul>
             </div>
           </form>
+        </div>
+        <div className="lg:col-span-2">
+          <MfaSettingsPanel />
         </div>
       )}
     </DashboardLayout>
