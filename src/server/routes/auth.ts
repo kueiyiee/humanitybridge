@@ -12,6 +12,8 @@ import { DASHBOARD_ROLES, ROLE_PERMISSIONS } from '../../../packages/shared/type
 import {
   generateRandomToken,
   generateTotpSecret,
+  encryptMfaSecret,
+  decryptMfaSecret,
   hashPasswordArgon2id,
   hashToken,
   verifyPasswordArgon2id,
@@ -97,7 +99,7 @@ router.post(
           data: { mfaRequired: true },
         });
       }
-      if (!verifyTotpCode(mfa.totpSecret, parsed.mfaCode)) {
+      if (!verifyTotpCode(decryptMfaSecret(mfa.totpSecret), parsed.mfaCode)) {
         await db.insert(schema.loginAttempts).values({
           email,
           ipAddress: ip,
@@ -506,23 +508,34 @@ router.post(
   '/mfa/setup',
   requireAuth,
   asyncHandler(async (req: AuthenticatedRequest, res) => {
+    const password = String(req.body?.password || '');
+    const currentCode = String(req.body?.currentCode || '');
+    const userRows = await db.select().from(schema.users).where(eq(schema.users.id, req.user!.id)).limit(1);
+    const user = userRows[0];
+    if (!user || !verifyPasswordArgon2id(password, user.passwordHash)) {
+      throw new AppError(401, 'Current password verification failed');
+    }
+
+    const existing = await db.select().from(schema.mfaSettings)
+      .where(eq(schema.mfaSettings.userId, req.user!.id)).limit(1);
+    if (existing[0]?.enabled) {
+      if (!currentCode || !verifyTotpCode(decryptMfaSecret(existing[0].totpSecret), currentCode)) {
+        throw new AppError(401, 'Current authenticator verification is required before replacing MFA');
+      }
+    }
+
     const secret = generateTotpSecret();
+    const encryptedSecret = encryptMfaSecret(secret);
     const ts = nowUtc();
-    const existing = await db
-      .select()
-      .from(schema.mfaSettings)
-      .where(eq(schema.mfaSettings.userId, req.user!.id))
-      .limit(1);
 
     if (existing.length > 0) {
-      await db
-        .update(schema.mfaSettings)
-        .set({ totpSecret: secret, enabled: false, updatedAt: ts })
+      await db.update(schema.mfaSettings)
+        .set({ totpSecret: encryptedSecret, enabled: false, updatedAt: ts })
         .where(eq(schema.mfaSettings.userId, req.user!.id));
     } else {
       await db.insert(schema.mfaSettings).values({
         userId: req.user!.id,
-        totpSecret: secret,
+        totpSecret: encryptedSecret,
         enabled: false,
         updatedAt: ts,
       });
@@ -549,7 +562,7 @@ router.post(
       .limit(1);
     const mfa = rows[0];
     if (!mfa) throw new AppError(400, 'Initialize MFA setup first');
-    if (!verifyTotpCode(mfa.totpSecret, code)) {
+    if (!verifyTotpCode(decryptMfaSecret(mfa.totpSecret), code)) {
       throw new AppError(400, 'Invalid 6-digit verification code');
     }
 
@@ -576,25 +589,42 @@ router.post(
   '/mfa/disable',
   requireAuth,
   asyncHandler(async (req: AuthenticatedRequest, res) => {
+    const password = String(req.body?.password || '');
+    const code = String(req.body?.code || '');
+    const userRows = await db.select().from(schema.users).where(eq(schema.users.id, req.user!.id)).limit(1);
+    const user = userRows[0];
+    if (!user || !verifyPasswordArgon2id(password, user.passwordHash)) {
+      throw new AppError(401, 'Current password verification failed');
+    }
+
+    const mfaRows = await db.select().from(schema.mfaSettings)
+      .where(eq(schema.mfaSettings.userId, user.id)).limit(1);
+    const mfa = mfaRows[0];
+    if (!mfa || !mfa.enabled || !verifyTotpCode(decryptMfaSecret(mfa.totpSecret), code)) {
+      throw new AppError(401, 'A valid current authenticator code is required');
+    }
+
     const ts = nowUtc();
     await db.transaction(async (tx) => {
-      await tx
-        .update(schema.mfaSettings)
-        .set({ enabled: false, updatedAt: ts })
-        .where(eq(schema.mfaSettings.userId, req.user!.id));
-      await tx.update(schema.users).set({ mfaEnabled: false, updatedAt: ts }).where(eq(schema.users.id, req.user!.id));
+      await tx.update(schema.mfaSettings).set({ enabled: false, updatedAt: ts })
+        .where(eq(schema.mfaSettings.userId, user.id));
+      await tx.update(schema.users).set({ mfaEnabled: false, updatedAt: ts })
+        .where(eq(schema.users.id, user.id));
+      await tx.update(schema.userSessions).set({ revokedAt: ts })
+        .where(eq(schema.userSessions.userId, user.id));
     });
 
+    clearAuthCookies(res);
     await writeAuditLog({
-      actorUserId: req.user!.id,
-      actorRole: req.user!.role,
+      actorUserId: user.id,
+      actorRole: user.role,
       action: 'AUTH_MFA_DISABLED',
       resourceType: 'user',
-      resourceId: req.user!.id,
+      resourceId: user.id,
       ipAddress: req.ip,
     });
 
-    return res.json({ success: true, message: 'Two-factor authentication disabled', data: null });
+    return res.json({ success: true, message: 'MFA disabled. Please sign in again.', data: null });
   }),
 );
 

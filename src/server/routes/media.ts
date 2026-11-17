@@ -3,7 +3,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { Router } from 'express';
 import multer from 'multer';
-import { eq } from 'drizzle-orm';
+import { and, eq, isNull, or } from 'drizzle-orm';
 import { db, schema, nowUtc } from '../../db/index';
 import { env } from '../config/env';
 import { type AuthenticatedRequest, requireAuth } from '../middleware/auth';
@@ -102,6 +102,27 @@ router.get(
   '/public/:filename',
   asyncHandler(async (req, res) => {
     const filename = path.basename(String(req.params.filename));
+    const mediaRows = await db.select().from(schema.mediaFiles)
+      .where(eq(schema.mediaFiles.safeFilename, filename)).limit(1);
+    const media = mediaRows[0];
+    if (!media || media.storageScope !== 'PUBLIC_STORY') {
+      throw new AppError(404, 'Media file not found');
+    }
+
+    const publicStory = await db.select({ id: schema.stories.id })
+      .from(schema.stories)
+      .innerJoin(schema.storyConsents, eq(schema.stories.id, schema.storyConsents.storyId))
+      .where(and(
+        eq(schema.stories.coverImageUrl, `/api/v1/media/public/${filename}`),
+        eq(schema.stories.status, 'PUBLISHED'),
+        eq(schema.storyConsents.consentStory, true),
+        eq(schema.storyConsents.consentMedia, true),
+        or(eq(schema.stories.isMinorSubject, false), eq(schema.storyConsents.guardianConsentRecorded, true)),
+        isNull(schema.storyConsents.withdrawnAt),
+        isNull(schema.stories.deletedAt),
+      )).limit(1);
+    if (!publicStory[0]) throw new AppError(404, 'Media is not approved for public publication');
+
     const diskPath = path.join(env.publicMediaDir, filename);
     if (!fs.existsSync(diskPath)) throw new AppError(404, 'Media file not found');
     return res.sendFile(diskPath);
@@ -116,14 +137,16 @@ router.get(
     const fileId = Number(req.params.id);
     const rows = await db.select().from(schema.mediaFiles).where(eq(schema.mediaFiles.id, fileId)).limit(1);
     const file = rows[0];
-    if (!file) throw new AppError(404, 'File not found');
+    if (!file || file.storageScope !== 'PRIVATE_CASE_EVIDENCE') {
+      throw new AppError(404, 'Private evidence file not found');
+    }
 
     if (req.user!.role !== DASHBOARD_ROLES.PLATFORM_ADMIN && file.uploadedBy !== req.user!.id) {
       throw new AppError(403, 'Access denied to confidential evidence file');
     }
 
     const expires = Date.now() + 5 * 60 * 1000;
-    const payload = `${file.id}:${file.safeFilename}:${expires}`;
+    const payload = `${file.id}:${file.safeFilename}:${req.user!.id}:${expires}`;
     const sig = signHmac(payload, env.signedUrlSecret);
 
     return res.json({
@@ -149,9 +172,14 @@ router.get(
 
     const rows = await db.select().from(schema.mediaFiles).where(eq(schema.mediaFiles.id, fileId)).limit(1);
     const file = rows[0];
-    if (!file) throw new AppError(404, 'File not found');
+    if (!file || file.storageScope !== 'PRIVATE_CASE_EVIDENCE') {
+      throw new AppError(404, 'Private evidence file not found');
+    }
+    if (req.user!.role !== DASHBOARD_ROLES.PLATFORM_ADMIN && file.uploadedBy !== req.user!.id) {
+      throw new AppError(403, 'Access denied to confidential evidence file');
+    }
 
-    const payload = `${file.id}:${file.safeFilename}:${expires}`;
+    const payload = `${file.id}:${file.safeFilename}:${req.user!.id}:${expires}`;
     if (!verifyHmac(payload, sig, env.signedUrlSecret)) {
       throw new AppError(403, 'Invalid file access signature');
     }

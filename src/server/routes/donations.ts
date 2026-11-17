@@ -11,6 +11,11 @@ import { env } from '../config/env';
 
 const router = Router();
 
+function toMinorUnits(value: number): number {
+  if (!Number.isFinite(value) || value < 0) throw new AppError(400, 'Invalid payment amount');
+  return Math.round(value * 100);
+}
+
 // Step 1: Create an INITIATED donation intent. Never confirms payment from form submission alone.
 router.post(
   '/donations',
@@ -84,7 +89,9 @@ router.post(
   '/donations/webhook',
   asyncHandler(async (req, res) => {
     const signature = String(req.headers['x-hb-signature'] || '');
-    const rawPayload = JSON.stringify(req.body);
+    const rawBody = (req as typeof req & { rawBody?: Buffer }).rawBody;
+    if (!rawBody) throw new AppError(400, 'Original webhook payload is unavailable');
+    const rawPayload = rawBody.toString('utf8');
 
     if (!signature || !paymentAdapter.verifyWebhookSignature(rawPayload, signature)) {
       throw new AppError(401, 'Invalid webhook signature');
@@ -135,6 +142,23 @@ router.post(
         throw new AppError(404, 'Referenced donation not found');
       }
 
+      if (!['SETTLED', 'FAILED'].includes(eventStatus)) {
+        throw new AppError(400, 'Unsupported payment event status');
+      }
+
+      if (donation.status !== 'INITIATED') {
+        throw new AppError(409, 'Donation is not awaiting payment confirmation');
+      }
+
+      if (eventStatus === 'SETTLED') {
+        if (toMinorUnits(amount) !== toMinorUnits(Number(donation.amount))) {
+          throw new AppError(400, 'Payment amount does not match the original donation');
+        }
+        if (currency !== String(donation.currency).toUpperCase()) {
+          throw new AppError(400, 'Payment currency does not match the original donation');
+        }
+      }
+
       await tx.insert(schema.paymentWebhookEvents).values({
         eventId,
         provider: paymentAdapter.providerName,
@@ -144,9 +168,6 @@ router.post(
       });
 
       if (eventStatus === 'SETTLED') {
-        if (donation.status === 'CONFIRMED') {
-          return { duplicate: true, status: 'ALREADY_CONFIRMED' };
-        }
 
         await tx.insert(schema.paymentTransactions).values({
           donationId: donation.id,

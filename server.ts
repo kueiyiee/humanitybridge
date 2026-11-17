@@ -4,14 +4,13 @@ import path from 'node:path';
 import express from 'express';
 import { createServer as createViteServer } from 'vite';
 import { createApiApp } from './src/server/app';
-import { env } from './src/server/config/env';
+import { env, validateProductionEnvironment } from './src/server/config/env';
+import { checkDatabaseConnection } from './src/db/index';
 import { logger } from './src/server/config/logger';
-import { seedIfEmpty } from './database/seeds/seed';
 
 async function startServer() {
-  await seedIfEmpty().catch((err) => {
-    logger.warn('Auto-seed skipped or deferred', { error: err instanceof Error ? err.message : String(err) });
-  });
+  validateProductionEnvironment();
+  await checkDatabaseConnection();
 
   const app = createApiApp();
 
@@ -46,4 +45,9 @@ async function startServer() {
   });
 }
 
-startServer();
+startServer().catch((err) => {
+  logger.error('HumanityBridge startup failed', {
+    error: err instanceof Error ? err.message : String(err),
+  });
+  process.exit(1);
+});

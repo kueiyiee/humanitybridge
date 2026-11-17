@@ -53,4 +53,19 @@ export class SandboxPaymentAdapter implements PaymentProviderAdapter {
   }
 }
 
-export const paymentAdapter: PaymentProviderAdapter = new SandboxPaymentAdapter();
+/**
+ * Fail closed: this repository currently implements only the sandbox adapter.
+ * A live provider must be implemented and independently reviewed before production
+ * payment routes can be enabled.
+ */
+export function createPaymentAdapter(): PaymentProviderAdapter {
+  if (env.isProduction) {
+    throw new Error('No production payment provider is implemented. Payment processing is disabled.');
+  }
+  if (env.paymentProvider !== 'sandbox') {
+    throw new Error(`Payment provider "${env.paymentProvider}" is not implemented.`);
+  }
+  return new SandboxPaymentAdapter();
+}
+
+export const paymentAdapter: PaymentProviderAdapter = createPaymentAdapter();

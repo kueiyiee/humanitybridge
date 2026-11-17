@@ -12,6 +12,10 @@ export type DbDialect = 'mysql' | 'sqlite';
 
 const mysqlUrl = process.env.DATABASE_URL?.startsWith('mysql://') ? process.env.DATABASE_URL : '';
 
+if (process.env.NODE_ENV === 'production' && (!mysqlUrl || process.env.USE_MYSQL !== 'true')) {
+  throw new Error('Production database configuration is invalid: MySQL is required.');
+}
+
 let activeDialect: DbDialect = 'sqlite';
 let sqliteInstance: DatabaseSync | null = null;
 let mysqlPool: mysql.Pool | null = null;

@@ -1,19 +1,21 @@
 {
-  "name": "react-example",
+  "name": "humanitybridge",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
     "build": "vite build",
-    "start": "NODE_ENV=production tsx server.ts",
+    "start": "tsx server.ts",
     "preview": "vite preview",
-    "clean": "rm -rf dist data/*.db",
+    "clean": "node -e \"for (const p of ['dist']) require('node:fs').rmSync(p,{recursive:true,force:true})\"",
     "lint": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
-    "db:push": "drizzle-kit push",
     "db:seed": "tsx database/seeds/seed.ts",
-    "test": "tsx tests/acceptance.test.ts"
+    "test": "tsx tests/acceptance.test.ts",
+    "db:migrate": "drizzle-kit migrate",
+    "db:encrypt-mfa": "tsx scripts/encrypt-mfa-secrets.ts",
+    "test:security": "node --import tsx --test tests/security-hardening.test.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
@@ -56,5 +58,6 @@
     "tsx": "^4.21.0",
     "typescript": "^7.0.2",
     "@types/express": "^4.17.21"
-  }
+  },
+  "description": "Humanitarian coordination, safeguarding and financial accountability platform"
 }

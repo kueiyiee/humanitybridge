@@ -3,7 +3,7 @@ import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import rateLimit from 'express-rate-limit';
 import swaggerUi from 'swagger-ui-express';
-import { getDbDiagnostics } from '../db/index';
+import { checkDatabaseConnection, getDbDiagnostics } from '../db/index';
 import { env } from './config/env';
 import { openApiSpec } from './config/openapi';
 import { attachSessionUser, verifyCsrfForMutations } from './middleware/auth';
@@ -29,7 +29,12 @@ export function createApiApp() {
   );
 
   app.use(cookieParser());
-  app.use(express.json({ limit: '2mb' }));
+  app.use(express.json({
+    limit: '2mb',
+    verify: (req, _res, buffer) => {
+      (req as typeof req & { rawBody?: Buffer }).rawBody = Buffer.from(buffer);
+    },
+  }));
   app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 
   const globalLimiter = rateLimit({
@@ -43,16 +48,40 @@ export function createApiApp() {
   app.use(attachSessionUser);
   app.use(verifyCsrfForMutations);
 
-  app.get('/api/health', (_req, res) => {
-    res.json({
-      success: true,
-      message: 'HumanityBridge API healthy',
-      data: {
-        status: 'ok',
-        timestamp: new Date().toISOString(),
-        database: getDbDiagnostics(),
-      },
-    });
+  app.get('/api/health/live', (_req, res) => {
+    res.status(200).json({ success: true, data: { status: 'alive' } });
+  });
+
+  app.get('/api/health/ready', async (_req, res) => {
+    try {
+      await checkDatabaseConnection();
+      return res.status(200).json({
+        success: true,
+        data: { status: 'ready', database: getDbDiagnostics(), timestamp: new Date().toISOString() },
+      });
+    } catch {
+      return res.status(503).json({
+        success: false,
+        data: { status: 'not_ready', database: { status: 'disconnected' }, timestamp: new Date().toISOString() },
+      });
+    }
+  });
+
+  app.get('/api/health', async (_req, res) => {
+    try {
+      await checkDatabaseConnection();
+      return res.status(200).json({
+        success: true,
+        message: 'HumanityBridge API healthy',
+        data: { status: 'ok', timestamp: new Date().toISOString(), database: getDbDiagnostics() },
+      });
+    } catch {
+      return res.status(503).json({
+        success: false,
+        message: 'HumanityBridge API is not ready',
+        data: { status: 'unavailable', timestamp: new Date().toISOString() },
+      });
+    }
   });
 
   app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openApiSpec));

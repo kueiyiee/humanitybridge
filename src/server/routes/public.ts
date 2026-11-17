@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { and, desc, eq, isNull, sql } from 'drizzle-orm';
+import { and, desc, eq, isNull, or, sql } from 'drizzle-orm';
 import { db, schema, nowUtc } from '../../db/index';
 import {
   contactMessageSchema,
@@ -56,6 +56,8 @@ router.get(
         and(
           eq(schema.stories.status, 'PUBLISHED'),
           eq(schema.storyConsents.consentStory, true),
+          eq(schema.storyConsents.consentMedia, true),
+          or(eq(schema.stories.isMinorSubject, false), eq(schema.storyConsents.guardianConsentRecorded, true)),
           isNull(schema.storyConsents.withdrawnAt),
           isNull(schema.stories.deletedAt),
         ),
@@ -151,6 +153,8 @@ router.get(
         and(
           eq(schema.stories.status, 'PUBLISHED'),
           eq(schema.storyConsents.consentStory, true),
+          eq(schema.storyConsents.consentMedia, true),
+          or(eq(schema.stories.isMinorSubject, false), eq(schema.storyConsents.guardianConsentRecorded, true)),
           isNull(schema.storyConsents.withdrawnAt),
           isNull(schema.stories.deletedAt),
         ),
@@ -218,6 +222,8 @@ router.get(
           eq(schema.stories.slug, slug),
           eq(schema.stories.status, 'PUBLISHED'),
           eq(schema.storyConsents.consentStory, true),
+          eq(schema.storyConsents.consentMedia, true),
+          or(eq(schema.stories.isMinorSubject, false), eq(schema.storyConsents.guardianConsentRecorded, true)),
           isNull(schema.storyConsents.withdrawnAt),
           isNull(schema.stories.deletedAt),
         ),

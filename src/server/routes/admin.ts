@@ -7,6 +7,7 @@ import { type AuthenticatedRequest, requireRole } from '../middleware/auth';
 import { AppError, asyncHandler } from '../middleware/errorHandler';
 import { generateReferenceCode, hashPasswordArgon2id } from '../utils/crypto';
 import { createNotification, writeAuditLog } from '../services/auditService';
+import { paymentAdapter } from '../services/paymentAdapter';
 import { generateTranslationDraft, type SupportedLocale } from '../services/translationService';
 
 const router = Router();
@@ -695,6 +696,9 @@ router.post(
     const donationId = Number(req.params.id);
     const reason = String(req.body?.reason || '').trim();
     if (!reason) throw new AppError(400, 'Refund reason is required');
+    if (paymentAdapter.providerName === 'SANDBOX_GATEWAY') {
+      throw new AppError(503, 'Refunds are disabled until a production payment provider with refund support is integrated.');
+    }
 
     const rows = await db.select().from(schema.donations).where(eq(schema.donations.id, donationId)).limit(1);
     const donation = rows[0];
@@ -757,6 +761,22 @@ router.post(
     const distributionNotes = String(req.body?.distributionNotes || '').trim();
     if (!caseId || amountUsd <= 0 || !distributionNotes) {
       throw new AppError(400, 'Case ID, positive amount, and distribution notes are required');
+    }
+
+    const caseRows = await db.select().from(schema.humanitarianCases)
+      .where(eq(schema.humanitarianCases.id, caseId)).limit(1);
+    const targetCase = caseRows[0];
+    if (!targetCase || targetCase.status !== 'VERIFIED') {
+      throw new AppError(400, 'Distributions are permitted only for verified cases');
+    }
+
+    const [allocated] = await db.select({
+      total: sql<number>`coalesce(sum(${schema.assistanceDistributions.amountUsd}), 0)`,
+    }).from(schema.assistanceDistributions)
+      .where(eq(schema.assistanceDistributions.caseId, caseId));
+    const remainingBudget = Number(targetCase.estimatedCostUsd || 0) - Number(allocated?.total || 0);
+    if (amountUsd > remainingBudget) {
+      throw new AppError(400, 'Distribution exceeds the remaining approved case budget');
     }
 
     const ts = nowUtc();

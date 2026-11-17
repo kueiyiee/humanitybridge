@@ -113,7 +113,6 @@ router.get(
         status: schema.humanitarianCases.status,
         isPublic: schema.humanitarianCases.isPublic,
         isChildRelated: schema.humanitarianCases.isChildRelated,
-        internalAdminNotes: schema.humanitarianCases.internalAdminNotes,
         createdAt: schema.humanitarianCases.createdAt,
         updatedAt: schema.humanitarianCases.updatedAt,
         categoryName: schema.caseCategories.name,
