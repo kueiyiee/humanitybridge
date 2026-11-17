@@ -22,11 +22,54 @@ export function AboutUsPage() {
         </p>
       </div>
 
+      <section className="relative overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0D223D] p-7 sm:p-10">
+        <div className="max-w-3xl">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#16865D] dark:text-[#1FA977]">
+            Our Beginning · A Gift Rooted in Service
+          </p>
+          <h2 className="mt-3 font-editorial text-3xl sm:text-4xl font-semibold leading-tight text-[#0B1F3A] dark:text-white">
+            A technology gift in recognition of community service.
+          </h2>
+          <p className="mt-5 text-base text-slate-600 dark:text-slate-300 leading-relaxed">
+            HumanityBridge began as a personal gift from <strong className="text-[#0B1F3A] dark:text-white">Kuei Poch Kuei</strong>,
+            a fourth-year Computer Science student at Dilla University, to <strong className="text-[#0B1F3A] dark:text-white">Paul Ruot Bayoch Gtaluak</strong>.
+            The gift was conceived in recognition of Paul's sustained dedication to serving the community and his commitment
+            to listening to people, understanding the challenges they face, identifying those in need and documenting their circumstances.
+          </p>
+          <p className="mt-4 text-base text-slate-600 dark:text-slate-300 leading-relaxed">
+            On Monday, 16 November 2026, at 2:55 p.m., Kuei communicated the initiative to Paul and presented HumanityBridge
+            as a gift intended to help organise, strengthen and facilitate this important work. The platform provides a
+            structured way to register people in need, document their circumstances, organise cases and connect them with
+            well-wishers, individuals and organisations willing to contribute.
+          </p>
+          <p className="mt-4 text-base text-slate-600 dark:text-slate-300 leading-relaxed">
+            At its heart, HumanityBridge is more than a technology project. It is a practical tool created to support a
+            service-driven vision: listening to the community, documenting genuine needs and connecting people who need
+            assistance with those willing to provide it.
+          </p>
+          <div className="mt-7 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="rounded-xl bg-[#F7F9FC] dark:bg-[#071324] p-5">
+              <p className="text-xs uppercase tracking-wider text-[#748196] dark:text-slate-400">Initiated and gifted by</p>
+              <p className="mt-2 text-lg font-semibold text-[#0B1F3A] dark:text-white">Kuei Poch Kuei</p>
+              <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">Fourth-year Computer Science student, Dilla University</p>
+            </div>
+            <div className="rounded-xl bg-[#F7F9FC] dark:bg-[#071324] p-5">
+              <p className="text-xs uppercase tracking-wider text-[#748196] dark:text-slate-400">Gift presented to</p>
+              <p className="mt-2 text-lg font-semibold text-[#0B1F3A] dark:text-white">Paul Ruot Bayoch Gtaluak</p>
+              <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">Community-service inspiration and intended beneficiary of the gift</p>
+            </div>
+          </div>
+          <p className="mt-5 text-xs text-[#748196] dark:text-slate-400">
+            Initiative communicated: Monday, 16 November 2026 · 2:55 p.m.
+          </p>
+        </div>
+      </section>
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {[
           ['Dignity & Consent', 'Stories and cases are published only when informed, documented consent is recorded and verified.'],
           ['Two-Layer Privacy', 'Confidential contact records and sensitive documents are strictly separated from public impact directories.'],
-          ['Auditable Accountability', 'Every confirmed contribution and disbursement passes through verifiable gateway and audit trails.'],
+          ['Auditable Accountability', 'External bank transfers are recorded with supporting evidence and reviewed before organisational receipts are issued.'],
         ].map(([title, body]) => (
           <div key={title} className="bg-white dark:bg-[#0D223D] border border-slate-200 dark:border-slate-800 rounded-xl p-6">
             <h2 className="font-editorial text-xl font-semibold text-[#0B1F3A] dark:text-white">{title}</h2>
@@ -106,10 +149,10 @@ export function HowItWorksPage() {
 
       <div className="space-y-4">
         {[
-          ['01. Community Discovery & Documentation', 'Authorized Community Coordinators work alongside local committees to document verified community needs while keeping personal contact information in private records.'],
+          ['01. Community Discovery & Documentation', 'Authorised Community Coordinators work alongside local committees to document community needs while keeping personal contact information in private records.'],
           ['02. Administrative & Safeguarding Verification', 'Platform Administrators inspect evidence, verify guardian or beneficiary consent, redact identifying details when required, and issue a public QR-verifiable reference.'],
-          ['03. Direct & Verified Support', 'Supporters contribute to verified cases or campaigns. Funds update totals only after signed payment gateway verification.'],
-          ['04. Field Delivery & Impact Reporting', 'Coordinators log field visits and assistance delivered, creating a transparent chain from contribution to community outcome.'],
+          ['03. Direct & Accountable Support', 'Supporters may arrange contributions outside the platform through independently confirmed organisational channels. Staff record completed external bank transfers and submit supporting evidence for administrative review. HumanityBridge does not process online payments.'],
+          ['04. Field Delivery & Impact Reporting', 'Coordinators log field visits and assistance delivered, creating a transparent record of support and community outcomes.'],
         ].map(([title, desc]) => (
           <div key={title} className="bg-white dark:bg-[#0D223D] border border-slate-200 dark:border-slate-800 rounded-xl p-6">
             <h2 className="font-editorial text-xl font-semibold text-[#0B1F3A] dark:text-white">{title}</h2>
@@ -272,7 +315,7 @@ export function FAQPage() {
   const faqs = [
     ['How are humanitarian cases verified?', 'Every submitted case is reviewed by a Platform Administrator who inspects supporting evidence, checks consent records, and redacts any identifying contact details before public listing.'],
     ['Are beneficiary phone numbers or addresses ever published?', 'No. Private contact names, phone numbers, and exact household coordinates remain strictly inside access-controlled administrative vaults.'],
-    ['How does HumanityBridge verify donations?', 'Contributions create an intent and are confirmed solely when a signed gateway settlement callback is received and verified idempotently.'],
+    ['Does HumanityBridge process online payments?', 'No. HumanityBridge does not accept online payments or collect card details. Contributions are arranged externally through independently confirmed organisational channels; completed bank transfers may then be recorded and reviewed by authorised staff.'],
     ['Can a Community Coordinator approve their own submission?', 'Never. Role permissions strictly separate field intake (COMMUNITY_COORDINATOR) from verification, publication, and financial governance (PLATFORM_ADMIN).'],
   ];
 
