@@ -506,9 +506,9 @@ export function CoordinatorDashboard() {
               </ul>
             </div>
           </form>
-        </div>
-        <div className="lg:col-span-2">
-          <MfaSettingsPanel />
+          <div className="lg:col-span-2">
+            <MfaSettingsPanel />
+          </div>
         </div>
       )}
     </DashboardLayout>
