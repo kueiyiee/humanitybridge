@@ -58,7 +58,7 @@ export const humanitarianCases = mysqlTable(
     beneficiaryConsentObtained: boolean('beneficiary_consent_obtained').notNull().default(false),
     privateContactName: varchar('private_contact_name', { length: 120 }).notNull(),
     privateContactPhone: varchar('private_contact_phone', { length: 64 }).notNull(),
-    beneficiaryFullName: varchar('beneficiary_full_name', { length: 120 }).notNull(),
+    beneficiaryFullName: varchar('beneficiary_full_name', { length: 120 }).notNull().default(''),
     beneficiaryAgeBand: varchar('beneficiary_age_band', { length: 24 }).notNull().default('UNKNOWN'),
     beneficiaryGender: varchar('beneficiary_gender', { length: 24 }).notNull().default('UNKNOWN'),
     householdSize: int('household_size').notNull().default(1),
