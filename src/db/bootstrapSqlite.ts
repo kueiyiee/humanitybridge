@@ -610,11 +610,12 @@ export function ensureSqliteSchema(sqlite: DatabaseSync) {
     );
   `);
 
-  const existingCaseColumns = new Set(db.prepare('PRAGMA table_info(humanitarian_cases)').all().map((column) => String(column.name)));
+  const caseColumnRows = sqlite.prepare('PRAGMA table_info(humanitarian_cases)').all() as Array<{ name: string }>;
+  const existingCaseColumns = new Set(caseColumnRows.map((column: { name: string }) => column.name));
   const additiveColumns: Array<[string, string]> = [
     ['beneficiary_full_name', "TEXT NOT NULL DEFAULT ''"], ['beneficiary_age_band', "TEXT NOT NULL DEFAULT 'UNKNOWN'"],
     ['beneficiary_gender', "TEXT NOT NULL DEFAULT 'UNKNOWN'"], ['household_size', 'INTEGER NOT NULL DEFAULT 1'],
     ['beneficiary_preferred_language', 'TEXT'], ['beneficiary_needs_notes', 'TEXT'],
   ];
-  for (const [column, definition] of additiveColumns) if (!existingCaseColumns.has(column)) db.exec(`ALTER TABLE humanitarian_cases ADD COLUMN ${column} ${definition}`);
+  for (const [column, definition] of additiveColumns) if (!existingCaseColumns.has(column)) sqlite.exec(`ALTER TABLE humanitarian_cases ADD COLUMN ${column} ${definition}`);
 }
