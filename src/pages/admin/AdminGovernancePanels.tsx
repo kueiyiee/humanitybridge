@@ -11,6 +11,7 @@ export function AdminUsersPanel() {
   const [newName, setNewName] = useState('');
   const [newRegion, setNewRegion] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [msg, setMsg] = useState<string | null>(null);
 
   const { data } = useQuery({
     queryKey: ['admin-users'],
@@ -58,7 +59,8 @@ export function AdminUsersPanel() {
     <div className="space-y-6">
       <form onSubmit={createCoordinator} className="bg-white dark:bg-[#0D223D] border border-slate-200 dark:border-slate-800 rounded-xl p-6 space-y-4">
         <h2 className="font-editorial text-xl font-semibold">Provision Community Coordinator Account</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+        {msg && <p className="text-xs text-[#16865D]">{msg}</p>}
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
           <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Full Name" className="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#071324] text-sm" />
           <input type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="Email" className="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#071324] text-sm" />
           <input value={newRegion} onChange={(e) => setNewRegion(e.target.value)} placeholder="Region" className="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#071324] text-sm" />
@@ -270,6 +272,8 @@ export function AdminFinancialsPanel() {
 
 export function AdminSafeguardingAndSettingsPanel({ mode }: { mode: 'safeguarding' | 'settings' }) {
   const qc = useQueryClient();
+  const [mfaSecret, setMfaSecret] = useState<string | null>(null);
+  const [mfaCode, setMfaCode] = useState('');
   const [msg, setMsg] = useState<string | null>(null);
 
   const { data: safeData } = useQuery({
@@ -347,9 +351,7 @@ export function AdminSafeguardingAndSettingsPanel({ mode }: { mode: 'safeguardin
       {msg && <p className="text-xs text-[#16865D]">{msg}</p>}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="lg:col-span-2">
-          <MfaSettingsPanel />
-        </div>
+        <div className="lg:col-span-2"><MfaSettingsPanel /></div>
 
         <div className="bg-white dark:bg-[#0D223D] border border-slate-200 dark:border-slate-800 rounded-xl p-6 space-y-3">
           <h3 className="font-editorial text-lg font-semibold">Configurable Public Identity</h3>
