@@ -740,10 +740,13 @@ router.patch('/bank-transfers/:id/review', asyncHandler(async (req: Authenticate
   const ts = nowUtc();
   const receiptNumber = decision === 'VERIFIED' ? generateReferenceCode('HB-RCT') : null;
   await db.transaction(async (tx) => {
-    await tx.update(schema.bankTransferRecords).set({
+    const updateResult = await tx.update(schema.bankTransferRecords).set({
       status: decision, verifiedBy: req.user!.id, verificationNotes, verifiedAt: ts,
       receiptNumber, receiptIssuedAt: decision === 'VERIFIED' ? ts : null, updatedAt: ts,
     }).where(and(eq(schema.bankTransferRecords.id, transferId), eq(schema.bankTransferRecords.status, 'PENDING_REVIEW')));
+    const affectedRows = (updateResult as unknown as { affectedRows?: number; changes?: number }).affectedRows
+      ?? (updateResult as unknown as { affectedRows?: number; changes?: number }).changes;
+    if (affectedRows === 0) throw new AppError(409, 'This transfer has already been reviewed by another administrator.');
     if (decision === 'VERIFIED') {
       await tx.insert(schema.financialRecords).values({
         entryType: 'DISBURSEMENT', referenceCode: receiptNumber!, amount: transfer.amount,
