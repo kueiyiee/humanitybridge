@@ -1,9 +1,7 @@
 import assert from 'node:assert/strict';
-import crypto from 'node:crypto';
 import type { AddressInfo } from 'node:net';
 import { createApiApp } from '../src/server/app';
 import { seedIfEmpty } from '../database/seeds/seed';
-import { signHmac } from '../src/server/utils/crypto';
 import { env } from '../src/server/config/env';
 import { closeDb } from '../src/db/index';
 
@@ -131,59 +129,24 @@ async function runTests() {
     });
     assert.equal(selfApproveAttempt.status, 403);
 
-    // Test 4 & 5: Unverified payments do not count, and duplicate webhooks do not duplicate donations
+    // Test 4: online payments and payment webhooks remain deliberately disabled
     const donateRes = await fetch(`${baseUrl}/api/v1/donations`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        campaignId: 1,
-        amount: 100,
-        currency: 'USD',
-        donorName: 'Acceptance Test Donor',
-        donorEmail: 'donor@example.org',
-        isAnonymous: false,
-        paymentChannel: 'SANDBOX_CARD',
+        campaignId: 1, amount: 100, currency: 'USD',
+        donorName: 'Acceptance Test Donor', donorEmail: 'donor@example.org',
+        isAnonymous: false, paymentChannel: 'SANDBOX_CARD',
       }),
     });
-    assert.equal(donateRes.status, 201);
-    const donationData = (await donateRes.json()) as {
-      data: { donationReference: string; status: string; paymentIntent: { providerReference: string } };
-    };
-    assert.equal(donationData.data.status, 'INITIATED');
+    assert.equal(donateRes.status, 503);
 
-    const statusBefore = await fetch(`${baseUrl}/api/v1/donations/${donationData.data.donationReference}/status`);
-    const statusBeforeJson = (await statusBefore.json()) as { data: { status: string } };
-    assert.equal(statusBeforeJson.data.status, 'INITIATED');
-
-    const webhookPayload = JSON.stringify({
-      eventId: `EVT-TEST-${crypto.randomUUID()}`,
-      donationReference: donationData.data.donationReference,
-      providerReference: donationData.data.paymentIntent.providerReference,
-      amount: 100,
-      currency: 'USD',
-      status: 'SETTLED',
-    });
-    const sig = signHmac(webhookPayload, env.paymentWebhookSecret);
-
-    const wh1 = await fetch(`${baseUrl}/api/v1/donations/webhook`, {
+    const webhookRes = await fetch(`${baseUrl}/api/v1/donations/webhook`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-hb-signature': sig },
-      body: webhookPayload,
+      headers: { 'Content-Type': 'application/json', 'x-hb-signature': 'disabled' },
+      body: JSON.stringify({ eventId: 'DISABLED-TEST', status: 'SETTLED' }),
     });
-    assert.equal(wh1.status, 200);
-    const wh1Json = (await wh1.json()) as { data: { duplicate: boolean; status: string } };
-    assert.equal(wh1Json.data.duplicate, false);
-    assert.equal(wh1Json.data.status, 'CONFIRMED');
-
-    // Duplicate callback must be idempotent
-    const wh2 = await fetch(`${baseUrl}/api/v1/donations/webhook`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-hb-signature': sig },
-      body: webhookPayload,
-    });
-    assert.equal(wh2.status, 200);
-    const wh2Json = (await wh2.json()) as { data: { duplicate: boolean } };
-    assert.equal(wh2Json.data.duplicate, true);
+    assert.equal(webhookRes.status, 410);
 
     // Test 7: Administrative action generates audit record
     const adminJar = new CookieJar();
