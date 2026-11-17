@@ -1,15 +1,9 @@
 import { Router } from 'express';
 import { eq } from 'drizzle-orm';
-import { db, schema, nowUtc } from '../../db/index';
-import { createDonationSchema } from '../../../packages/shared/validation';
+import { db, schema } from '../../db/index';
 import { AppError, asyncHandler } from '../middleware/errorHandler';
 
 const router = Router();
-
-function toMinorUnits(value: number): number {
-  if (!Number.isFinite(value) || value < 0) throw new AppError(400, 'Invalid payment amount');
-  return Math.round(value * 100);
-}
 
 // Step 1: Create an INITIATED donation intent. Never confirms payment from form submission alone.
 router.post('/donations', asyncHandler(async (_req, _res) => {
