@@ -136,6 +136,12 @@ export function ensureSqliteSchema(sqlite: DatabaseSync) {
       beneficiary_consent_obtained INTEGER NOT NULL DEFAULT 0,
       private_contact_name TEXT NOT NULL,
       private_contact_phone TEXT NOT NULL,
+      beneficiary_full_name TEXT NOT NULL DEFAULT '',
+      beneficiary_age_band TEXT NOT NULL DEFAULT 'UNKNOWN',
+      beneficiary_gender TEXT NOT NULL DEFAULT 'UNKNOWN',
+      household_size INTEGER NOT NULL DEFAULT 1,
+      beneficiary_preferred_language TEXT,
+      beneficiary_needs_notes TEXT,
       private_location_notes TEXT NOT NULL,
       internal_admin_notes TEXT,
       verified_by INTEGER REFERENCES users(id),
@@ -575,6 +581,19 @@ export function ensureSqliteSchema(sqlite: DatabaseSync) {
       created_at TEXT NOT NULL
     );
 
+    CREATE TABLE IF NOT EXISTS bank_transfer_records (
+      id INTEGER PRIMARY KEY AUTOINCREMENT, case_id INTEGER NOT NULL REFERENCES humanitarian_cases(id),
+      beneficiary_name TEXT NOT NULL, bank_name TEXT NOT NULL, bank_reference TEXT NOT NULL,
+      amount REAL NOT NULL, currency TEXT NOT NULL, transfer_date TEXT NOT NULL,
+      recipient_account_last4 TEXT, purpose TEXT NOT NULL, notes TEXT NOT NULL,
+      evidence_media_id INTEGER NOT NULL REFERENCES media_files(id),
+      status TEXT NOT NULL DEFAULT 'PENDING_REVIEW', recorded_by INTEGER NOT NULL REFERENCES users(id),
+      verified_by INTEGER REFERENCES users(id), verification_notes TEXT, receipt_number TEXT UNIQUE,
+      verified_at TEXT, receipt_issued_at TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL,
+      UNIQUE(bank_name, bank_reference)
+    );
+    CREATE INDEX IF NOT EXISTS ix_bank_transfer_status ON bank_transfer_records(status);
+    CREATE INDEX IF NOT EXISTS ix_bank_transfer_case ON bank_transfer_records(case_id);
     CREATE TABLE IF NOT EXISTS activity_logs (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER REFERENCES users(id),
@@ -590,4 +609,13 @@ export function ensureSqliteSchema(sqlite: DatabaseSync) {
       recorded_at TEXT NOT NULL
     );
   `);
+
+  const caseColumnRows = sqlite.prepare('PRAGMA table_info(humanitarian_cases)').all() as Array<{ name: string }>;
+  const existingCaseColumns = new Set(caseColumnRows.map((column: { name: string }) => column.name));
+  const additiveColumns: Array<[string, string]> = [
+    ['beneficiary_full_name', "TEXT NOT NULL DEFAULT ''"], ['beneficiary_age_band', "TEXT NOT NULL DEFAULT 'UNKNOWN'"],
+    ['beneficiary_gender', "TEXT NOT NULL DEFAULT 'UNKNOWN'"], ['household_size', 'INTEGER NOT NULL DEFAULT 1'],
+    ['beneficiary_preferred_language', 'TEXT'], ['beneficiary_needs_notes', 'TEXT'],
+  ];
+  for (const [column, definition] of additiveColumns) if (!existingCaseColumns.has(column)) sqlite.exec(`ALTER TABLE humanitarian_cases ADD COLUMN ${column} ${definition}`);
 }

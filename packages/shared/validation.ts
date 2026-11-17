@@ -47,6 +47,12 @@ export const createCaseSchema = z.object({
   beneficiaryConsentObtained: z.boolean().refine((v) => v === true, {
     message: 'Verified consent confirmation is mandatory before registering a case',
   }),
+  beneficiaryFullName: z.string().trim().min(2, 'Beneficiary full name is required').max(120),
+  beneficiaryAgeBand: z.enum(['UNDER_18', '18_24', '25_59', '60_PLUS', 'UNKNOWN']).default('UNKNOWN'),
+  beneficiaryGender: z.enum(['FEMALE', 'MALE', 'OTHER', 'PREFER_NOT_TO_SAY', 'UNKNOWN']).default('UNKNOWN'),
+  householdSize: z.coerce.number().int().min(1).max(1000),
+  beneficiaryPreferredLanguage: z.string().trim().max(60).optional(),
+  beneficiaryNeedsNotes: z.string().trim().max(1000).optional(),
   privateContactName: z.string().trim().min(2, 'Private contact name required for internal verification').max(120),
   privateContactPhone: z.string().trim().min(5, 'Private contact phone/channel required').max(60),
   privateLocationNotes: z.string().trim().min(5, 'General internal verification notes required').max(500),

@@ -39,6 +39,9 @@ export function CoordinatorCaseForm({
   } = useForm<z.input<typeof createCaseSchema>, unknown, z.output<typeof createCaseSchema>>({
     resolver: zodResolver(createCaseSchema),
     defaultValues: {
+      beneficiaryAgeBand: 'UNKNOWN',
+      beneficiaryGender: 'UNKNOWN',
+      householdSize: 1,
       urgencyLevel: 'MEDIUM',
       affectedCount: 1,
       isChildRelated: false,
@@ -49,6 +52,8 @@ export function CoordinatorCaseForm({
   });
 
   const isChildRelated = watch('isChildRelated');
+  const beneficiaryAgeBand = watch('beneficiaryAgeBand');
+  const requiresGuardianConsent = isChildRelated || beneficiaryAgeBand === 'UNDER_18';
 
   const handleEvidenceUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -98,6 +103,18 @@ export function CoordinatorCaseForm({
       {err && <div className="p-3 rounded-lg bg-rose-50 dark:bg-rose-950/40 text-xs text-rose-700 dark:text-rose-300">{err}</div>}
 
       <form className="space-y-4">
+        <section className="rounded-xl border border-cyan-200 bg-cyan-50/40 p-4 space-y-4 dark:border-cyan-900/60 dark:bg-cyan-950/20">
+          <div><h3 className="text-sm font-bold text-slate-900 dark:text-white">Beneficiary identity & household profile</h3><p className="mt-1 text-xs leading-5 text-slate-600 dark:text-slate-400">Confidential details for authorised case-management staff only. Do not enter national identity numbers, bank passwords or full bank-account numbers.</p></div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="sm:col-span-2"><label className="mb-1 block text-xs font-semibold">Beneficiary full name *</label><input {...register('beneficiaryFullName')} autoComplete="name" className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950" />{errors.beneficiaryFullName && <p className="mt-1 text-xs text-rose-600">{errors.beneficiaryFullName.message}</p>}</div>
+            <div><label className="mb-1 block text-xs font-semibold">Age group *</label><select {...register('beneficiaryAgeBand')} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"><option value="UNKNOWN">Not recorded</option><option value="UNDER_18">Under 18</option><option value="18_24">18–24</option><option value="25_59">25–59</option><option value="60_PLUS">60+</option></select></div>
+            <div><label className="mb-1 block text-xs font-semibold">Gender (optional)</label><select {...register('beneficiaryGender')} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"><option value="UNKNOWN">Not recorded</option><option value="FEMALE">Female</option><option value="MALE">Male</option><option value="OTHER">Other</option><option value="PREFER_NOT_TO_SAY">Prefer not to say</option></select></div>
+            <div><label className="mb-1 block text-xs font-semibold">Household size *</label><input type="number" min="1" max="1000" {...register('householdSize')} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950" />{errors.householdSize && <p className="mt-1 text-xs text-rose-600">{errors.householdSize.message}</p>}</div>
+            <div><label className="mb-1 block text-xs font-semibold">Preferred language</label><input {...register('beneficiaryPreferredLanguage')} placeholder="e.g. Nuer, Arabic, English" className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950" /></div>
+            <div className="sm:col-span-2 lg:col-span-4"><label className="mb-1 block text-xs font-semibold">Priority or accessibility considerations (optional)</label><textarea rows={2} {...register('beneficiaryNeedsNotes')} placeholder="Record only information necessary to assess and deliver assistance." className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950" /></div>
+          </div>
+        </section>
+
         <div>
           <label className="block text-sm font-medium mb-1">Case Title</label>
           <input {...register('title')} className="w-full px-3.5 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#071324] text-sm" />
@@ -201,7 +218,7 @@ export function CoordinatorCaseForm({
             <input type="checkbox" {...register('isChildRelated')} />
             <span>Case involves minors (triggers Child Safeguarding protocol)</span>
           </label>
-          {isChildRelated && (
+          {requiresGuardianConsent && (
             <label className="flex items-center gap-2.5 cursor-pointer pl-6 text-amber-700 dark:text-amber-300">
               <input type="checkbox" {...register('guardianConsentObtained')} />
               <span>Verified guardian consent documented and stored privately</span>

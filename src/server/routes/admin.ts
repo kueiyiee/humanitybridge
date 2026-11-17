@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { desc, eq, isNull, sql } from 'drizzle-orm';
+import { and, desc, eq, isNull, sql } from 'drizzle-orm';
 import { db, schema, nowUtc } from '../../db/index';
 import { createCampaignSchema } from '../../../packages/shared/validation';
 import { DASHBOARD_ROLES } from '../../../packages/shared/types';
@@ -255,6 +255,12 @@ router.get(
         guardianConsentObtained: schema.humanitarianCases.guardianConsentObtained,
         beneficiaryConsentObtained: schema.humanitarianCases.beneficiaryConsentObtained,
         privateContactName: schema.humanitarianCases.privateContactName,
+        beneficiaryFullName: schema.humanitarianCases.beneficiaryFullName,
+        beneficiaryAgeBand: schema.humanitarianCases.beneficiaryAgeBand,
+        beneficiaryGender: schema.humanitarianCases.beneficiaryGender,
+        householdSize: schema.humanitarianCases.householdSize,
+        beneficiaryPreferredLanguage: schema.humanitarianCases.beneficiaryPreferredLanguage,
+        beneficiaryNeedsNotes: schema.humanitarianCases.beneficiaryNeedsNotes,
         privateContactPhone: schema.humanitarianCases.privateContactPhone,
         privateLocationNotes: schema.humanitarianCases.privateLocationNotes,
         internalAdminNotes: schema.humanitarianCases.internalAdminNotes,
@@ -689,110 +695,111 @@ router.post(
   }),
 );
 
-router.post(
-  '/donations/:id/refund',
-  asyncHandler(async (req: AuthenticatedRequest, res) => {
-    const donationId = Number(req.params.id);
-    const reason = String(req.body?.reason || '').trim();
-    if (!reason) throw new AppError(400, 'Refund reason is required');
+router.post('/donations/:id/refund', asyncHandler(async () => {
+  throw new AppError(503, 'Online payment refunds are disabled. HumanityBridge records external bank transfers only.');
+}));
 
-    const rows = await db.select().from(schema.donations).where(eq(schema.donations.id, donationId)).limit(1);
-    const donation = rows[0];
-    if (!donation || donation.status !== 'CONFIRMED') {
-      throw new AppError(400, 'Only confirmed donations can be refunded');
-    }
 
-    const ts = nowUtc();
-    await db.transaction(async (tx) => {
-      await tx.update(schema.donations).set({ status: 'REFUNDED' }).where(eq(schema.donations.id, donationId));
-      await tx.insert(schema.refunds).values({
-        donationId,
-        amount: donation.amount,
-        currency: donation.currency,
-        reason,
-        approvedBy: req.user!.id,
-        status: 'COMPLETED',
-        createdAt: ts,
+router.post('/distributions', asyncHandler(async () => {
+  throw new AppError(410, 'Direct distribution recording is retired. Submit external bank-transfer evidence through the coordinator workflow and verify it here before issuing a receipt.');
+}));
+
+router.get('/bank-transfers', asyncHandler(async (_req, res) => {
+  const rows = await db.select({
+    id: schema.bankTransferRecords.id, caseId: schema.bankTransferRecords.caseId,
+    caseReference: schema.humanitarianCases.referenceCode, caseTitle: schema.humanitarianCases.title,
+    beneficiaryName: schema.bankTransferRecords.beneficiaryName, bankName: schema.bankTransferRecords.bankName,
+    bankReference: schema.bankTransferRecords.bankReference, amount: schema.bankTransferRecords.amount,
+    currency: schema.bankTransferRecords.currency, transferDate: schema.bankTransferRecords.transferDate,
+    recipientAccountLast4: schema.bankTransferRecords.recipientAccountLast4, purpose: schema.bankTransferRecords.purpose,
+    notes: schema.bankTransferRecords.notes, status: schema.bankTransferRecords.status,
+    verificationNotes: schema.bankTransferRecords.verificationNotes, receiptNumber: schema.bankTransferRecords.receiptNumber,
+    evidenceMediaId: schema.bankTransferRecords.evidenceMediaId, recordedByName: schema.userProfiles.displayName,
+    createdAt: schema.bankTransferRecords.createdAt,
+  }).from(schema.bankTransferRecords)
+    .innerJoin(schema.humanitarianCases, eq(schema.bankTransferRecords.caseId, schema.humanitarianCases.id))
+    .leftJoin(schema.userProfiles, eq(schema.bankTransferRecords.recordedBy, schema.userProfiles.userId))
+    .orderBy(desc(schema.bankTransferRecords.createdAt));
+  return res.json({ success: true, message: 'External bank transfers loaded', data: rows });
+}));
+
+router.patch('/bank-transfers/:id/review', asyncHandler(async (req: AuthenticatedRequest, res) => {
+  const transferId = Number(req.params.id);
+  const decision = String(req.body?.decision || '').toUpperCase();
+  const verificationNotes = String(req.body?.verificationNotes || '').trim();
+  if (!Number.isSafeInteger(transferId) || transferId < 1 || !['VERIFIED', 'REJECTED'].includes(decision) ||
+      verificationNotes.length < 8 || verificationNotes.length > 1500) {
+    throw new AppError(400, 'A valid review decision and detailed verification notes are required.');
+  }
+  const rows = await db.select().from(schema.bankTransferRecords).where(eq(schema.bankTransferRecords.id, transferId)).limit(1);
+  const transfer = rows[0];
+  if (!transfer) throw new AppError(404, 'Bank transfer record not found.');
+  if (transfer.status !== 'PENDING_REVIEW') throw new AppError(409, 'Only pending transfers can be reviewed.');
+  if (transfer.recordedBy === req.user!.id) throw new AppError(403, 'The person who submitted transfer evidence cannot independently verify it.');
+
+  const ts = nowUtc();
+  const receiptNumber = decision === 'VERIFIED' ? generateReferenceCode('HB-RCT') : null;
+  await db.transaction(async (tx) => {
+    const updateResult = await tx.update(schema.bankTransferRecords).set({
+      status: decision, verifiedBy: req.user!.id, verificationNotes, verifiedAt: ts,
+      receiptNumber, receiptIssuedAt: decision === 'VERIFIED' ? ts : null, updatedAt: ts,
+    }).where(and(eq(schema.bankTransferRecords.id, transferId), eq(schema.bankTransferRecords.status, 'PENDING_REVIEW')));
+    const affectedRows = (updateResult as unknown as { affectedRows?: number; changes?: number }).affectedRows
+      ?? (updateResult as unknown as { affectedRows?: number; changes?: number }).changes;
+    if (affectedRows === 0) throw new AppError(409, 'This transfer has already been reviewed by another administrator.');
+    if (decision === 'VERIFIED') {
+      await tx.insert(schema.financialRecords).values({
+        entryType: 'DISBURSEMENT', referenceCode: receiptNumber!, amount: transfer.amount,
+        currency: transfer.currency, caseId: transfer.caseId,
+        description: `External bank transfer verified: ${transfer.purpose}. ${verificationNotes}`, recordedAt: ts,
       });
-      if (donation.campaignId) {
-        await tx
-          .update(schema.campaigns)
-          .set({
-            raisedAmount: sql`max(0, ${schema.campaigns.raisedAmount} - ${donation.amount})`,
-            updatedAt: ts,
-          })
-          .where(eq(schema.campaigns.id, donation.campaignId));
+      if (transfer.currency === 'USD') {
+        await tx.insert(schema.assistanceDistributions).values({
+          caseId: transfer.caseId, amountUsd: transfer.amount, currency: 'USD',
+          approvedBy: req.user!.id, distributionNotes: `Bank transfer ${transfer.bankReference}: ${transfer.purpose}`, distributedAt: ts,
+        });
       }
-      await tx.insert(schema.financialRecords).values({
-        entryType: 'REFUND',
-        referenceCode: donation.donationReference,
-        amount: donation.amount,
-        currency: donation.currency,
-        campaignId: donation.campaignId,
-        caseId: donation.caseId,
-        description: `Refund issued: ${reason}`,
-        recordedAt: ts,
-      });
-    });
-
-    await writeAuditLog({
-      actorUserId: req.user!.id,
-      actorRole: req.user!.role,
-      action: 'ADMIN_DONATION_REFUNDED',
-      resourceType: 'donation',
-      resourceId: donation.donationReference,
-      details: { reason, amount: donation.amount },
-      ipAddress: req.ip,
-    });
-
-    return res.json({ success: true, message: 'Refund processed and ledger adjusted', data: null });
-  }),
-);
-
-router.post(
-  '/distributions',
-  asyncHandler(async (req: AuthenticatedRequest, res) => {
-    const caseId = Number(req.body?.caseId);
-    const amountUsd = Number(req.body?.amountUsd || 0);
-    const distributionNotes = String(req.body?.distributionNotes || '').trim();
-    if (!caseId || amountUsd <= 0 || !distributionNotes) {
-      throw new AppError(400, 'Case ID, positive amount, and distribution notes are required');
     }
+  });
+  const caseRows = await db.select({ coordinatorId: schema.humanitarianCases.coordinatorId, referenceCode: schema.humanitarianCases.referenceCode })
+    .from(schema.humanitarianCases).where(eq(schema.humanitarianCases.id, transfer.caseId)).limit(1);
+  if (caseRows[0]) await createNotification({
+    userId: caseRows[0].coordinatorId, eventType: `BANK_TRANSFER_${decision}`,
+    title: `Bank transfer ${decision.toLowerCase()}`,
+    message: decision === 'VERIFIED'
+      ? `Transfer evidence for ${caseRows[0].referenceCode} was verified. Receipt ${receiptNumber} is now available.`
+      : `Transfer evidence for ${caseRows[0].referenceCode} was rejected. Review the feedback and resubmit corrected evidence if required.`,
+  });
+  await writeAuditLog({
+    actorUserId: req.user!.id, actorRole: req.user!.role, action: `ADMIN_BANK_TRANSFER_${decision}`,
+    resourceType: 'bank_transfer', resourceId: transfer.bankReference,
+    details: { transferId, receiptNumber, amount: transfer.amount, currency: transfer.currency, verificationNotes }, ipAddress: req.ip,
+  });
+  return res.json({
+    success: true,
+    message: decision === 'VERIFIED' ? `Transfer verified. Receipt ${receiptNumber} issued.` : 'Transfer evidence rejected with review notes.',
+    data: { id: transferId, status: decision, receiptNumber },
+  });
+}));
 
-    const ts = nowUtc();
-    await db.transaction(async (tx) => {
-      await tx.insert(schema.assistanceDistributions).values({
-        caseId,
-        amountUsd,
-        currency: 'USD',
-        approvedBy: req.user!.id,
-        distributionNotes,
-        distributedAt: ts,
-      });
-      await tx.insert(schema.financialRecords).values({
-        entryType: 'DISBURSEMENT',
-        referenceCode: generateReferenceCode('HB-DISB'),
-        amount: amountUsd,
-        currency: 'USD',
-        caseId,
-        description: distributionNotes,
-        recordedAt: ts,
-      });
-    });
-
-    await writeAuditLog({
-      actorUserId: req.user!.id,
-      actorRole: req.user!.role,
-      action: 'ADMIN_FUNDS_DISTRIBUTED',
-      resourceType: 'humanitarian_case',
-      resourceId: caseId,
-      details: { amountUsd, distributionNotes },
-      ipAddress: req.ip,
-    });
-
-    return res.status(201).json({ success: true, message: 'Fund distribution recorded', data: null });
-  }),
-);
+router.get('/bank-transfers/:id/receipt', asyncHandler(async (req, res) => {
+  const transferId = Number(req.params.id);
+  const rows = await db.select({
+    id: schema.bankTransferRecords.id, receiptNumber: schema.bankTransferRecords.receiptNumber,
+    beneficiaryName: schema.bankTransferRecords.beneficiaryName, bankName: schema.bankTransferRecords.bankName,
+    bankReference: schema.bankTransferRecords.bankReference, amount: schema.bankTransferRecords.amount,
+    currency: schema.bankTransferRecords.currency, transferDate: schema.bankTransferRecords.transferDate,
+    recipientAccountLast4: schema.bankTransferRecords.recipientAccountLast4, purpose: schema.bankTransferRecords.purpose,
+    notes: schema.bankTransferRecords.notes, verificationNotes: schema.bankTransferRecords.verificationNotes,
+    verifiedAt: schema.bankTransferRecords.verifiedAt, receiptIssuedAt: schema.bankTransferRecords.receiptIssuedAt,
+    caseReference: schema.humanitarianCases.referenceCode, caseTitle: schema.humanitarianCases.title,
+  }).from(schema.bankTransferRecords)
+    .innerJoin(schema.humanitarianCases, eq(schema.bankTransferRecords.caseId, schema.humanitarianCases.id))
+    .where(and(eq(schema.bankTransferRecords.id, transferId), eq(schema.bankTransferRecords.status, 'VERIFIED')))
+    .limit(1);
+  if (!rows[0] || !rows[0].receiptNumber) throw new AppError(404, 'Verified transfer receipt not found.');
+  return res.json({ success: true, message: 'Verified transfer receipt loaded', data: rows[0] });
+}));
 
 // Volunteers, Partnerships & Assistance Requests
 router.get(

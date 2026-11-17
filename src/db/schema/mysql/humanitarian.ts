@@ -11,6 +11,7 @@ import {
   uniqueIndex,
 } from 'drizzle-orm/mysql-core';
 import { users } from './identity';
+import { mediaFiles } from './governance';
 
 export const caseCategories = mysqlTable('case_categories', {
   id: bigint('id', { mode: 'number', unsigned: true }).autoincrement().primaryKey(),
@@ -57,6 +58,12 @@ export const humanitarianCases = mysqlTable(
     beneficiaryConsentObtained: boolean('beneficiary_consent_obtained').notNull().default(false),
     privateContactName: varchar('private_contact_name', { length: 120 }).notNull(),
     privateContactPhone: varchar('private_contact_phone', { length: 64 }).notNull(),
+    beneficiaryFullName: varchar('beneficiary_full_name', { length: 120 }).notNull().default(''),
+    beneficiaryAgeBand: varchar('beneficiary_age_band', { length: 24 }).notNull().default('UNKNOWN'),
+    beneficiaryGender: varchar('beneficiary_gender', { length: 24 }).notNull().default('UNKNOWN'),
+    householdSize: int('household_size').notNull().default(1),
+    beneficiaryPreferredLanguage: varchar('beneficiary_preferred_language', { length: 60 }),
+    beneficiaryNeedsNotes: text('beneficiary_needs_notes'),
     privateLocationNotes: text('private_location_notes').notNull(),
     internalAdminNotes: text('internal_admin_notes'),
     verifiedBy: bigint('verified_by', { mode: 'number', unsigned: true }).references(() => users.id),
@@ -157,3 +164,36 @@ export const assistanceDistributions = mysqlTable('assistance_distributions', {
   distributionNotes: text('distribution_notes').notNull(),
   distributedAt: timestamp('distributed_at', { fsp: 3 }).defaultNow().notNull(),
 });
+
+export const bankTransferRecords = mysqlTable(
+  'bank_transfer_records',
+  {
+    id: bigint('id', { mode: 'number', unsigned: true }).autoincrement().primaryKey(),
+    caseId: bigint('case_id', { mode: 'number', unsigned: true }).notNull().references(() => humanitarianCases.id),
+    beneficiaryName: varchar('beneficiary_name', { length: 120 }).notNull(),
+    bankName: varchar('bank_name', { length: 120 }).notNull(),
+    bankReference: varchar('bank_reference', { length: 120 }).notNull(),
+    amount: decimal('amount', { precision: 14, scale: 2 }).notNull(),
+    currency: varchar('currency', { length: 3 }).notNull(),
+    transferDate: timestamp('transfer_date', { fsp: 3 }).notNull(),
+    recipientAccountLast4: varchar('recipient_account_last4', { length: 4 }),
+    purpose: varchar('purpose', { length: 180 }).notNull(),
+    notes: text('notes').notNull(),
+    evidenceMediaId: bigint('evidence_media_id', { mode: 'number', unsigned: true }).notNull().references(() => mediaFiles.id),
+    status: varchar('status', { length: 24 }).notNull().default('PENDING_REVIEW'),
+    recordedBy: bigint('recorded_by', { mode: 'number', unsigned: true }).notNull().references(() => users.id),
+    verifiedBy: bigint('verified_by', { mode: 'number', unsigned: true }).references(() => users.id),
+    verificationNotes: text('verification_notes'),
+    receiptNumber: varchar('receipt_number', { length: 48 }),
+    verifiedAt: timestamp('verified_at', { fsp: 3 }),
+    receiptIssuedAt: timestamp('receipt_issued_at', { fsp: 3 }),
+    createdAt: timestamp('created_at', { fsp: 3 }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { fsp: 3 }).defaultNow().notNull(),
+  },
+  (table) => ({
+    bankReferenceUnique: uniqueIndex('ux_bank_transfer_reference').on(table.bankName, table.bankReference),
+    receiptUnique: uniqueIndex('ux_bank_transfer_receipt').on(table.receiptNumber),
+    statusIdx: index('ix_bank_transfer_status').on(table.status),
+    caseIdx: index('ix_bank_transfer_case').on(table.caseId),
+  }),
+);

@@ -1,9 +1,12 @@
 import { db, schema, nowUtc } from '../../src/db/index';
-import { hashPasswordArgon2id, generateTotpSecret } from '../../src/server/utils/crypto';
+import { hashPasswordArgon2id, generateTotpSecret, encryptMfaSecret } from '../../src/server/utils/crypto';
 import { DASHBOARD_ROLES, ROLE_PERMISSIONS } from '../../packages/shared/types';
 import { count } from 'drizzle-orm';
 
 export async function seedIfEmpty() {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('Demo seeding is disabled in production.');
+  }
   const [{ value: userCount }] = await db.select({ value: count() }).from(schema.users);
   if (Number(userCount) > 0) {
     return { seeded: false, reason: 'Database already populated' };
@@ -37,8 +40,15 @@ export async function seedIfEmpty() {
   await db.insert(schema.permissions).values(permissionRows);
 
   // 2. Bootstrap Admin & Sample Community Coordinators (dev/initial seed)
-  const adminEmail = process.env.ADMIN_BOOTSTRAP_EMAIL || 'admin@humanitybridge.org';
-  const adminPassword = process.env.ADMIN_BOOTSTRAP_PASSWORD || 'BridgeAdmin#2026';
+  const adminEmail = process.env.ADMIN_BOOTSTRAP_EMAIL?.trim().toLowerCase();
+  const adminPassword = process.env.ADMIN_BOOTSTRAP_PASSWORD;
+  const seedCoordinatorPassword = process.env.SEED_COORDINATOR_PASSWORD;
+  if (!adminEmail || !adminPassword || adminPassword.length < 16) {
+    throw new Error('Set ADMIN_BOOTSTRAP_EMAIL and a 16+ character ADMIN_BOOTSTRAP_PASSWORD before seeding.');
+  }
+  if (!seedCoordinatorPassword || seedCoordinatorPassword.length < 16) {
+    throw new Error('Set a 16+ character SEED_COORDINATOR_PASSWORD before seeding.');
+  }
 
   await db.insert(schema.users).values([
     {
@@ -53,7 +63,7 @@ export async function seedIfEmpty() {
     },
     {
       email: 'nyamal.gatluak@humanitybridge.org',
-      passwordHash: hashPasswordArgon2id('Coordinator#2026'),
+      passwordHash: hashPasswordArgon2id(seedCoordinatorPassword),
       role: DASHBOARD_ROLES.COMMUNITY_COORDINATOR,
       status: 'ACTIVE',
       emailVerified: true,
@@ -113,7 +123,7 @@ export async function seedIfEmpty() {
 
   await db.insert(schema.mfaSettings).values({
     userId: adminUser.id,
-    totpSecret: generateTotpSecret(),
+    totpSecret: encryptMfaSecret(generateTotpSecret()),
     enabled: false,
     updatedAt: ts,
   });
@@ -169,6 +179,10 @@ export async function seedIfEmpty() {
       isPublic: true,
       isChildRelated: false,
       guardianConsentObtained: false,
+      beneficiaryFullName: 'Confidential beneficiary representative',
+      beneficiaryAgeBand: 'UNKNOWN',
+      beneficiaryGender: 'UNKNOWN',
+      householdSize: 1,
       beneficiaryConsentObtained: true,
       privateContactName: 'Confidential Local Water Committee Chair',
       privateContactPhone: '+000-RESTRICTED-01',

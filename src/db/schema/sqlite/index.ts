@@ -167,6 +167,12 @@ export const humanitarianCases = sqliteTable(
     beneficiaryConsentObtained: integer('beneficiary_consent_obtained', { mode: 'boolean' }).notNull().default(false),
     privateContactName: text('private_contact_name').notNull(),
     privateContactPhone: text('private_contact_phone').notNull(),
+    beneficiaryFullName: text('beneficiary_full_name').notNull().default(''),
+    beneficiaryAgeBand: text('beneficiary_age_band').notNull().default('UNKNOWN'),
+    beneficiaryGender: text('beneficiary_gender').notNull().default('UNKNOWN'),
+    householdSize: integer('household_size').notNull().default(1),
+    beneficiaryPreferredLanguage: text('beneficiary_preferred_language'),
+    beneficiaryNeedsNotes: text('beneficiary_needs_notes'),
     privateLocationNotes: text('private_location_notes').notNull(),
     internalAdminNotes: text('internal_admin_notes'),
     verifiedBy: integer('verified_by').references(() => users.id),
@@ -726,6 +732,39 @@ export const mediaFiles = sqliteTable('media_files', {
   altText: text('alt_text'),
   createdAt: text('created_at').notNull(),
 });
+
+export const bankTransferRecords = sqliteTable(
+  'bank_transfer_records',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    caseId: integer('case_id').notNull().references(() => humanitarianCases.id),
+    beneficiaryName: text('beneficiary_name').notNull(),
+    bankName: text('bank_name').notNull(),
+    bankReference: text('bank_reference').notNull(),
+    amount: real('amount').notNull(),
+    currency: text('currency').notNull(),
+    transferDate: text('transfer_date').notNull(),
+    recipientAccountLast4: text('recipient_account_last4'),
+    purpose: text('purpose').notNull(),
+    notes: text('notes').notNull(),
+    evidenceMediaId: integer('evidence_media_id').notNull().references(() => mediaFiles.id),
+    status: text('status').notNull().default('PENDING_REVIEW'),
+    recordedBy: integer('recorded_by').notNull().references(() => users.id),
+    verifiedBy: integer('verified_by').references(() => users.id),
+    verificationNotes: text('verification_notes'),
+    receiptNumber: text('receipt_number'),
+    verifiedAt: text('verified_at'),
+    receiptIssuedAt: text('receipt_issued_at'),
+    createdAt: text('created_at').notNull(),
+    updatedAt: text('updated_at').notNull(),
+  },
+  (table) => ({
+    bankReferenceUnique: uniqueIndex('ux_bank_transfer_reference').on(table.bankName, table.bankReference),
+    receiptUnique: uniqueIndex('ux_bank_transfer_receipt').on(table.receiptNumber),
+    statusIdx: index('ix_bank_transfer_status').on(table.status),
+    caseIdx: index('ix_bank_transfer_case').on(table.caseId),
+  }),
+);
 
 export const activityLogs = sqliteTable('activity_logs', {
   id: integer('id').primaryKey({ autoIncrement: true }),
