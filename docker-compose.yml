@@ -51,7 +51,7 @@ services:
       SIGNED_URL_SECRET: ${SIGNED_URL_SECRET:?SIGNED_URL_SECRET is required}
       MFA_ENCRYPTION_KEY: ${MFA_ENCRYPTION_KEY:?MFA_ENCRYPTION_KEY is required}
       COOKIE_SECURE: "true"
-      PAYMENT_PROVIDER: ${PAYMENT_PROVIDER:?Select a production payment provider}
+      PAYMENT_PROVIDER: ${PAYMENT_PROVIDER:-disabled}
     volumes:
       - app_storage:/app/storage
 
