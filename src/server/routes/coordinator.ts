@@ -132,8 +132,8 @@ router.post(
   '/cases',
   asyncHandler(async (req: AuthenticatedRequest, res) => {
     const parsed = createCaseSchema.parse(req.body);
-    if (parsed.isChildRelated && !parsed.guardianConsentObtained) {
-      throw new AppError(400, 'Child-related cases require explicit guardian consent confirmation');
+    if ((parsed.isChildRelated || parsed.beneficiaryAgeBand === 'UNDER_18') && !parsed.guardianConsentObtained) {
+      throw new AppError(400, 'Cases involving a beneficiary under 18 require documented guardian consent');
     }
 
     const ts = nowUtc();
@@ -157,6 +157,12 @@ router.post(
       isChildRelated: parsed.isChildRelated,
       guardianConsentObtained: parsed.guardianConsentObtained,
       beneficiaryConsentObtained: parsed.beneficiaryConsentObtained,
+      beneficiaryFullName: parsed.beneficiaryFullName,
+      beneficiaryAgeBand: parsed.beneficiaryAgeBand,
+      beneficiaryGender: parsed.beneficiaryGender,
+      householdSize: parsed.householdSize,
+      beneficiaryPreferredLanguage: parsed.beneficiaryPreferredLanguage || null,
+      beneficiaryNeedsNotes: parsed.beneficiaryNeedsNotes || null,
       privateContactName: parsed.privateContactName,
       privateContactPhone: parsed.privateContactPhone,
       privateLocationNotes: parsed.privateLocationNotes,
@@ -219,6 +225,9 @@ router.patch(
     }
 
     const parsed = createCaseSchema.parse(req.body);
+    if ((parsed.isChildRelated || parsed.beneficiaryAgeBand === 'UNDER_18') && !parsed.guardianConsentObtained) {
+      throw new AppError(400, 'Cases involving a beneficiary under 18 require documented guardian consent');
+    }
     const ts = nowUtc();
     // Coordinator cannot self-approve; submitting moves to SUBMITTED
     const nextStatus = parsed.saveAsDraft ? 'DRAFT' : 'SUBMITTED';
@@ -255,6 +264,97 @@ router.patch(
     return res.json({ success: true, message: 'Case submission updated', data: { id: caseId, status: nextStatus } });
   }),
 );
+
+
+router.get('/bank-transfers', asyncHandler(async (req: AuthenticatedRequest, res) => {
+  const rows = await db.select({
+    id: schema.bankTransferRecords.id, caseId: schema.bankTransferRecords.caseId,
+    caseReference: schema.humanitarianCases.referenceCode, caseTitle: schema.humanitarianCases.title,
+    beneficiaryName: schema.bankTransferRecords.beneficiaryName, bankName: schema.bankTransferRecords.bankName,
+    bankReference: schema.bankTransferRecords.bankReference, amount: schema.bankTransferRecords.amount,
+    currency: schema.bankTransferRecords.currency, transferDate: schema.bankTransferRecords.transferDate,
+    purpose: schema.bankTransferRecords.purpose, status: schema.bankTransferRecords.status,
+    verificationNotes: schema.bankTransferRecords.verificationNotes, receiptNumber: schema.bankTransferRecords.receiptNumber,
+    evidenceMediaId: schema.bankTransferRecords.evidenceMediaId, createdAt: schema.bankTransferRecords.createdAt,
+  }).from(schema.bankTransferRecords)
+    .innerJoin(schema.humanitarianCases, eq(schema.bankTransferRecords.caseId, schema.humanitarianCases.id))
+    .where(eq(schema.humanitarianCases.coordinatorId, req.user!.id))
+    .orderBy(desc(schema.bankTransferRecords.createdAt));
+  return res.json({ success: true, message: 'Your external bank transfer records loaded', data: rows });
+}));
+
+router.post('/bank-transfers', asyncHandler(async (req: AuthenticatedRequest, res) => {
+  const caseId = Number(req.body?.caseId);
+  const bankName = String(req.body?.bankName || '').trim();
+  const bankReference = String(req.body?.bankReference || '').trim();
+  const amount = Number(req.body?.amount);
+  const currency = String(req.body?.currency || '').trim().toUpperCase();
+  const transferDateInput = String(req.body?.transferDate || '').trim();
+  const recipientAccountLast4 = String(req.body?.recipientAccountLast4 || '').trim();
+  const purpose = String(req.body?.purpose || '').trim();
+  const notes = String(req.body?.notes || '').trim();
+  const evidenceMediaId = Number(req.body?.evidenceMediaId);
+
+  if (!Number.isSafeInteger(caseId) || caseId < 1 || !bankName || bankName.length > 120 ||
+      bankReference.length < 4 || bankReference.length > 120 || !Number.isFinite(amount) ||
+      amount <= 0 || amount > 1000000000 || !/^[A-Z]{3}$/.test(currency) ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(transferDateInput) ||
+      (recipientAccountLast4 && !/^\d{4}$/.test(recipientAccountLast4)) ||
+      purpose.length < 3 || purpose.length > 180 || notes.length < 8 || notes.length > 1500 ||
+      !Number.isSafeInteger(evidenceMediaId) || evidenceMediaId < 1) {
+    throw new AppError(400, 'Complete all required transfer fields with valid values and attach bank evidence.');
+  }
+  const transferDate = new Date(`${transferDateInput}T12:00:00.000Z`);
+  if (Number.isNaN(transferDate.getTime()) || transferDate.getTime() > Date.now()) {
+    throw new AppError(400, 'Transfer date must be valid and cannot be in the future.');
+  }
+  const caseRows = await db.select().from(schema.humanitarianCases).where(eq(schema.humanitarianCases.id, caseId)).limit(1);
+  const targetCase = caseRows[0];
+  if (!targetCase || targetCase.coordinatorId !== req.user!.id || targetCase.status !== 'VERIFIED') {
+    throw new AppError(403, 'You may only record external transfers for your own verified cases.');
+  }
+  if (!targetCase.beneficiaryFullName) throw new AppError(400, 'Register the beneficiary before recording a transfer.');
+  const mediaRows = await db.select().from(schema.mediaFiles).where(eq(schema.mediaFiles.id, evidenceMediaId)).limit(1);
+  const evidence = mediaRows[0];
+  if (!evidence || evidence.storageScope !== 'PRIVATE_CASE_EVIDENCE' || evidence.uploadedBy !== req.user!.id) {
+    throw new AppError(403, 'Transfer evidence must be a private file uploaded by your account.');
+  }
+  const duplicate = await db.select({ id: schema.bankTransferRecords.id }).from(schema.bankTransferRecords)
+    .where(and(eq(schema.bankTransferRecords.bankName, bankName), eq(schema.bankTransferRecords.bankReference, bankReference))).limit(1);
+  if (duplicate[0]) throw new AppError(409, 'This bank transaction reference has already been recorded.');
+
+  const ts = nowUtc();
+  await db.insert(schema.bankTransferRecords).values({
+    caseId, beneficiaryName: targetCase.beneficiaryFullName, bankName, bankReference, amount, currency,
+    transferDate: transferDate.toISOString(), recipientAccountLast4: recipientAccountLast4 || null,
+    purpose, notes, evidenceMediaId, status: 'PENDING_REVIEW', recordedBy: req.user!.id, createdAt: ts, updatedAt: ts,
+  });
+  await writeAuditLog({
+    actorUserId: req.user!.id, actorRole: req.user!.role, action: 'COORDINATOR_BANK_TRANSFER_RECORDED',
+    resourceType: 'bank_transfer', resourceId: bankReference,
+    details: { caseReference: targetCase.referenceCode, amount, currency, evidenceMediaId }, ipAddress: req.ip,
+  });
+  return res.status(201).json({ success: true, message: 'External bank transfer evidence submitted for independent administrative review.', data: { caseReference: targetCase.referenceCode, status: 'PENDING_REVIEW' } });
+}));
+
+router.get('/bank-transfers/:id/receipt', asyncHandler(async (req: AuthenticatedRequest, res) => {
+  const transferId = Number(req.params.id);
+  const rows = await db.select({
+    id: schema.bankTransferRecords.id, receiptNumber: schema.bankTransferRecords.receiptNumber,
+    beneficiaryName: schema.bankTransferRecords.beneficiaryName, bankName: schema.bankTransferRecords.bankName,
+    bankReference: schema.bankTransferRecords.bankReference, amount: schema.bankTransferRecords.amount,
+    currency: schema.bankTransferRecords.currency, transferDate: schema.bankTransferRecords.transferDate,
+    recipientAccountLast4: schema.bankTransferRecords.recipientAccountLast4, purpose: schema.bankTransferRecords.purpose,
+    notes: schema.bankTransferRecords.notes, verificationNotes: schema.bankTransferRecords.verificationNotes,
+    verifiedAt: schema.bankTransferRecords.verifiedAt, receiptIssuedAt: schema.bankTransferRecords.receiptIssuedAt,
+    caseReference: schema.humanitarianCases.referenceCode, caseTitle: schema.humanitarianCases.title,
+  }).from(schema.bankTransferRecords)
+    .innerJoin(schema.humanitarianCases, eq(schema.bankTransferRecords.caseId, schema.humanitarianCases.id))
+    .where(and(eq(schema.bankTransferRecords.id, transferId), eq(schema.humanitarianCases.coordinatorId, req.user!.id), eq(schema.bankTransferRecords.status, 'VERIFIED')))
+    .limit(1);
+  if (!rows[0] || !rows[0].receiptNumber) throw new AppError(404, 'Verified transfer receipt not found.');
+  return res.json({ success: true, message: 'Verified transfer receipt loaded', data: rows[0] });
+}));
 
 router.get(
   '/stories',

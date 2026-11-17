@@ -17,7 +17,7 @@ export const env = {
   signedUrlSecret: developmentSecret(process.env.SIGNED_URL_SECRET),
   paymentWebhookSecret: developmentSecret(process.env.PAYMENT_WEBHOOK_SECRET),
   mfaEncryptionKey: process.env.MFA_ENCRYPTION_KEY || '',
-  paymentProvider: process.env.PAYMENT_PROVIDER || 'sandbox',
+  paymentProvider: process.env.PAYMENT_PROVIDER || 'disabled',
   sessionTtlHours: Number(process.env.SESSION_TTL_HOURS || 24),
   cookieSecure: isProduction || process.env.COOKIE_SECURE === 'true',
   privateStorageDir: path.resolve(process.cwd(), process.env.PRIVATE_STORAGE_DIR || 'storage/private'),
@@ -32,7 +32,6 @@ export function validateProductionEnvironment(): void {
     ['SESSION_SECRET', env.sessionSecret],
     ['CSRF_SECRET', env.csrfSecret],
     ['SIGNED_URL_SECRET', env.signedUrlSecret],
-    ['PAYMENT_WEBHOOK_SECRET', env.paymentWebhookSecret],
   ];
 
   for (const [name, value] of requiredSecrets) {
@@ -51,9 +50,5 @@ export function validateProductionEnvironment(): void {
 
   if (process.env.USE_MYSQL !== 'true' || !process.env.DATABASE_URL?.startsWith('mysql://')) {
     throw new Error('Production must use a configured MySQL DATABASE_URL.');
-  }
-
-  if (env.paymentProvider === 'sandbox') {
-    throw new Error('Sandbox payments are disabled in production. Configure a real payment provider first.');
   }
 }

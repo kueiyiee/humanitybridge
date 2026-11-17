@@ -1,71 +1,18 @@
-import crypto from 'node:crypto';
-import { env } from '../config/env';
-import { signHmac, verifyHmac } from '../utils/crypto';
-
-export interface PaymentIntentInput {
-  donationReference: string;
-  amount: number;
-  currency: string;
-  paymentChannel: string;
-}
-
-export interface PaymentIntentResult {
-  provider: string;
-  providerReference: string;
-  checkoutMode: 'SANDBOX_SIMULATOR' | 'EXTERNAL_REDIRECT';
-  instructions: string;
-  sandboxSignature: string;
-}
-
+import { AppError } from '../middleware/errorHandler';
+export interface PaymentIntentInput { donationReference: string; amount: number; currency: string; paymentChannel: string; }
+export interface PaymentIntentResult { provider: string; providerReference: string; checkoutMode: 'SANDBOX_SIMULATOR' | 'EXTERNAL_REDIRECT'; instructions: string; sandboxSignature: string; }
 export interface PaymentProviderAdapter {
   readonly providerName: string;
   createPaymentIntent(input: PaymentIntentInput): PaymentIntentResult;
   verifyWebhookSignature(rawPayload: string, signature: string): boolean;
 }
-
-export class SandboxPaymentAdapter implements PaymentProviderAdapter {
-  public readonly providerName = 'SANDBOX_GATEWAY';
-
-  createPaymentIntent(input: PaymentIntentInput): PaymentIntentResult {
-    const providerReference = `SBX-TX-${Date.now()}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
-    const eventPayload = JSON.stringify({
-      eventId: `EVT-${providerReference}`,
-      donationReference: input.donationReference,
-      providerReference,
-      amount: input.amount,
-      currency: input.currency,
-      status: 'SETTLED',
-    });
-    const sandboxSignature = signHmac(eventPayload, env.paymentWebhookSecret);
-
-    return {
-      provider: this.providerName,
-      providerReference,
-      checkoutMode: 'SANDBOX_SIMULATOR',
-      instructions:
-        'Sandbox Payment Adapter active. Contributions are simulated for verification only and are never counted until a signed webhook confirmation is processed.',
-      sandboxSignature,
-    };
+class OfflineOnlyPaymentAdapter implements PaymentProviderAdapter {
+  public readonly providerName = 'OFFLINE_ONLY';
+  createPaymentIntent(_input: PaymentIntentInput): PaymentIntentResult {
+    throw new AppError(503, 'Online payment processing is disabled. HumanityBridge records external bank transfers after they are completed outside the platform.');
   }
-
-  verifyWebhookSignature(rawPayload: string, signature: string): boolean {
-    return verifyHmac(rawPayload, signature, env.paymentWebhookSecret);
-  }
+  verifyWebhookSignature(_rawPayload: string, _signature: string): boolean { return false; }
 }
-
-/**
- * Fail closed: this repository currently implements only the sandbox adapter.
- * A live provider must be implemented and independently reviewed before production
- * payment routes can be enabled.
- */
-export function createPaymentAdapter(): PaymentProviderAdapter {
-  if (env.isProduction) {
-    throw new Error('No production payment provider is implemented. Payment processing is disabled.');
-  }
-  if (env.paymentProvider !== 'sandbox') {
-    throw new Error(`Payment provider "${env.paymentProvider}" is not implemented.`);
-  }
-  return new SandboxPaymentAdapter();
-}
-
+/** No live payment gateway is configured or required; bank transfers use the evidence-review workflow. */
+export function createPaymentAdapter(): PaymentProviderAdapter { return new OfflineOnlyPaymentAdapter(); }
 export const paymentAdapter: PaymentProviderAdapter = createPaymentAdapter();
