@@ -51,7 +51,7 @@ The top-level frontend and backend documentation folders establish clear domain 
 5. Apply reviewed SQL migrations with `npm run db:migrate`.
 6. Start the application only after database readiness succeeds.
 7. Verify `/api/health/live` and `/api/health/ready`.
-8. Enable live payment processing only after a provider-specific adapter, webhook signature scheme, settlement reconciliation and refund API have been implemented and tested.
+8. Keep online payment processing disabled. The organisation completes bank transfers externally; authorised staff record the transfer and supporting bank evidence in the coordinator dashboard, and a separate administrator reviews it before a numbered organisational receipt is issued.
 
 ## Security invariants
 
@@ -60,11 +60,12 @@ The top-level frontend and backend documentation folders establish clear domain 
 - MFA TOTP secrets are encrypted at rest using AES-256-GCM.
 - Public story media requires active narrative and media consent; minor-related stories additionally require guardian consent.
 - Private media signatures are bound to the authorised user and ownership is rechecked when serving the file.
-- A payment webhook must be signed over its original request bytes and match the original donation amount and currency.
-- The sandbox payment adapter is development-only. The current repository has no live provider implementation; production payment operations remain disabled.
-- Refunds cannot be represented as completed until a real provider refund operation is available.
+- No online payment gateway, card collection, payment webhook or automated refund flow is enabled.
+- External bank transfers are recorded against verified beneficiary cases, with bank reference, amount, currency and private evidence attachment.
+- Transfer references are unique per bank; a separate administrator must review the evidence before a receipt is issued.
+- Receipts are organisational acknowledgements of reviewed evidence, not bank-issued receipts or independent proof of settlement.
 - Coordinator API responses do not include internal administrator notes.
 
 ## Operational limitations
 
-This branch is a security-hardening foundation, not a certification of production readiness. A real payment gateway, SMTP delivery provider, malware scanning, backup/restore drills, CI execution, database integration tests and deployment-environment verification remain release gates.
+This branch is a security-hardening foundation, not a certification of production readiness. Transactional email delivery, malware scanning and image re-encoding, backup/restore drills, staging deployment, database integration tests, MFA recovery codes and independent security review remain release gates. The bank-transfer review workflow should also be exercised with real bank-issued evidence in staging before operational use.
