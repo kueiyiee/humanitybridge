@@ -167,7 +167,7 @@ export const humanitarianCases = sqliteTable(
     beneficiaryConsentObtained: integer('beneficiary_consent_obtained', { mode: 'boolean' }).notNull().default(false),
     privateContactName: text('private_contact_name').notNull(),
     privateContactPhone: text('private_contact_phone').notNull(),
-    beneficiaryFullName: text('beneficiary_full_name').notNull(),
+    beneficiaryFullName: text('beneficiary_full_name').notNull().default(''),
     beneficiaryAgeBand: text('beneficiary_age_band').notNull().default('UNKNOWN'),
     beneficiaryGender: text('beneficiary_gender').notNull().default('UNKNOWN'),
     householdSize: integer('household_size').notNull().default(1),
