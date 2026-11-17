@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Download } from 'lucide-react';
+import { MfaSettingsPanel } from '../../components/security/MfaSettingsPanel';
 import { apiRequest } from '../../services/api';
 
 export function AdminUsersPanel() {
@@ -344,42 +345,13 @@ export function AdminSafeguardingAndSettingsPanel({ mode }: { mode: 'safeguardin
     );
   }
 
-  const setupMfa = async () => {
-    const res = await apiRequest<{ secret: string }>('/auth/mfa/setup', { method: 'POST' });
-    setMfaSecret(res.data.secret);
-  };
-
-  const enableMfa = async () => {
-    const res = await apiRequest('/auth/mfa/enable', { method: 'POST', body: JSON.stringify({ code: mfaCode }) });
-    setMsg(res.message);
-  };
-
   return (
     <div className="space-y-6">
       <h2 className="font-editorial text-2xl font-semibold">System Settings, MFA & Audit Logs</h2>
       {msg && <p className="text-xs text-[#16865D]">{msg}</p>}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white dark:bg-[#0D223D] border border-slate-200 dark:border-slate-800 rounded-xl p-6 space-y-4">
-          <h3 className="font-editorial text-lg font-semibold">Administrator MFA (TOTP)</h3>
-          <p className="text-xs text-slate-600 dark:text-slate-300">
-            Protect Platform Administrator credentials using an RFC 6238 authenticator app.
-          </p>
-          <button type="button" onClick={setupMfa} className="px-4 py-2 rounded-lg bg-[#0B1F3A] dark:bg-[#00BCEB] text-white dark:text-[#071324] text-xs font-semibold">
-            Generate TOTP Secret
-          </button>
-          {mfaSecret && (
-            <div className="space-y-2 pt-2">
-              <p className="text-xs font-mono-tabular break-all bg-[#F7F9FC] dark:bg-[#071324] p-2.5 rounded">Secret: {mfaSecret}</p>
-              <div className="flex gap-2">
-                <input value={mfaCode} onChange={(e) => setMfaCode(e.target.value)} placeholder="6-digit code" className="px-3 py-1.5 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#071324] text-xs font-mono-tabular" />
-                <button type="button" onClick={enableMfa} className="px-3 py-1.5 rounded bg-[#16865D] text-white text-xs font-semibold">
-                  Enable MFA
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+        <div className="lg:col-span-2"><MfaSettingsPanel /></div>
 
         <div className="bg-white dark:bg-[#0D223D] border border-slate-200 dark:border-slate-800 rounded-xl p-6 space-y-3">
           <h3 className="font-editorial text-lg font-semibold">Configurable Public Identity</h3>
