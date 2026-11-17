@@ -70,7 +70,11 @@ function createMysqlDb() {
 }
 
 // Type-unified handle: both MySQL and SQLite schemas mirror identical column property names.
-export const schema = sqliteSchema;
+// Select dialect-specific Drizzle descriptors at runtime. Both schemas expose
+// the same logical table/property names, while each dialect retains its own SQL types.
+export const schema = (
+  mysqlUrl && process.env.USE_MYSQL === 'true' ? mysqlSchema : sqliteSchema
+) as typeof sqliteSchema;
 export const mysqlTables = mysqlSchema;
 
 let dbInstance: ReturnType<typeof createSqliteDb>;
@@ -86,11 +90,22 @@ if (mysqlUrl && process.env.USE_MYSQL === 'true') {
 
 export const db = dbInstance;
 
+export async function checkDatabaseConnection(): Promise<void> {
+  if (activeDialect === 'mysql') {
+    if (!mysqlPool) throw new Error('MySQL pool has not been initialised');
+    await mysqlPool.query('SELECT 1');
+    return;
+  }
+
+  if (!sqliteInstance) throw new Error('SQLite database has not been initialised');
+  sqliteInstance.prepare('SELECT 1').get();
+}
+
 export function getDbDiagnostics() {
   return {
     dialect: activeDialect,
     mysqlConfigured: Boolean(mysqlUrl),
-    status: 'connected',
+    status: 'configured',
   };
 }
 
