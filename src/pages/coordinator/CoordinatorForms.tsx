@@ -52,6 +52,8 @@ export function CoordinatorCaseForm({
   });
 
   const isChildRelated = watch('isChildRelated');
+  const beneficiaryAgeBand = watch('beneficiaryAgeBand');
+  const requiresGuardianConsent = isChildRelated || beneficiaryAgeBand === 'UNDER_18';
 
   const handleEvidenceUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -216,7 +218,7 @@ export function CoordinatorCaseForm({
             <input type="checkbox" {...register('isChildRelated')} />
             <span>Case involves minors (triggers Child Safeguarding protocol)</span>
           </label>
-          {isChildRelated && (
+          {requiresGuardianConsent && (
             <label className="flex items-center gap-2.5 cursor-pointer pl-6 text-amber-700 dark:text-amber-300">
               <input type="checkbox" {...register('guardianConsentObtained')} />
               <span>Verified guardian consent documented and stored privately</span>
