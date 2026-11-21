@@ -10,7 +10,7 @@ const linkClass = 'text-sm text-[#d5dfd6] transition-colors hover:text-white foc
 
 export function PublicFooter({ settings = {} }: PublicFooterProps) {
   return (
-    <footer className="bg-[#193d2b] text-[#eaf0e9]">
+    <footer className="relative z-10 bg-[#193d2b] text-[#eaf0e9]">
       <div className="mx-auto max-w-7xl px-5 py-12 sm:px-8 sm:py-14 lg:px-10">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.3fr_0.8fr_1fr_1fr] lg:gap-12">
           <div>
