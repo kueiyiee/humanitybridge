@@ -562,3 +562,170 @@ body,
     background-color: #1a2632 !important;
   }
 }
+
+
+/* HumanityBridge — monochrome glass and editorial, card-free visual system. */
+:root {
+  --color-primary: #191b1d;
+  --color-secondary: #4c5054;
+  --color-accent: #8c9297;
+  --color-success: #62686d;
+  --color-background: #f5f5f4;
+  --color-surface: rgb(255 255 255 / 58%);
+  --color-text: #202326;
+  --color-muted: #73797e;
+  --hb-border: rgb(124 130 135 / 22%);
+  --hb-brand-primary: #24272a;
+  --hb-brand-primary-hover: #08090a;
+  --hb-brand-link: #3a3e42;
+  --hb-brand-accent: #aeb3b7;
+  --hb-app-background:
+    radial-gradient(ellipse at 16% 0%, rgb(205 210 214 / 30%), transparent 38%),
+    linear-gradient(145deg, #fafafa 0%, #f0f1f1 54%, #e5e7e8 100%);
+  --hb-dashboard-background: var(--hb-app-background);
+  --hb-glass-surface: rgb(255 255 255 / 32%);
+  --hb-glass-border: rgb(255 255 255 / 66%);
+  --hb-glass-shadow: 0 18px 55px -42px rgb(20 24 28 / 24%), inset 0 1px 0 rgb(255 255 255 / 70%);
+  --hb-motion-ease: cubic-bezier(.2,.75,.25,1);
+}
+.dark {
+  --color-primary: #f2f3f4;
+  --color-secondary: #c1c5c8;
+  --color-accent: #b9bec2;
+  --color-success: #c0c4c7;
+  --color-background: #090a0b;
+  --color-surface: rgb(27 29 31 / 54%);
+  --color-text: #f0f1f2;
+  --color-muted: #a4a9ad;
+  --hb-border: rgb(213 218 222 / 16%);
+  --hb-brand-primary: #d7dadd;
+  --hb-brand-primary-hover: #ffffff;
+  --hb-brand-link: #e3e5e7;
+  --hb-brand-accent: #aeb4b9;
+  --hb-app-background:
+    radial-gradient(ellipse at 18% 0%, rgb(104 111 118 / 15%), transparent 40%),
+    linear-gradient(145deg, #050606 0%, #101214 56%, #191c1f 100%);
+  --hb-dashboard-background: var(--hb-app-background);
+  --hb-glass-surface: rgb(255 255 255 / 4.5%);
+  --hb-glass-border: rgb(228 232 235 / 12%);
+  --hb-glass-shadow: 0 24px 64px -42px rgb(0 0 0 / 72%), inset 0 1px 0 rgb(255 255 255 / 7%);
+}
+html { scroll-behavior: smooth; scroll-padding-top: 5rem; }
+body { background: var(--hb-app-background); }
+.hb-topbar {
+  -webkit-backdrop-filter: blur(30px) saturate(155%);
+  backdrop-filter: blur(30px) saturate(155%);
+  box-shadow: 0 12px 38px -34px rgb(0 0 0 / 42%);
+}
+.hb-topbar a, .hb-topbar button, .hb-topbar select {
+  transition: color 420ms var(--hb-motion-ease), background-color 420ms var(--hb-motion-ease), border-color 420ms var(--hb-motion-ease), transform 420ms var(--hb-motion-ease);
+}
+.hb-public-shell > header,
+.hb-dashboard-shell > header,
+.hb-dashboard-shell > aside,
+.hb-dashboard-shell > div > header {
+  background: rgb(255 255 255 / 46%) !important;
+  border-color: rgb(125 132 138 / 18%) !important;
+  -webkit-backdrop-filter: blur(30px) saturate(160%);
+  backdrop-filter: blur(30px) saturate(160%);
+}
+.dark .hb-public-shell > header,
+.dark .hb-dashboard-shell > header,
+.dark .hb-dashboard-shell > aside,
+.dark .hb-dashboard-shell > div > header {
+  background: rgb(8 9 10 / 58%) !important;
+  border-color: rgb(220 225 229 / 10%) !important;
+}
+/* Replace dashboard and public content cards with a typography-first layout. */
+.hb-public-shell main article,
+.hb-public-shell main :is(section, div)[class*="rounded-xl"][class*="border"][class~="bg-white"],
+.hb-public-shell main :is(section, div)[class*="rounded-2xl"][class*="border"][class~="bg-white"],
+.hb-dashboard-shell main article,
+.hb-dashboard-shell main :is(section, div)[class*="rounded-xl"][class*="border"][class~="bg-white"],
+.hb-dashboard-shell main :is(section, div)[class*="rounded-2xl"][class*="border"][class~="bg-white"] {
+  background: transparent !important;
+  background-image: none !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+.hb-public-shell main article:hover,
+.hb-dashboard-shell main article:hover,
+.hb-dashboard-shell main :is(section, div)[class*="rounded-xl"][class*="border"][class~="bg-white"]:hover,
+.hb-dashboard-shell main :is(section, div)[class*="rounded-2xl"][class*="border"][class~="bg-white"]:hover {
+  transform: none !important;
+  box-shadow: none !important;
+}
+.hb-dashboard-shell main h1,
+.hb-public-shell main h1 {
+  letter-spacing: -.045em;
+  font-weight: 650;
+}
+.hb-dashboard-shell main h2,
+.hb-public-shell main h2 {
+  letter-spacing: -.03em;
+  font-weight: 620;
+}
+.hb-dashboard-shell main p,
+.hb-public-shell main p {
+  line-height: 1.75;
+}
+.hb-dashboard-shell main > *,
+.hb-public-shell main > * {
+  animation: hb-editorial-rise 900ms var(--hb-motion-ease) both;
+}
+@keyframes hb-editorial-rise {
+  from { opacity: 0; transform: translate3d(0, 10px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+.hb-nav-item { border-radius: .55rem; }
+.hb-nav-item:hover { background: rgb(100 106 112 / 9%) !important; color: var(--color-text) !important; }
+.hb-nav-item-active, .hb-nav-item-active:hover {
+  background: rgb(125 132 138 / 13%) !important;
+  border-color: rgb(125 132 138 / 20%) !important;
+  color: var(--color-text) !important;
+  box-shadow: inset 2px 0 0 #858b90;
+}
+.dark .hb-nav-item-active, .dark .hb-nav-item-active:hover {
+  background: rgb(220 225 229 / 9%) !important;
+  border-color: rgb(220 225 229 / 13%) !important;
+  color: #f5f6f7 !important;
+  box-shadow: inset 2px 0 0 #c4c9cd;
+}
+.hb-dashboard-shell main :is(input, select, textarea),
+.hb-public-shell main :is(input, select, textarea) {
+  border-radius: .65rem;
+  border-color: var(--hb-border);
+  background: rgb(255 255 255 / 45%);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+}
+.dark .hb-dashboard-shell main :is(input, select, textarea),
+.dark .hb-public-shell main :is(input, select, textarea) {
+  background: rgb(255 255 255 / 4%);
+  border-color: var(--hb-border);
+}
+.hb-dashboard-shell :is(button, a, input, select, textarea),
+.hb-public-shell :is(button, a, input, select, textarea) {
+  transition-duration: 420ms;
+  transition-timing-function: var(--hb-motion-ease);
+}
+.hb-public-shell main table,
+.hb-dashboard-shell main table { border-collapse: separate; border-spacing: 0; }
+.hb-public-shell main thead,
+.hb-dashboard-shell main thead {
+  background: transparent !important;
+  border-bottom: 1px solid var(--hb-border);
+}
+.hb-public-shell > footer { background: rgb(20 22 24 / 94%) !important; }
+@media (max-width: 767px) {
+  html { scroll-padding-top: 4rem; }
+  .hb-dashboard-shell main { padding-left: 1rem; padding-right: 1rem; }
+  .hb-dashboard-shell main :is(h1,h2) { overflow-wrap: anywhere; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .hb-dashboard-shell main > *, .hb-public-shell main > * { animation: none !important; }
+  .hb-topbar *, .hb-dashboard-shell *, .hb-public-shell * { transition-duration: .01ms !important; }
+}
