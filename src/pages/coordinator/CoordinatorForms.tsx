@@ -74,6 +74,14 @@ export function CoordinatorCaseForm({
   const submitCase = async (values: z.infer<typeof createCaseSchema>, asDraft: boolean) => {
     setErr(null);
     setMsg(null);
+    if (!asDraft && !values.beneficiaryConsentObtained) {
+      setErr('Record informed beneficiary consent before submitting this case. You may save it as a draft while consent is pending.');
+      return;
+    }
+    if (!asDraft && (values.isChildRelated || values.beneficiaryAgeBand === 'UNDER_18') && !values.guardianConsentObtained) {
+      setErr('Document verified guardian consent before submitting a case involving a person under 18.');
+      return;
+    }
     try {
       const res = await apiRequest<{ referenceCode: string }>('/coordinator/cases', {
         method: 'POST',
