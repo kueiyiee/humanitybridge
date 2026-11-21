@@ -323,3 +323,73 @@ body {
   [role="menu"],
   [role="listbox"] { background: var(--hb-glass-strong) !important; }
 }
+
+
+/* Beneficiary intake form: shared theme tokens and controlled A4 print output. */
+.hb-case-registration {
+  color: var(--hb-text);
+  background: var(--hb-glass);
+  border: 1px solid var(--hb-glass-border);
+  border-radius: 1.25rem;
+  padding: clamp(1rem, 2.5vw, 2rem);
+  box-shadow: var(--hb-glass-shadow);
+  -webkit-backdrop-filter: blur(var(--hb-blur)) saturate(150%);
+  backdrop-filter: blur(var(--hb-blur)) saturate(150%);
+}
+.hb-case-registration :is(h2,h3,label,p,span) { color: inherit; }
+.hb-case-registration :is(h2,h3) { color: var(--hb-text-strong) !important; }
+.hb-case-registration label { font-weight: 600; }
+.hb-case-registration input:not([type="checkbox"]):not([type="file"]),
+.hb-case-registration select,
+.hb-case-registration textarea {
+  background: var(--hb-glass-strong) !important;
+  color: var(--hb-text) !important;
+  border-color: var(--hb-border) !important;
+}
+.hb-case-registration input::placeholder,
+.hb-case-registration textarea::placeholder { color: var(--hb-subtle) !important; opacity: 1; }
+.hb-case-registration .text-rose-600,
+.hb-case-registration .text-rose-700 { color: #c04455 !important; }
+.dark .hb-case-registration .text-rose-600,
+.dark .hb-case-registration .text-rose-700 { color: #ff9aa7 !important; }
+@media print {
+  @page { size: A4 portrait; margin: 12mm; }
+  html, body { background: #fff !important; color: #111 !important; }
+  body * { visibility: hidden !important; }
+  .hb-case-registration, .hb-case-registration * { visibility: visible !important; }
+  .hb-case-registration {
+    position: absolute !important;
+    inset: 0 auto auto 0 !important;
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: #fff !important;
+    color: #111 !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    font-size: 10pt !important;
+  }
+  .hb-case-registration :is(h2,h3,label,p,span) { color: #111 !important; }
+  .hb-case-registration section,
+  .hb-case-registration form > div {
+    break-inside: avoid;
+    border-color: #c8cdd1 !important;
+    background: #fff !important;
+  }
+  .hb-case-registration input,
+  .hb-case-registration select,
+  .hb-case-registration textarea {
+    color: #111 !important;
+    background: #fff !important;
+    border: 1px solid #aeb5ba !important;
+    box-shadow: none !important;
+  }
+  .hb-case-registration input[type="checkbox"] { print-color-adjust: exact; }
+  .hb-case-registration .hb-print-hide,
+  .hb-case-registration button,
+  .hb-case-registration input[type="file"] { display: none !important; }
+  .hb-case-registration :is(input,select,textarea) { print-color-adjust: exact; }
+}
