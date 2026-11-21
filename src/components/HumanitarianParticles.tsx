@@ -27,7 +27,7 @@ export function HumanitarianParticles() {
       canvas.style.height = '100%';
       context.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-      const count = Math.min(48, Math.max(22, Math.round(width /  thirtyTwo())));
+      const count = Math.min(48, Math.max(22, Math.round(width / 32)));
       particles = Array.from({ length: count }, () => ({
         x: Math.random() * width,
         y: Math.random() * height,
@@ -126,8 +126,4 @@ export function HumanitarianParticles() {
       <canvas ref={canvasRef} />
     </div>
   );
-}
-
-function thirtyTwo() {
-  return 32;
 }
