@@ -109,6 +109,9 @@ export function HumanitarianParticles() {
       }
     };
 
+    const themeObserver = new MutationObserver(() => draw(0, false));
+    themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+
     resize();
     start();
     window.addEventListener('resize', resize, { passive: true });
@@ -117,6 +120,7 @@ export function HumanitarianParticles() {
     return () => {
       window.removeEventListener('resize', resize);
       document.removeEventListener('visibilitychange', onVisibilityChange);
+      themeObserver.disconnect();
       if (frame) window.cancelAnimationFrame(frame);
     };
   }, []);
