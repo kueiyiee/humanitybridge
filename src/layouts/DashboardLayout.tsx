@@ -153,7 +153,7 @@ export function DashboardLayout({
   );
 
   return (
-    <div className="hb-dashboard-shell relative isolate min-h-screen text-slate-900 dark:text-slate-100">
+    <div className="hb-dashboard-shell relative isolate min-h-screen overflow-x-clip text-slate-900 dark:text-slate-100">
       <HumanitarianParticles />
       <header className="hb-topbar sticky top-0 z-50 border-b border-slate-200/70 bg-white/75 backdrop-blur-2xl dark:border-white/10 dark:bg-black/65">
         <div className="mx-auto flex h-16 max-w-[1600px] items-center gap-3 px-4 sm:px-6 lg:h-[68px] lg:px-8">
