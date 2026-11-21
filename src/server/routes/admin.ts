@@ -1175,6 +1175,56 @@ router.put(
 );
 
 router.get(
+  '/notifications',
+  asyncHandler(async (req: AuthenticatedRequest, res) => {
+    const rows = await db
+      .select()
+      .from(schema.notifications)
+      .where(eq(schema.notifications.userId, req.user!.id))
+      .orderBy(desc(schema.notifications.createdAt))
+      .limit(50);
+    return res.json({ success: true, message: 'Administrator notifications loaded', data: rows });
+  }),
+);
+
+router.patch(
+  '/notifications/read-all',
+  asyncHandler(async (req: AuthenticatedRequest, res) => {
+    await db
+      .update(schema.notifications)
+      .set({ isRead: true })
+      .where(eq(schema.notifications.userId, req.user!.id));
+    await writeAuditLog({
+      actorUserId: req.user!.id,
+      actorRole: req.user!.role,
+      action: 'ADMIN_NOTIFICATIONS_MARKED_READ',
+      resourceType: 'notification',
+      details: { scope: 'own_notifications' },
+      ipAddress: req.ip,
+    });
+    return res.json({ success: true, message: 'All notifications marked as read', data: null });
+  }),
+);
+
+router.patch(
+  '/notifications/:id/read',
+  asyncHandler(async (req: AuthenticatedRequest, res) => {
+    const notificationId = Number(req.params.id);
+    if (!Number.isSafeInteger(notificationId) || notificationId < 1) {
+      throw new AppError(400, 'Invalid notification identifier');
+    }
+    await db
+      .update(schema.notifications)
+      .set({ isRead: true })
+      .where(and(
+        eq(schema.notifications.id, notificationId),
+        eq(schema.notifications.userId, req.user!.id),
+      ));
+    return res.json({ success: true, message: 'Notification marked as read', data: null });
+  }),
+);
+
+router.get(
   '/audit-logs',
   asyncHandler(async (_req, res) => {
     const rows = await db

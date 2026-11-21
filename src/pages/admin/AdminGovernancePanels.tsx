@@ -285,6 +285,7 @@ export function AdminSafeguardingAndSettingsPanel({ mode }: { mode: 'safeguardin
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPasswords, setShowPasswords] = useState(false);
+  const [auditSearch, setAuditSearch] = useState('');
 
   const passwordStrength = (() => {
     let score = 0;
@@ -323,6 +324,30 @@ export function AdminSafeguardingAndSettingsPanel({ mode }: { mode: 'safeguardin
       ),
     enabled: mode === 'settings',
   });
+
+  const auditRows = (auditData?.data || []).filter((log) => {
+    const query = auditSearch.trim().toLowerCase();
+    return !query || [log.action, log.resourceType, log.resourceId || '', log.actorRole || '']
+      .some((value) => value.toLowerCase().includes(query));
+  });
+
+  const exportAuditCsv = () => {
+    const columns = ['id', 'timestamp_utc', 'action', 'actor_role', 'resource_type', 'resource_id'];
+    const quote = (value: unknown) => `"${String(value ?? '').replace(/"/g, '""')}"`;
+    const rows = auditRows.map((log) => [
+      log.id, log.createdAt, log.action, log.actorRole || 'SYSTEM', log.resourceType, log.resourceId || '',
+    ]);
+    const csv = [columns, ...rows].map((row) => row.map(quote).join(',')).join('\\r\\n');
+    const blob = new Blob(['\\uFEFF', csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `humanitybridge-audit-export-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+  };
 
   const changePassword = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -440,8 +465,24 @@ export function AdminSafeguardingAndSettingsPanel({ mode }: { mode: 'safeguardin
       </div>
 
       <div className="bg-white dark:bg-[#0D223D] border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800">
-          <h3 className="font-editorial text-lg font-semibold">Immutable Security & Governance Audit Trail</h3>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-6 py-4 dark:border-slate-800">
+          <div>
+            <h3 className="font-editorial text-lg font-semibold">Immutable Security & Governance Audit Trail</h3>
+            <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">Latest 100 records. Export contains audit metadata only, not private record contents.</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <input
+              type="search"
+              value={auditSearch}
+              onChange={(event) => setAuditSearch(event.target.value)}
+              placeholder="Filter audit events..."
+              aria-label="Filter audit events"
+              className="min-h-9 rounded-lg border border-slate-200 bg-white/70 px-3 text-xs dark:border-slate-700 dark:bg-slate-950/50"
+            />
+            <button type="button" onClick={exportAuditCsv} disabled={auditRows.length === 0} className="inline-flex min-h-9 items-center gap-2 rounded-lg border border-slate-300 px-3 text-xs font-semibold disabled:opacity-40 dark:border-slate-700">
+              <Download className="h-3.5 w-3.5" /> Export CSV
+            </button>
+          </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-xs text-left">
@@ -454,7 +495,7 @@ export function AdminSafeguardingAndSettingsPanel({ mode }: { mode: 'safeguardin
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {(auditData?.data || []).slice(0, 20).map((log) => (
+              {auditRows.map((log) => (
                 <tr key={log.id}>
                   <td className="px-5 py-2.5 font-mono-tabular">{log.createdAt.slice(0, 19)}</td>
                   <td className="px-5 py-2.5 font-semibold">{log.action}</td>

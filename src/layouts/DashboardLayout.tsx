@@ -15,6 +15,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { BrandLogo } from '../components/BrandLogo';
 import { OverflowPopover } from '../components/OverflowPopover';
+import { WorkspaceCommandMenu } from '../components/WorkspaceCommandMenu';
 
 export interface DashboardNavItem {
   id: string;
@@ -196,6 +197,10 @@ export function DashboardLayout({
             })}
           </nav>
 
+          <div className="flex min-w-0 flex-1 justify-end px-1 xl:justify-center">
+            <WorkspaceCommandMenu items={visibleNavItems} onSelect={onSelectTab} />
+          </div>
+
           <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
             {notificationsItem && (
               <button
@@ -292,7 +297,26 @@ export function DashboardLayout({
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-[1600px] p-4 sm:p-6 lg:p-8 xl:p-10">{children}</main>
+      <main className="mx-auto w-full max-w-[1600px] p-4 pb-24 sm:p-6 sm:pb-24 lg:p-8 lg:pb-8 xl:p-10">{children}</main>
+
+      <nav className="hb-mobile-dock lg:hidden" aria-label={`${title} quick navigation`}>
+        {visibleNavItems.slice(0, 4).map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            onClick={() => onSelectTab(item.id)}
+            aria-current={activeTab === item.id ? 'page' : undefined}
+            className={activeTab === item.id ? 'is-active' : ''}
+          >
+            <span aria-hidden="true">{item.icon}</span>
+            <span>{item.label}</span>
+          </button>
+        ))}
+        <button type="button" onClick={() => onSelectTab(notificationsItem?.id || settingsItem?.id || 'overview')}>
+          <span aria-hidden="true"><EllipsisVertical className="h-4 w-4" /></span>
+          <span>More</span>
+        </button>
+      </nav>
     </div>
   );
 }
