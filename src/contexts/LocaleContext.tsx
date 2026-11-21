@@ -4,11 +4,11 @@ export type AppLocale = 'en' | 'nus';
 
 const DICTIONARY: Record<AppLocale, Record<string, string>> = {
   en: {
-    heroHeadline: 'Every Story Matters. Every Life Deserves Hope.',
+    heroHeadline: 'Every Story Matters. Every Life Deserves Dignity.',
     heroSub:
-      'HumanityBridge connects vulnerable communities with compassionate individuals and meaningful assistance. Together, we can turn stories into action and build a more dignified future.',
-    ctaStories: 'Explore Our Stories',
-    ctaDifference: 'Make a Difference',
+      'HumanityBridge helps communities document verified needs and connect with responsible, accountable support.',
+    ctaStories: 'Explore our stories',
+    ctaDifference: 'Support a community',
     donateNow: 'Donate Now',
   },
   // Nuer (Thok Nath) uses the Google Translate language code `nus`.
