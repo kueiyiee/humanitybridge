@@ -45,6 +45,7 @@ export const createCaseSchema = z.object({
   privateContactName: z.string().trim().min(2, 'Private contact name required for internal verification').max(120),
   privateContactPhone: z.string().trim().min(5, 'Private contact phone/channel required').max(60),
   privateLocationNotes: z.string().trim().min(5, 'General internal verification notes required').max(500),
+  evidenceMediaId: z.coerce.number().int().positive().optional(),
   saveAsDraft: z.boolean().default(false),
 });
 
