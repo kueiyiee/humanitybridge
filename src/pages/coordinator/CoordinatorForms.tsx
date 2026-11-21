@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
-import { Upload } from 'lucide-react';
+import { Printer, Upload } from 'lucide-react';
 import type { z } from 'zod';
 import {
   createAssistanceRequestSchema,
@@ -29,6 +29,7 @@ export function CoordinatorCaseForm({
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [evidenceFileInfo, setEvidenceFileInfo] = useState<string | null>(null);
+  const [evidenceMediaId, setEvidenceMediaId] = useState<number | null>(null);
 
   const {
     register,
@@ -62,8 +63,9 @@ export function CoordinatorCaseForm({
     fd.append('file', file);
     fd.append('scope', 'PRIVATE_CASE_EVIDENCE');
     try {
-      const res = await apiRequest<{ safeFilename: string }>('/media/upload', { method: 'POST', body: fd });
-      setEvidenceFileInfo(`Encrypted private vault file stored: ${res.data.safeFilename}`);
+      const res = await apiRequest<{ id: number; safeFilename: string }>('/media/upload', { method: 'POST', body: fd });
+      setEvidenceMediaId(res.data.id);
+      setEvidenceFileInfo(`Confidential evidence attached: ${res.data.safeFilename}`);
     } catch (uploadErr) {
       setErr(uploadErr instanceof Error ? uploadErr.message : 'File upload rejected');
     }
@@ -75,10 +77,12 @@ export function CoordinatorCaseForm({
     try {
       const res = await apiRequest<{ referenceCode: string }>('/coordinator/cases', {
         method: 'POST',
-        body: JSON.stringify({ ...values, saveAsDraft: asDraft }),
+        body: JSON.stringify({ ...values, evidenceMediaId, saveAsDraft: asDraft }),
       });
       setMsg(`${res.message} (${res.data.referenceCode})`);
       reset();
+      setEvidenceMediaId(null);
+      setEvidenceFileInfo(null);
       qc.invalidateQueries({ queryKey: ['coordinator-cases'] });
       qc.invalidateQueries({ queryKey: ['coordinator-dashboard'] });
       onSuccess();
@@ -88,7 +92,7 @@ export function CoordinatorCaseForm({
   };
 
   return (
-    <div className="bg-white dark:bg-[#0D223D] border border-slate-200 dark:border-slate-800 rounded-xl p-6 space-y-5">
+    <div className="hb-case-registration space-y-5">
       <div>
         <h2 className="font-editorial text-2xl font-semibold text-[#0B1F3A] dark:text-white">
           Individual & Family Case Registration
@@ -102,6 +106,10 @@ export function CoordinatorCaseForm({
       {msg && <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-xs text-emerald-700 dark:text-emerald-300">{msg}</div>}
       {err && <div className="p-3 rounded-lg bg-rose-50 dark:bg-rose-950/40 text-xs text-rose-700 dark:text-rose-300">{err}</div>}
 
+      <div className="hb-print-hide flex flex-wrap items-center justify-between gap-3 border-y border-[var(--hb-border)] py-3">
+        <p className="text-xs text-[var(--hb-muted)]">Complete the form online or print a blank copy for an authorised field visit. Printed copies contain confidential information and must be stored securely.</p>
+        <button type="button" onClick={() => window.print()} className="inline-flex items-center gap-2 rounded-full border border-[var(--hb-border)] bg-[var(--hb-glass)] px-4 py-2 text-sm font-semibold text-[var(--hb-text)] hover:bg-[var(--hb-accent-soft)]"><Printer className="h-4 w-4" /> Print A4 form</button>
+      </div>
       <form className="space-y-4">
         <section className="rounded-xl border border-cyan-200 bg-cyan-50/40 p-4 space-y-4 dark:border-cyan-900/60 dark:bg-cyan-950/20">
           <div><h3 className="text-sm font-bold text-slate-900 dark:text-white">Beneficiary identity & household profile</h3><p className="mt-1 text-xs leading-5 text-slate-600 dark:text-slate-400">Confidential details for authorised case-management staff only. Do not enter national identity numbers, bank passwords or full bank-account numbers.</p></div>
