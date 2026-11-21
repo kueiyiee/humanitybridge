@@ -16,8 +16,8 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
     <div className="hb-public-shell relative min-h-screen flex flex-col overflow-x-hidden text-[var(--color-text)]">
       <HumanitarianParticles />
       <PublicHeader />
-      <main className="flex-1">{children}</main>
-      <PublicFooter settings={data?.data?.settings} />
+      <main className="relative z-10 flex-1">{children}</main>
+      <div className="relative z-10"><PublicFooter settings={data?.data?.settings} /></div>
     </div>
   );
 }
