@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState } from 'react';
 
-export type AppLocale = 'en' | 'nus' | 'ar' | 'am';
+export type AppLocale = 'en' | 'nus';
 
 const DICTIONARY: Record<AppLocale, Record<string, string>> = {
   en: {
@@ -11,30 +11,10 @@ const DICTIONARY: Record<AppLocale, Record<string, string>> = {
     ctaDifference: 'Make a Difference',
     donateNow: 'Donate Now',
   },
-  nus: {
-    heroHeadline: 'Every Story Matters. Every Life Deserves Hope.',
-    heroSub:
-      'HumanityBridge connects vulnerable communities with compassionate individuals and meaningful assistance (Thok Naath locale preview — editorial translations underway).',
-    ctaStories: 'Explore Our Stories',
-    ctaDifference: 'Make a Difference',
-    donateNow: 'Donate Now',
-  },
-  ar: {
-    heroHeadline: 'كل قصة مهمة. كل حياة تستحق الأمل.',
-    heroSub:
-      'تربط HumanityBridge المجتمعات المحتاجة بالأفراد المتعاطفين والمساعدات الموثوقة بكرامة وشفافية.',
-    ctaStories: 'استكشف قصصنا',
-    ctaDifference: 'اصنع فرقاً',
-    donateNow: 'تبرع الآن',
-  },
-  am: {
-    heroHeadline: 'እያንዳንዱ ታሪክ ዋጋ አለው። እያንዳንዱ ሕይወት ተስፋ ይገባዋል።',
-    heroSub:
-      'HumanityBridge ተጋላጭ ማህበረሰቦችን ከርኅሩኅ ሰዎች እና ከተረጋገጠ ሰብዓዊ ድጋፍ ጋር በክብር እና በግልጽነት ያገናኛል።',
-    ctaStories: 'ታሪኮቻችንን ይመልከቱ',
-    ctaDifference: 'ለውጥ ያምጡ',
-    donateNow: 'አሁን ይለግሱ',
-  },
+  // Nuer (Thok Nath) uses the Google Translate language code `nus`.
+  // Keep English fallback until each public-facing string has been reviewed by a fluent speaker.
+  nus: {},
+
 };
 
 interface LocaleContextValue {
@@ -48,7 +28,7 @@ const LocaleContext = createContext<LocaleContextValue | undefined>(undefined);
 
 export function LocaleProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocale] = useState<AppLocale>('en');
-  const dir = locale === 'ar' ? 'rtl' : 'ltr';
+  const dir = 'ltr';
   const t = (key: string) => DICTIONARY[locale]?.[key] || DICTIONARY.en[key] || key;
 
   return (
