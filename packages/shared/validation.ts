@@ -33,9 +33,7 @@ export const createCaseSchema = z.object({
   estimatedCostUsd: z.coerce.number().min(0).max(1000000).optional(),
   isChildRelated: z.boolean().default(false),
   guardianConsentObtained: z.boolean().default(false),
-  beneficiaryConsentObtained: z.boolean().refine((v) => v === true, {
-    message: 'Verified consent confirmation is mandatory before registering a case',
-  }),
+  beneficiaryConsentObtained: z.boolean().default(false),
   beneficiaryFullName: z.string().trim().min(2, 'Beneficiary full name is required').max(120),
   beneficiaryAgeBand: z.enum(['UNDER_18', '18_24', '25_59', '60_PLUS', 'UNKNOWN']).default('UNKNOWN'),
   beneficiaryGender: z.enum(['FEMALE', 'MALE', 'OTHER', 'PREFER_NOT_TO_SAY', 'UNKNOWN']).default('UNKNOWN'),
@@ -47,6 +45,10 @@ export const createCaseSchema = z.object({
   privateLocationNotes: z.string().trim().min(5, 'General internal verification notes required').max(500),
   evidenceMediaId: z.coerce.number().int().positive().optional(),
   saveAsDraft: z.boolean().default(false),
+}).superRefine((values, ctx) => {
+  if (!values.saveAsDraft && !values.beneficiaryConsentObtained) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Verified beneficiary consent is required before submitting a case', path: ['beneficiaryConsentObtained'] });
+  }
 });
 
 export const createStorySchema = z.object({
