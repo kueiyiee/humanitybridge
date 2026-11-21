@@ -111,11 +111,11 @@ export function CoordinatorCaseForm({
         </p>
       </div>
 
-      {msg && <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-xs text-emerald-700 dark:text-emerald-300">{msg}</div>}
-      {err && <div className="p-3 rounded-lg bg-rose-50 dark:bg-rose-950/40 text-xs text-rose-700 dark:text-rose-300">{err}</div>}
+      {msg && <div className="hb-print-hide p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-xs text-emerald-700 dark:text-emerald-300">{msg}</div>}
+      {err && <div className="hb-print-hide p-3 rounded-lg bg-rose-50 dark:bg-rose-950/40 text-xs text-rose-700 dark:text-rose-300">{err}</div>}
 
       <div className="hb-print-hide flex flex-wrap items-center justify-between gap-3 border-y border-[var(--hb-border)] py-3">
-        <p className="text-xs text-[var(--hb-muted)]">Complete the form online or print a blank copy for an authorised field visit. Printed copies contain confidential information and must be stored securely.</p>
+        <p className="text-xs text-[var(--hb-muted)]">Complete the form online or print a copy for an authorised field visit. Printed copies may contain confidential information and must be stored securely.</p>
         <button type="button" onClick={() => window.print()} className="inline-flex items-center gap-2 rounded-full border border-[var(--hb-border)] bg-[var(--hb-glass)] px-4 py-2 text-sm font-semibold text-[var(--hb-text)] hover:bg-[var(--hb-accent-soft)]"><Printer className="h-4 w-4" /> Print A4 form</button>
       </div>
       <form className="space-y-4">
