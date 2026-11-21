@@ -30,6 +30,22 @@ import { env } from '../config/env';
 
 const router = Router();
 
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many sign-in attempts from this network. Please wait before trying again.', data: null },
+});
+
+const sensitiveActionLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 8,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many verification attempts. Please wait before trying again.', data: null },
+});
+
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 30,
@@ -40,37 +56,19 @@ const authLimiter = rateLimit({
 
 router.post(
   '/login',
-  authLimiter,
+  loginLimiter,
   asyncHandler(async (req, res) => {
     const parsed = loginSchema.parse(req.body);
     const email = parsed.email.toLowerCase();
     const ip = req.ip || 'unknown';
     const ts = nowUtc();
 
-    const recentFailures = await db
-      .select({ attemptedAt: schema.loginAttempts.attemptedAt, success: schema.loginAttempts.success })
-      .from(schema.loginAttempts)
-      .where(eq(schema.loginAttempts.email, email))
-      .orderBy(desc(schema.loginAttempts.attemptedAt))
-      .limit(50);
-    const cutoff = Date.now() - 15 * 60 * 1000;
-    const failuresWithinWindow = recentFailures.filter((attempt) => {
-      if (attempt.success) return false;
-      const attemptedAtValue = attempt.attemptedAt as unknown as Date | string;
-      const attemptedAt: Date = typeof attemptedAtValue === 'string'
-        ? new Date(attemptedAtValue)
-        : attemptedAtValue as unknown as Date;
-      return attemptedAt.getTime() >= cutoff;
-    }).length;
-    if (failuresWithinWindow >= 5) {
-      throw new AppError(423, 'Account temporarily locked after repeated failed sign-in attempts.');
-    }
-
-    const allActiveUsers = await db
+    const matchingUsers = await db
       .select()
       .from(schema.users)
-      .where(isNull(schema.users.deletedAt));
-    const user = allActiveUsers.find((candidate) => candidate.email.trim().toLowerCase() === email);
+      .where(and(eq(schema.users.email, email), isNull(schema.users.deletedAt)))
+      .limit(1);
+    const user = matchingUsers[0];
 
     if (!user || !verifyPasswordArgon2id(parsed.password, user.passwordHash)) {
       await db.insert(schema.loginAttempts).values({
@@ -465,6 +463,7 @@ router.delete(
 router.post(
   '/mfa/setup',
   requireAuth,
+  sensitiveActionLimiter,
   asyncHandler(async (req: AuthenticatedRequest, res) => {
     const password = String(req.body?.password || '');
     const currentCode = String(req.body?.currentCode || '');
@@ -511,6 +510,7 @@ router.post(
 router.post(
   '/mfa/enable',
   requireAuth,
+  sensitiveActionLimiter,
   asyncHandler(async (req: AuthenticatedRequest, res) => {
     const code = String(req.body?.code || '');
     const rows = await db
@@ -546,6 +546,7 @@ router.post(
 router.post(
   '/mfa/disable',
   requireAuth,
+  sensitiveActionLimiter,
   asyncHandler(async (req: AuthenticatedRequest, res) => {
     const password = String(req.body?.password || '');
     const code = String(req.body?.code || '');
