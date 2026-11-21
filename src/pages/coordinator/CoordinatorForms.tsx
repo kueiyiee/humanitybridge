@@ -85,7 +85,7 @@ export function CoordinatorCaseForm({
     try {
       const res = await apiRequest<{ referenceCode: string }>('/coordinator/cases', {
         method: 'POST',
-        body: JSON.stringify({ ...values, evidenceMediaId, saveAsDraft: asDraft }),
+        body: JSON.stringify({ ...values, ...(evidenceMediaId ? { evidenceMediaId } : {}), saveAsDraft: asDraft }),
       });
       setMsg(`${res.message} (${res.data.referenceCode})`);
       reset();
