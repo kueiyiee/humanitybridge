@@ -184,11 +184,12 @@ export function DashboardLayout({
                       <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" />
                     </>
                   )}
-                  triggerClassName={`inline-flex min-h-10 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 text-[13px] font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#51745a] ${
+                  triggerClassName={`inline-flex min-h-10 items-center gap-1.5 whitespace-nowrap rounded-lg border border-transparent px-3 text-[13px] font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--hb-accent)] ${
                     groupIsActive
-                      ? 'bg-slate-100 text-slate-950 dark:bg-slate-800 dark:text-white'
-                      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white'
+                      ? 'border-[var(--hb-border)] bg-[var(--hb-accent-soft)] text-[var(--hb-text-strong)]'
+                      : 'text-[var(--hb-muted)] hover:border-[var(--hb-border)] hover:bg-[var(--hb-glass)] hover:text-[var(--hb-text-strong)]'
                   }`}
+                  panelClassName="hb-navigation-popover"
                 >
                   <div className="space-y-0.5">
                     <p className="px-3 pb-1 pt-2 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">{group}</p>
