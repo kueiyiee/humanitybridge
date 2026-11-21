@@ -152,8 +152,8 @@ export function DashboardLayout({
   );
 
   return (
-    <div className="min-h-screen text-slate-900 dark:text-slate-100">
-      <header className="sticky top-0 z-50 border-b border-slate-200/90 bg-white/95 backdrop-blur-md dark:border-slate-800 dark:bg-slate-950/95">
+    <div className="hb-dashboard-shell min-h-screen text-slate-900 dark:text-slate-100">
+      <header className="hb-topbar sticky top-0 z-50 border-b border-slate-200/70 bg-white/75 backdrop-blur-2xl dark:border-white/10 dark:bg-black/65">
         <div className="mx-auto flex h-16 max-w-[1600px] items-center gap-3 px-4 sm:px-6 lg:h-[68px] lg:px-8">
           <Link
             to="/"
