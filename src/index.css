@@ -1138,3 +1138,19 @@ body { background: var(--hb-app-background); color: var(--color-text); }
   html { scroll-behavior: auto; }
   .hb-home article, .hb-public-shell main article, .hb-dashboard-shell main article { transition: none !important; }
 }
+
+
+/* Apply the same glass treatment to dashboard panels built from section/div
+   wrappers, not only article elements. */
+.hb-public-shell main section[class*="rounded"][class*="border"],
+.hb-public-shell main div[class*="rounded-xl"][class*="border"],
+.hb-public-shell main div[class*="rounded-2xl"][class*="border"],
+.hb-dashboard-shell main section[class*="rounded"][class*="border"],
+.hb-dashboard-shell main div[class*="rounded-xl"][class*="border"],
+.hb-dashboard-shell main div[class*="rounded-2xl"][class*="border"] {
+  background: var(--hb-glass-surface) !important;
+  border-color: var(--hb-glass-border) !important;
+  box-shadow: var(--hb-glass-shadow) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(145%);
+  backdrop-filter: blur(18px) saturate(145%);
+}
