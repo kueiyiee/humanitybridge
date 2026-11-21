@@ -24,14 +24,20 @@ const ALLOWED_MIME_TYPES = new Set([
   'application/pdf',
 ]);
 
-const ALLOWED_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.pdf']);
+const ALLOWED_FILE_TYPES: Record<string, string> = {
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.png': 'image/png',
+  '.webp': 'image/webp',
+  '.pdf': 'application/pdf',
+};
 
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
-    if (!ALLOWED_MIME_TYPES.has(file.mimetype) || !ALLOWED_EXTENSIONS.has(ext)) {
+    if (!ALLOWED_MIME_TYPES.has(file.mimetype) || ALLOWED_FILE_TYPES[ext] !== file.mimetype) {
       return cb(new AppError(400, 'Unsupported or unsafe file type. Allowed: JPG, PNG, WebP, PDF.'));
     }
     cb(null, true);
