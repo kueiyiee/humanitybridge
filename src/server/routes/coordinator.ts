@@ -135,6 +135,16 @@ router.post(
     if ((parsed.isChildRelated || parsed.beneficiaryAgeBand === 'UNDER_18') && !parsed.guardianConsentObtained) {
       throw new AppError(400, 'Cases involving a beneficiary under 18 require documented guardian consent');
     }
+    const evidenceRows = parsed.evidenceMediaId
+      ? await db.select().from(schema.mediaFiles).where(and(
+          eq(schema.mediaFiles.id, parsed.evidenceMediaId),
+          eq(schema.mediaFiles.uploadedBy, req.user!.id),
+          eq(schema.mediaFiles.storageScope, 'PRIVATE_CASE_EVIDENCE'),
+        )).limit(1)
+      : [];
+    if (parsed.evidenceMediaId && !evidenceRows[0]) {
+      throw new AppError(403, 'The selected evidence file is unavailable or is not owned by your account');
+    }
 
     const ts = nowUtc();
     const referenceCode = generateReferenceCode('HB-CASE');
@@ -176,6 +186,18 @@ router.post(
       .where(eq(schema.humanitarianCases.referenceCode, referenceCode))
       .limit(1);
     const created = createdRows[0];
+
+    if (evidenceRows[0]) {
+      await db.insert(schema.caseDocuments).values({
+        caseId: created.id,
+        uploadedBy: req.user!.id,
+        documentType: 'PRIVATE_CASE_EVIDENCE',
+        storageKey: evidenceRows[0].safeFilename,
+        originalFilename: evidenceRows[0].safeFilename,
+        isConfidential: true,
+        createdAt: ts,
+      });
+    }
 
     await db.insert(schema.caseStatusHistory).values({
       caseId: created.id,
