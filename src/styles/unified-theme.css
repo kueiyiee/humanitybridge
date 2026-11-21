@@ -393,3 +393,29 @@ body {
   .hb-case-registration input[type="file"] { display: none !important; }
   .hb-case-registration :is(input,select,textarea) { print-color-adjust: exact; }
 }
+
+/* Persistent navigation: keep the public and workspace bars visible during page scroll. */
+.hb-topbar {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 100 !important;
+  isolation: isolate;
+  width: 100%;
+  background: color-mix(in srgb, var(--hb-glass-strong) 92%, transparent) !important;
+  border-bottom: 1px solid var(--hb-glass-border) !important;
+  box-shadow:
+    0 12px 36px -28px rgb(12 24 31 / 42%),
+    inset 0 1px 0 rgb(255 255 255 / 34%) !important;
+  -webkit-backdrop-filter: blur(30px) saturate(175%) !important;
+  backdrop-filter: blur(30px) saturate(175%) !important;
+  transform: translateZ(0);
+}
+.dark .hb-topbar {
+  background: color-mix(in srgb, var(--hb-glass-strong) 94%, transparent) !important;
+  box-shadow:
+    0 14px 40px -28px rgb(0 0 0 / 78%),
+    inset 0 1px 0 rgb(255 255 255 / 8%) !important;
+}
+@supports not (backdrop-filter: blur(1px)) {
+  .hb-topbar { background: var(--hb-bg-deep) !important; }
+}
