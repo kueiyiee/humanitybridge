@@ -109,13 +109,18 @@ export function PublicHeader() {
           <OverflowPopover
             label="More navigation options"
             trigger={<EllipsisVertical className="h-5 w-5" aria-hidden="true" />}
-            triggerClassName="inline-flex h-10 w-10 items-center justify-center rounded-lg text-slate-700 transition-colors hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#51745a] dark:text-slate-200 dark:hover:bg-slate-800"
+            triggerClassName="hb-menu-trigger inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--hb-glass-border)] bg-[var(--hb-glass)] text-[var(--hb-text)] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[var(--hb-glass-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--hb-accent)]"
+            panelClassName="hb-navigation-popover"
           >
             <div className="space-y-3">
               <section aria-labelledby="public-navigation-heading">
-                <h2 id="public-navigation-heading" className="px-3 pb-1 pt-2 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
-                  Explore
-                </h2>
+                <div className="mb-2 border-b border-[var(--hb-border)] px-3 pb-3 pt-2">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--hb-accent-strong)]">HumanityBridge</p>
+                  <h2 id="public-navigation-heading" className="mt-1 text-base font-semibold tracking-tight text-[var(--hb-text-strong)]">
+                    Explore
+                  </h2>
+                  <p className="mt-1 text-xs leading-relaxed text-[var(--hb-muted)]">Navigate our stories, support pathways and community impact.</p>
+                </div>
                 <nav aria-label="Public navigation" className="space-y-0.5">
                   {publicLinks.map(({ to, label }) => (
                     <NavLink
