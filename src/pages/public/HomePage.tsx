@@ -15,6 +15,7 @@ import {
   UsersRound,
 } from 'lucide-react';
 import { apiRequest } from '../../services/api';
+import { useLocale } from '../../contexts/LocaleContext';
 import { ResilientImage } from '../../components/ResilientImage';
 import heroWater from '../../assets/images/hero_community_water_1794840710503.jpg';
 
@@ -158,6 +159,7 @@ function SectionError({ children }: { children: React.ReactNode }) {
 }
 
 export function HomePage() {
+  const { t } = useLocale();
   const { data: overviewResult, isLoading: overviewLoading, isError: overviewError } = useQuery({
     queryKey: ['public-overview'],
     queryFn: () => apiRequest<OverviewResponse>('/public/overview'),
@@ -188,10 +190,10 @@ export function HomePage() {
               HumanityBridge · Local stories, accountable support
             </p>
             <h1 className="mt-7 font-editorial text-[2.65rem] font-semibold leading-[1.08] tracking-tight text-[#183b2b] sm:text-6xl">
-              Every Story Matters. Every Life Deserves Dignity.
+              {t('heroHeadline')}
             </h1>
             <p className="mt-6 max-w-lg text-base leading-7 text-[#56645a] sm:text-lg sm:leading-8">
-              HumanityBridge helps communities document verified needs and connect with responsible, accountable support.
+              {t('heroSub')}
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link
