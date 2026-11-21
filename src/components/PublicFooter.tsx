@@ -1,6 +1,5 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { useLocale, type AppLocale } from '../contexts/LocaleContext';
 import { BrandLogo } from './BrandLogo';
 
 interface PublicFooterProps {
@@ -10,8 +9,6 @@ interface PublicFooterProps {
 const linkClass = 'text-sm text-[#d5dfd6] transition-colors hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d7c08c]';
 
 export function PublicFooter({ settings = {} }: PublicFooterProps) {
-  const { locale, setLocale } = useLocale();
-
   return (
     <footer className="bg-[#193d2b] text-[#eaf0e9]">
       <div className="mx-auto max-w-7xl px-5 py-12 sm:px-8 sm:py-14 lg:px-10">
@@ -65,22 +62,6 @@ export function PublicFooter({ settings = {} }: PublicFooterProps) {
               <li><Link to="/policies/transparency" className={linkClass}>Donation Transparency</Link></li>
               <li><Link to="/faq" className={linkClass}>FAQs</Link></li>
             </ul>
-            <div className="mt-6">
-              <label htmlFor="footer-locale" className="mb-2 block text-xs text-[#bdcbbf]">
-                Language
-              </label>
-              <select
-                id="footer-locale"
-                value={locale}
-                onChange={(event) => setLocale(event.target.value as AppLocale)}
-                className="min-h-10 w-full rounded-lg border border-white/20 bg-[#244b35] px-3 text-xs text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#d7c08c]"
-              >
-                <option value="en">English</option>
-                <option value="nus">Thok Naath / Nuer</option>
-                <option value="ar">العربية / Arabic</option>
-                <option value="am">አማርኛ / Amharic</option>
-              </select>
-            </div>
           </div>
         </div>
 
