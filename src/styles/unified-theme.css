@@ -37,7 +37,6 @@
   --color-surface: var(--hb-glass-strong);
   --color-text: var(--hb-text);
   --color-muted: var(--hb-muted);
-  --hb-border: var(--hb-border);
   --hb-brand-primary: var(--hb-primary);
   --hb-brand-primary-hover: var(--hb-primary-hover);
   --hb-brand-link: var(--hb-accent-strong);
@@ -104,7 +103,23 @@ body {
   position: relative;
   z-index: 10;
 }
-.hb-home { background: transparent !important; color: var(--hb-text) !important; }
+.hb-home,
+.dark .hb-home {
+  background: transparent !important;
+  color: var(--hb-text) !important;
+}
+.dark .hb-home article,
+.dark .hb-home li,
+.dark .hb-home [class~="bg-white"],
+.dark .hb-public-shell main article,
+.dark .hb-public-shell main li,
+.dark .hb-dashboard-shell main article,
+.dark .hb-dashboard-shell main li {
+  background: transparent !important;
+  background-image: none !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
 .hb-home > section:not(:first-child),
 .hb-public-shell main > section,
 .hb-dashboard-shell main > section {
