@@ -290,7 +290,8 @@ export function DashboardLayout({
               <OverflowPopover
                 label="Workspace navigation and account options"
                 trigger={<EllipsisVertical className="h-5 w-5" aria-hidden="true" />}
-                triggerClassName="inline-flex h-10 w-10 items-center justify-center rounded-lg text-slate-700 transition-colors hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#51745a] dark:text-slate-200 dark:hover:bg-slate-800"
+                triggerClassName="hb-menu-trigger inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--hb-glass-border)] bg-[var(--hb-glass)] text-[var(--hb-text)] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[var(--hb-glass-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--hb-accent)]"
+                panelClassName="hb-navigation-popover hb-dashboard-navigation-popover"
               >
                 {renderMobileNavigation()}
               </OverflowPopover>
