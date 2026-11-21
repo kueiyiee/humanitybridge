@@ -132,7 +132,7 @@ router.post(
   '/cases',
   asyncHandler(async (req: AuthenticatedRequest, res) => {
     const parsed = createCaseSchema.parse(req.body);
-    if ((parsed.isChildRelated || parsed.beneficiaryAgeBand === 'UNDER_18') && !parsed.guardianConsentObtained) {
+    if (!parsed.saveAsDraft && (parsed.isChildRelated || parsed.beneficiaryAgeBand === 'UNDER_18') && !parsed.guardianConsentObtained) {
       throw new AppError(400, 'Cases involving a beneficiary under 18 require documented guardian consent');
     }
     const evidenceRows = parsed.evidenceMediaId
