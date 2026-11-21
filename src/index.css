@@ -729,3 +729,24 @@ body { background: var(--hb-app-background); }
   .hb-dashboard-shell main > *, .hb-public-shell main > * { animation: none !important; }
   .hb-topbar *, .hb-dashboard-shell *, .hb-public-shell * { transition-duration: .01ms !important; }
 }
+
+.hb-topbar nav a[aria-current="page"],
+.hb-topbar nav button[aria-current="page"] {
+  color: var(--color-text) !important;
+  border-color: #969ca1 !important;
+}
+.dark .hb-topbar nav a[aria-current="page"],
+.dark .hb-topbar nav button[aria-current="page"] {
+  color: #f5f6f7 !important;
+  border-color: #c3c8cc !important;
+}
+.hb-topbar select {
+  border-color: var(--hb-border);
+  background: rgb(255 255 255 / 46%);
+  color: var(--color-text);
+  border-radius: .65rem;
+}
+.dark .hb-topbar select {
+  background: rgb(255 255 255 / 5%);
+  color: var(--color-text);
+}
