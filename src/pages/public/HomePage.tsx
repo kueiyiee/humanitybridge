@@ -480,34 +480,42 @@ export function HomePage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-20 lg:px-10">
-        <div className="grid gap-10 rounded-[1.5rem] bg-[#e9ede4] p-6 sm:p-9 lg:grid-cols-[0.8fr_1.2fr] lg:items-center lg:p-12">
-          <div>
-            <p className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-[#54745b]">
+      <section className="hb-trust-section mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-20 lg:px-10" aria-labelledby="trust-care-heading">
+        <div className="hb-trust-panel">
+          <div className="hb-trust-intro">
+            <p className="hb-trust-eyebrow">
               <ShieldCheck className="h-4 w-4" aria-hidden="true" />
               Trust and care
             </p>
-            <h2 className="mt-4 font-editorial text-3xl font-semibold leading-tight text-[#203c2a] sm:text-4xl">
+            <h2 id="trust-care-heading" className="hb-trust-heading">
               Every action must be accountable.
             </h2>
-            <div className="mt-6 flex flex-col items-start gap-3">
-              <Link to="/impact" className="text-sm font-semibold text-[#28583c] underline decoration-[#9bac9b] underline-offset-4 hover:text-[#173d29]">
-                Explore our accountability framework
+            <p className="hb-trust-summary">
+              Clear safeguards, careful review and reliable records guide how HumanityBridge works with communities.
+            </p>
+            <nav aria-label="Trust and safeguarding resources" className="hb-trust-links">
+              <Link to="/impact" className="hb-trust-link">
+                Explore our accountability framework <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
               </Link>
-              <Link to="/policies/safeguarding" className="text-sm font-semibold text-[#28583c] underline decoration-[#9bac9b] underline-offset-4 hover:text-[#173d29]">
-                Read our safeguarding policy
+              <Link to="/policies/safeguarding" className="hb-trust-link">
+                Read our safeguarding policy <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
               </Link>
-            </div>
+            </nav>
           </div>
-          <ul className="grid gap-3 sm:grid-cols-2">
-            {principles.map((principle) => (
-              <li key={principle.title} className="rounded-xl border border-white/80 bg-white/75 p-5">
-                <h3 className="text-sm font-semibold text-[#304936]">{principle.title}</h3>
-                <p className="mt-2 text-sm leading-6 text-[#69756b]">{principle.description}</p>
+          <ul className="hb-trust-principles">
+            {principles.map((principle, index) => (
+              <li key={principle.title} className="hb-trust-principle">
+                <span className="hb-trust-index" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
+                <div className="min-w-0">
+                  <h3>{principle.title}</h3>
+                  <p>{principle.description}</p>
+                </div>
               </li>
             ))}
           </ul>
         </div>
+      </section>
+
       </section>
 
       <section
