@@ -197,7 +197,7 @@ export function DashboardLayout({
             })}
           </nav>
 
-          <div className="hidden min-w-0 flex-1 justify-center px-3 xl:flex">
+          <div className="flex min-w-0 flex-1 justify-end px-1 xl:justify-center">
             <WorkspaceCommandMenu items={visibleNavItems} onSelect={onSelectTab} />
           </div>
 
