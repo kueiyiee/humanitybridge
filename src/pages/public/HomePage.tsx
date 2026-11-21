@@ -200,14 +200,14 @@ export function HomePage() {
                 to="/stories"
                 className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-[#20583a] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#17472e] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#20583a]"
               >
-                Explore our stories
+                {t('ctaStories')}
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Link>
               <Link
                 to="/cases"
                 className="inline-flex min-h-12 items-center justify-center rounded-lg border border-[#b8c5b8] bg-white/60 px-5 text-sm font-semibold text-[#294633] transition-colors hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#20583a]"
               >
-                Support a community
+                {t('ctaDifference')}
               </Link>
             </div>
             <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-[#d9ded3] pt-5 text-xs font-medium text-[#57695b]">
