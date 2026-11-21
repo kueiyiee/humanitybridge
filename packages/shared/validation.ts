@@ -45,10 +45,6 @@ export const createCaseSchema = z.object({
   privateLocationNotes: z.string().trim().min(5, 'General internal verification notes required').max(500),
   evidenceMediaId: z.coerce.number().int().positive().optional(),
   saveAsDraft: z.boolean().default(false),
-}).superRefine((values, ctx) => {
-  if (!values.saveAsDraft && !values.beneficiaryConsentObtained) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Verified beneficiary consent is required before submitting a case', path: ['beneficiaryConsentObtained'] });
-  }
 });
 
 export const createStorySchema = z.object({
