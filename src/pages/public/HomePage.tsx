@@ -65,26 +65,26 @@ interface OverviewResponse {
 const steps = [
   {
     number: '01',
-    title: 'Discover',
-    description: 'Explore needs documented with local communities.',
+    title: 'Identify',
+    description: 'Explore needs identified with local communities.',
     icon: BookOpen,
   },
   {
     number: '02',
-    title: 'Review',
-    description: 'Authorised reviewers assess evidence and safeguarding.',
+    title: 'Assess',
+    description: 'Authorised reviewers assess each case and its safeguarding requirements.',
     icon: ShieldCheck,
   },
   {
     number: '03',
-    title: 'Contribute',
-    description: 'Use the organisation’s approved channels.',
+    title: 'Connect',
+    description: 'Direct support through the organisation’s approved channels.',
     icon: HandHeart,
   },
   {
     number: '04',
-    title: 'Follow through',
-    description: 'Coordinators record assistance and programme updates.',
+    title: 'Report',
+    description: 'Coordinators document assistance and provide accountable updates.',
     icon: UsersRound,
   },
 ];
@@ -188,10 +188,10 @@ export function HomePage() {
               HumanityBridge · Local stories, accountable support
             </p>
             <h1 className="mt-7 font-editorial text-[2.65rem] font-semibold leading-[1.08] tracking-tight text-[#183b2b] sm:text-6xl">
-              Every story matters. Every life deserves hope.
+              Every Story Matters. Every Life Deserves Dignity.
             </h1>
             <p className="mt-6 max-w-lg text-base leading-7 text-[#56645a] sm:text-lg sm:leading-8">
-              We connect communities facing hardship with reviewed needs, compassionate supporters, and opportunities for lasting change.
+              HumanityBridge helps communities document verified needs and connect with responsible, accountable support.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link
@@ -272,8 +272,8 @@ export function HomePage() {
       <section className="mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-20 lg:px-10">
         <SectionHeading
           eyebrow="Community voices"
-          title="Stories that deserve to be heard"
-          description="Experiences, resilience, and hopes shared with permission."
+          title="Stories of resilience, shared with dignity"
+          description="Community experiences shared with informed consent and respect."
           action={{ label: 'All stories', to: '/stories' }}
         />
         {overviewLoading ? (
@@ -336,7 +336,7 @@ export function HomePage() {
           <SectionHeading
             eyebrow="Public case directory"
             title="Where support can make a difference"
-            description="Browse publicly listed needs reviewed by authorised staff. Personal contact details and precise locations are never shown."
+            description="Explore needs reviewed by authorised staff. Personal contact details and precise locations remain private."
             action={{ label: 'People in need', to: '/cases' }}
           />
           {casesLoading ? (
@@ -384,8 +384,8 @@ export function HomePage() {
       <section className="mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-20 lg:px-10">
         <SectionHeading
           eyebrow="Current programmes"
-          title="Programmes built for lasting change"
-          description="See the active programmes currently accepting support."
+          title="Community programmes, built for lasting impact"
+          description="Explore active initiatives and review confirmed progress before contributing."
           action={{ label: 'All campaigns', to: '/campaigns' }}
         />
         {overviewLoading ? (
@@ -460,8 +460,8 @@ export function HomePage() {
         <div className="mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-20 lg:px-10">
           <SectionHeading
             eyebrow="A considered process"
-            title="How HumanityBridge works"
-            description="A clear path from community-identified needs to documented follow-up."
+            title="From identified need to accountable action"
+            description="A transparent process that keeps communities, safeguarding and follow-up at its centre."
           />
           <ol className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {steps.map(({ number, title, description, icon: Icon }) => (
@@ -486,7 +486,7 @@ export function HomePage() {
               Trust and care
             </p>
             <h2 className="mt-4 font-editorial text-3xl font-semibold leading-tight text-[#203c2a] sm:text-4xl">
-              Accountability is at the heart of every action.
+              Every action must be accountable.
             </h2>
             <div className="mt-6 flex flex-col items-start gap-3">
               <Link to="/impact" className="text-sm font-semibold text-[#28583c] underline decoration-[#9bac9b] underline-offset-4 hover:text-[#173d29]">
@@ -522,23 +522,23 @@ export function HomePage() {
                 id="our-beginning-heading"
                 className="mt-4 max-w-2xl font-editorial text-3xl font-semibold leading-tight tracking-tight text-[#183b2b] sm:text-4xl lg:text-5xl"
               >
-                A Technology Gift in Recognition of Community Service.
+                A Technology Gift Inspired by Community Service.
               </h2>
               <div className="mt-7 max-w-2xl space-y-4 text-[15px] leading-7 text-[#59675d]">
                 <p>
-                  HumanityBridge began as a personal gift from Kuei Poch Kuei, a fourth-year Computer Science student at Dilla University, to Paul Ruot Bayoch Gtaluak.
+                  HumanityBridge was conceived and developed by Kuei Poch Kuei, a fourth-year Computer Science student at Dilla University, and presented to Paul Ruot Bayoch Gtaluak as a technology gift inspired by community service.
                 </p>
                 <p>
-                  The initiative was conceived in recognition of Paul’s sustained dedication to community service: listening to people, understanding their challenges, identifying those in need, and documenting their circumstances.
+                  The gift recognises Paul’s commitment to listening to community members, identifying humanitarian needs, and documenting circumstances so that people can be connected with appropriate support.
                 </p>
                 <p>
-                  On Monday, 16 November 2026, at 2:55 p.m., Kuei communicated the initiative to Paul and presented HumanityBridge as a gift intended to strengthen and support this important work.
+                  The initiative was formally communicated and presented on Monday, 16 November 2026, at 2:55 p.m.
                 </p>
                 <p>
-                  The platform provides a structured digital environment for registering people in need, documenting their circumstances, organising humanitarian cases, and connecting them with well-wishers, individuals, and organisations willing to contribute.
+                  The platform provides a structured environment for documenting community needs, managing reviewed humanitarian cases, and connecting people with individuals and organisations willing to help.
                 </p>
                 <p>
-                  More than a software project, HumanityBridge is a practical technology contribution in support of a service-driven vision: listening to communities, documenting genuine needs, and connecting people seeking assistance with those willing to provide it.
+                  Its purpose is straightforward: help communities make their needs visible while ensuring that assistance is handled with dignity, care, and accountability.
                 </p>
               </div>
 
@@ -688,10 +688,10 @@ export function HomePage() {
           <div className="max-w-2xl">
             <p className="text-xs font-bold uppercase tracking-[0.17em] text-[#d7c08c]">Take part</p>
             <h2 className="mt-3 font-editorial text-3xl font-semibold leading-tight sm:text-4xl">
-              Be part of something that matters.
+              Help turn community needs into meaningful action.
             </h2>
             <p className="mt-3 max-w-xl text-sm leading-6 text-[#e2e8df] sm:text-base">
-              Your time, skills, and partnerships can help communities access meaningful support.
+              Your time, expertise, and partnerships can help communities access responsible support.
             </p>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row">
