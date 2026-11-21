@@ -935,3 +935,206 @@ body { background: var(--hb-dashboard-background); }
   .hb-mobile-dock { background: #f5f9fc; }
   .dark .hb-mobile-dock { background: #111f2d; }
 }
+
+
+/* Final unified HumanityBridge design tokens.
+   This layer intentionally overrides legacy page-level colour utilities so
+   public pages and both workspaces share one graphite/silver visual language. */
+:root {
+  color-scheme: light;
+  --color-primary: #202326;
+  --color-secondary: #50565b;
+  --color-accent: #8c969d;
+  --color-success: #53656f;
+  --color-background: #f4f5f5;
+  --color-surface: rgb(255 255 255 / 70%);
+  --color-text: #24282b;
+  --color-muted: #687178;
+  --hb-border: rgb(75 84 91 / 17%);
+  --hb-brand-primary: #292e32;
+  --hb-brand-primary-hover: #111518;
+  --hb-brand-link: #3e5968;
+  --hb-brand-accent: #7fabbf;
+  --hb-app-background:
+    radial-gradient(ellipse at 12% 0%, rgb(180 194 202 / 22%), transparent 38%),
+    radial-gradient(ellipse at 88% 14%, rgb(196 207 213 / 17%), transparent 34%),
+    linear-gradient(145deg, #fafbfb 0%, #f0f2f3 54%, #e6e9eb 100%);
+  --hb-dashboard-background: var(--hb-app-background);
+  --hb-glass-surface: rgb(255 255 255 / 62%);
+  --hb-glass-border: rgb(255 255 255 / 78%);
+  --hb-glass-shadow: 0 22px 58px -40px rgb(22 31 37 / 25%), inset 0 1px 0 rgb(255 255 255 / 78%);
+  --hb-motion-ease: cubic-bezier(.2,.75,.25,1);
+}
+.dark {
+  color-scheme: dark;
+  --color-primary: #f0f2f3;
+  --color-secondary: #c1c7cb;
+  --color-accent: #aab5bb;
+  --color-success: #aebdc4;
+  --color-background: #101214;
+  --color-surface: rgb(31 35 39 / 70%);
+  --color-text: #edf0f1;
+  --color-muted: #a4adb2;
+  --hb-border: rgb(222 230 234 / 13%);
+  --hb-brand-primary: #d8e0e4;
+  --hb-brand-primary-hover: #ffffff;
+  --hb-brand-link: #b7d3df;
+  --hb-brand-accent: #86b7cb;
+  --hb-app-background:
+    radial-gradient(ellipse at 12% 0%, rgb(91 116 128 / 17%), transparent 40%),
+    radial-gradient(ellipse at 88% 18%, rgb(75 95 108 / 12%), transparent 34%),
+    linear-gradient(145deg, #090b0d 0%, #121619 56%, #1b2024 100%);
+  --hb-dashboard-background: var(--hb-app-background);
+  --hb-glass-surface: rgb(255 255 255 / 5.5%);
+  --hb-glass-border: rgb(226 234 238 / 12%);
+  --hb-glass-shadow: 0 24px 68px -42px rgb(0 0 0 / 72%), inset 0 1px 0 rgb(255 255 255 / 7%);
+}
+html { scroll-behavior: smooth; scroll-padding-top: 5rem; }
+body { background: var(--hb-app-background); color: var(--color-text); }
+.hb-public-shell, .hb-dashboard-shell {
+  background: var(--hb-app-background) !important;
+  color: var(--color-text);
+}
+.hb-public-shell > header,
+.hb-dashboard-shell > aside,
+.hb-dashboard-shell > div > header {
+  background: rgb(248 250 251 / 76%) !important;
+  border-color: var(--hb-glass-border) !important;
+  box-shadow: 0 16px 46px -36px rgb(20 29 35 / 34%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(155%);
+  backdrop-filter: blur(28px) saturate(155%);
+}
+.dark .hb-public-shell > header,
+.dark .hb-dashboard-shell > aside,
+.dark .hb-dashboard-shell > div > header {
+  background: rgb(13 16 18 / 82%) !important;
+  border-color: var(--hb-glass-border) !important;
+  box-shadow: 0 20px 54px -38px rgb(0 0 0 / 68%) !important;
+}
+.hb-home {
+  background: transparent !important;
+  color: var(--color-text) !important;
+}
+.hb-home > section:first-child {
+  background:
+    radial-gradient(ellipse at 78% 30%, rgb(133 169 185 / 15%), transparent 42%),
+    linear-gradient(135deg, rgb(255 255 255 / 56%), rgb(226 232 235 / 32%)) !important;
+  border-bottom: 1px solid var(--hb-border);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+}
+.dark .hb-home > section:first-child {
+  background:
+    radial-gradient(ellipse at 78% 30%, rgb(102 145 163 / 14%), transparent 42%),
+    linear-gradient(135deg, rgb(255 255 255 / 3%), rgb(255 255 255 / 1%)) !important;
+}
+.hb-home > section:not(:first-child) {
+  background: transparent !important;
+  border-color: var(--hb-border) !important;
+}
+.hb-home > section:last-child {
+  background: linear-gradient(125deg, #252b2f, #111619) !important;
+  color: #f5f7f8 !important;
+  border: 1px solid rgb(255 255 255 / 8%);
+}
+.dark .hb-home > section:last-child {
+  background: linear-gradient(125deg, #20272b, #0c1012) !important;
+}
+.hb-home article,
+.hb-home li,
+.hb-public-shell main article,
+.hb-dashboard-shell main article {
+  background: var(--hb-glass-surface) !important;
+  border: 1px solid var(--hb-glass-border) !important;
+  box-shadow: var(--hb-glass-shadow) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(145%);
+  backdrop-filter: blur(18px) saturate(145%);
+}
+.hb-home article:hover,
+.hb-public-shell main article:hover,
+.hb-dashboard-shell main article:hover {
+  transform: translateY(-2px);
+  border-color: rgb(128 166 184 / 34%) !important;
+}
+.hb-home :is(h1,h2,h3),
+.hb-public-shell main :is(h1,h2,h3),
+.hb-dashboard-shell main :is(h1,h2,h3) {
+  color: var(--color-primary) !important;
+  text-wrap: balance;
+}
+.hb-home [class*="text-[#"]:not(.text-white),
+.hb-public-shell main [class*="text-[#"]:not(.text-white),
+.hb-dashboard-shell main [class*="text-[#"]:not(.text-white) {
+  color: var(--color-secondary) !important;
+}
+.hb-home [class*="text-slate-"],
+.hb-public-shell main [class*="text-slate-"],
+.hb-dashboard-shell main [class*="text-slate-"] {
+  color: var(--color-secondary);
+}
+.hb-home > section:last-child :is(h1,h2,h3,p,a,span),
+.hb-home > section:last-child [class*="text-[#"] {
+  color: #f1f4f5 !important;
+}
+.hb-home > section:last-child a[class*="bg-[#"] {
+  background: #eef2f3 !important;
+  color: #20272b !important;
+}
+.hb-nav-item { color: var(--color-secondary) !important; }
+.hb-nav-item:hover {
+  background: rgb(111 145 161 / 10%) !important;
+  color: var(--color-primary) !important;
+}
+.hb-nav-item-active, .hb-nav-item-active:hover {
+  background: rgb(116 158 177 / 14%) !important;
+  border-color: rgb(116 158 177 / 28%) !important;
+  color: var(--color-primary) !important;
+  box-shadow: inset 2px 0 0 #83adbf;
+}
+.dark .hb-nav-item-active, .dark .hb-nav-item-active:hover {
+  background: rgb(128 174 193 / 13%) !important;
+  border-color: rgb(156 193 207 / 20%) !important;
+  color: #f1f4f5 !important;
+  box-shadow: inset 2px 0 0 #91bdce;
+}
+.hb-public-shell main :is(input,select,textarea),
+.hb-dashboard-shell main :is(input,select,textarea) {
+  background: rgb(255 255 255 / 62%) !important;
+  border-color: var(--hb-border) !important;
+  color: var(--color-text) !important;
+  border-radius: .8rem;
+}
+.dark .hb-public-shell main :is(input,select,textarea),
+.dark .hb-dashboard-shell main :is(input,select,textarea) {
+  background: rgb(255 255 255 / 5%) !important;
+  border-color: var(--hb-border) !important;
+  color: var(--color-text) !important;
+}
+.hb-public-shell main table, .hb-dashboard-shell main table { color: var(--color-text); }
+.hb-public-shell main :is(th,td), .hb-dashboard-shell main :is(th,td) { border-color: var(--hb-border); }
+.hb-particle-network circle { fill: #91aebc; opacity: .42; }
+.hb-particle-network path { stroke: #91aebc; opacity: .28; }
+.dark .hb-particle-network circle { fill: #a6c2ce; opacity: .35; }
+.dark .hb-particle-network path { stroke: #a6c2ce; opacity: .24; }
+.hb-mobile-dock {
+  background: rgb(248 250 251 / 84%);
+  border-color: var(--hb-glass-border);
+  -webkit-backdrop-filter: blur(26px) saturate(155%);
+  backdrop-filter: blur(26px) saturate(155%);
+}
+.dark .hb-mobile-dock { background: rgb(14 18 21 / 88%); border-color: var(--hb-glass-border); }
+.hb-workspace-search-trigger {
+  background: rgb(255 255 255 / 54%);
+  border-color: var(--hb-border);
+  color: var(--color-secondary);
+}
+.dark .hb-workspace-search-trigger { background: rgb(255 255 255 / 5%); color: var(--color-secondary); }
+:focus-visible { outline-color: #6f9eb2; }
+@media (max-width: 767px) {
+  .hb-home > section:first-child > div { padding-top: 2.75rem; padding-bottom: 2.75rem; }
+  .hb-home article, .hb-public-shell main article { border-radius: 1rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .hb-home article, .hb-public-shell main article, .hb-dashboard-shell main article { transition: none !important; }
+}

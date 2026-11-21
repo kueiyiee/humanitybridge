@@ -15,6 +15,7 @@ import {
   UsersRound,
 } from 'lucide-react';
 import { apiRequest } from '../../services/api';
+import { useLocale } from '../../contexts/LocaleContext';
 import { ResilientImage } from '../../components/ResilientImage';
 import heroWater from '../../assets/images/hero_community_water_1794840710503.jpg';
 
@@ -158,6 +159,7 @@ function SectionError({ children }: { children: React.ReactNode }) {
 }
 
 export function HomePage() {
+  const { t } = useLocale();
   const { data: overviewResult, isLoading: overviewLoading, isError: overviewError } = useQuery({
     queryKey: ['public-overview'],
     queryFn: () => apiRequest<OverviewResponse>('/public/overview'),
@@ -188,24 +190,24 @@ export function HomePage() {
               HumanityBridge · Local stories, accountable support
             </p>
             <h1 className="mt-7 font-editorial text-[2.65rem] font-semibold leading-[1.08] tracking-tight text-[#183b2b] sm:text-6xl">
-              Every Story Matters. Every Life Deserves Dignity.
+              {t('heroHeadline')}
             </h1>
             <p className="mt-6 max-w-lg text-base leading-7 text-[#56645a] sm:text-lg sm:leading-8">
-              HumanityBridge helps communities document verified needs and connect with responsible, accountable support.
+              {t('heroSub')}
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link
                 to="/stories"
                 className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-[#20583a] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#17472e] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#20583a]"
               >
-                Explore our stories
+                {t('ctaStories')}
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Link>
               <Link
                 to="/cases"
                 className="inline-flex min-h-12 items-center justify-center rounded-lg border border-[#b8c5b8] bg-white/60 px-5 text-sm font-semibold text-[#294633] transition-colors hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#20583a]"
               >
-                Support a community
+                {t('ctaDifference')}
               </Link>
             </div>
             <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-[#d9ded3] pt-5 text-xs font-medium text-[#57695b]">
