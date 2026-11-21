@@ -17,7 +17,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
       <HumanitarianParticles />
       <PublicHeader />
       <main className="relative z-10 flex-1">{children}</main>
-      <div className="relative z-10"><PublicFooter settings={data?.data?.settings} /></div>
+      <PublicFooter settings={data?.data?.settings} />
     </div>
   );
 }
