@@ -50,3 +50,12 @@ test('file signature validation rejects short and mismatched content', () => {
   assert.equal(hasValidMagicSignature(Buffer.from('%PDF-1.7'), 'image/jpeg'), false);
   assert.equal(hasValidMagicSignature(Buffer.from('%PDF-1.7'), 'application/pdf'), true);
 });
+
+test('JPEG and PNG signatures require their complete file markers', () => {
+  const jpeg = Buffer.from('ffd8ffe000', 'hex');
+  const png = Buffer.from('89504e470d0a1a0a', 'hex');
+  const truncatedPng = Buffer.from('89504e47', 'hex');
+  assert.equal(hasValidMagicSignature(jpeg, 'image/jpeg'), true);
+  assert.equal(hasValidMagicSignature(png, 'image/png'), true);
+  assert.equal(hasValidMagicSignature(truncatedPng, 'image/png'), false);
+});
