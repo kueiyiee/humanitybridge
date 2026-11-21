@@ -45,9 +45,7 @@ export function PublicHeader() {
         className="min-h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none transition focus-visible:ring-2 focus-visible:ring-[#51745a] dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
       >
         <option value="en">English</option>
-        <option value="nus">Thok Naath / Nuer</option>
-        <option value="ar">العربية / Arabic</option>
-        <option value="am">Amharic</option>
+        <option value="nus">Thok Nath (Nuer) · review in progress</option>
       </select>
     </label>
   );
@@ -69,8 +67,8 @@ export function PublicHeader() {
   );
 
   return (
-    <header className="sticky top-0 z-50 border-b border-slate-200/90 bg-white/95 text-slate-900 backdrop-blur-md dark:border-slate-800 dark:bg-slate-950/95 dark:text-slate-100">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:h-[68px] lg:px-8">
+    <header className="hb-topbar sticky top-0 z-50 border-b border-slate-200/70 bg-white/75 text-slate-900 backdrop-blur-2xl dark:border-white/10 dark:bg-black/65 dark:text-slate-100">
+      <div className="mx-auto flex h-[60px] max-w-[1440px] items-center justify-between gap-4 px-4 sm:px-6 lg:h-16 lg:px-8">
         <Link
           to="/"
           className="inline-flex shrink-0 items-center rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#51745a]"
@@ -79,7 +77,7 @@ export function PublicHeader() {
           <BrandLogo className="h-[40px] w-[120px]" />
         </Link>
 
-        <nav aria-label="Primary navigation" className="hidden min-w-0 flex-1 items-center justify-center gap-4 lg:flex xl:gap-6">
+        <nav aria-label="Primary navigation" className="hidden min-w-0 flex-1 items-center justify-center gap-5 lg:flex xl:gap-7">
           {publicLinks.map(({ to, label }) => (
             <NavLink key={to} to={to} className={({ isActive }) => publicNavClass(isActive)}>
               {label}
