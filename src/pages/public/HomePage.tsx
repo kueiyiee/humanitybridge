@@ -516,8 +516,6 @@ export function HomePage() {
         </div>
       </section>
 
-      </section>
-
       <section
         aria-labelledby="our-beginning-heading"
         className="border-y border-[#e4e5da] bg-[#f1f0e7] dark:border-[#354738] dark:bg-[#141e17]"
