@@ -16,10 +16,10 @@ const publicLinks = [
 ];
 
 function publicNavClass(isActive: boolean) {
-  return `inline-flex min-h-10 items-center whitespace-nowrap border-b-2 px-0.5 text-[13px] font-semibold transition-colors focus-visible:outline ${
+  return `inline-flex min-h-10 items-center whitespace-nowrap border-b-2 px-0.5 text-[13px] font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--hb-accent)] ${
     isActive
-      ? 'border-[#24563a] text-[#173c2a] dark:border-cyan-300 dark:text-white'
-      : 'border-transparent text-slate-600 hover:border-slate-300 hover:text-slate-950 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:text-white'
+      ? 'border-[var(--hb-accent)] text-[var(--hb-text-strong)]'
+      : 'border-transparent text-[var(--hb-muted)] hover:border-[var(--hb-border)] hover:text-[var(--hb-text-strong)]'
   }`;
 }
 
@@ -99,7 +99,7 @@ export function PublicHeader() {
           </button>
           <Link
             to="/donate"
-            className="inline-flex min-h-10 items-center justify-center rounded-lg bg-[#24563a] px-4 text-[13px] font-semibold text-white transition-colors hover:bg-[#183f2b] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#51745a] dark:bg-cyan-300 dark:text-slate-950 dark:hover:bg-cyan-200"
+            className="inline-flex min-h-10 items-center justify-center rounded-lg border border-[var(--hb-glass-border)] bg-[var(--hb-primary)] px-4 text-[13px] font-semibold text-white shadow-sm transition-all hover:-translate-y-0.5 hover:bg-[var(--hb-primary-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--hb-accent)] dark:text-slate-950"
           >
             {t('donateNow')}
           </Link>
@@ -109,13 +109,18 @@ export function PublicHeader() {
           <OverflowPopover
             label="More navigation options"
             trigger={<EllipsisVertical className="h-5 w-5" aria-hidden="true" />}
-            triggerClassName="inline-flex h-10 w-10 items-center justify-center rounded-lg text-slate-700 transition-colors hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#51745a] dark:text-slate-200 dark:hover:bg-slate-800"
+            triggerClassName="hb-menu-trigger inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--hb-glass-border)] bg-[var(--hb-glass)] text-[var(--hb-text)] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[var(--hb-glass-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--hb-accent)]"
+            panelClassName="hb-navigation-popover"
           >
             <div className="space-y-3">
               <section aria-labelledby="public-navigation-heading">
-                <h2 id="public-navigation-heading" className="px-3 pb-1 pt-2 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
-                  Explore
-                </h2>
+                <div className="mb-2 border-b border-[var(--hb-border)] px-3 pb-3 pt-2">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--hb-accent-strong)]">HumanityBridge</p>
+                  <h2 id="public-navigation-heading" className="mt-1 text-base font-semibold tracking-tight text-[var(--hb-text-strong)]">
+                    Explore
+                  </h2>
+                  <p className="mt-1 text-xs leading-relaxed text-[var(--hb-muted)]">Navigate our stories, support pathways and community impact.</p>
+                </div>
                 <nav aria-label="Public navigation" className="space-y-0.5">
                   {publicLinks.map(({ to, label }) => (
                     <NavLink

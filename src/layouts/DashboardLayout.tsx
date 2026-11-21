@@ -153,7 +153,7 @@ export function DashboardLayout({
   );
 
   return (
-    <div className="hb-dashboard-shell relative isolate min-h-screen text-slate-900 dark:text-slate-100">
+    <div className="hb-dashboard-shell relative isolate min-h-screen overflow-x-clip text-slate-900 dark:text-slate-100">
       <HumanitarianParticles />
       <header className="hb-topbar sticky top-0 z-50 border-b border-slate-200/70 bg-white/75 backdrop-blur-2xl dark:border-white/10 dark:bg-black/65">
         <div className="mx-auto flex h-16 max-w-[1600px] items-center gap-3 px-4 sm:px-6 lg:h-[68px] lg:px-8">
@@ -184,11 +184,12 @@ export function DashboardLayout({
                       <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" />
                     </>
                   )}
-                  triggerClassName={`inline-flex min-h-10 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 text-[13px] font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#51745a] ${
+                  triggerClassName={`inline-flex min-h-10 items-center gap-1.5 whitespace-nowrap rounded-lg border border-transparent px-3 text-[13px] font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--hb-accent)] ${
                     groupIsActive
-                      ? 'bg-slate-100 text-slate-950 dark:bg-slate-800 dark:text-white'
-                      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white'
+                      ? 'border-[var(--hb-border)] bg-[var(--hb-accent-soft)] text-[var(--hb-text-strong)]'
+                      : 'text-[var(--hb-muted)] hover:border-[var(--hb-border)] hover:bg-[var(--hb-glass)] hover:text-[var(--hb-text-strong)]'
                   }`}
+                  panelClassName="hb-navigation-popover"
                 >
                   <div className="space-y-0.5">
                     <p className="px-3 pb-1 pt-2 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">{group}</p>
@@ -290,7 +291,8 @@ export function DashboardLayout({
               <OverflowPopover
                 label="Workspace navigation and account options"
                 trigger={<EllipsisVertical className="h-5 w-5" aria-hidden="true" />}
-                triggerClassName="inline-flex h-10 w-10 items-center justify-center rounded-lg text-slate-700 transition-colors hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#51745a] dark:text-slate-200 dark:hover:bg-slate-800"
+                triggerClassName="hb-menu-trigger inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--hb-glass-border)] bg-[var(--hb-glass)] text-[var(--hb-text)] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[var(--hb-glass-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--hb-accent)]"
+                panelClassName="hb-navigation-popover hb-dashboard-navigation-popover"
               >
                 {renderMobileNavigation()}
               </OverflowPopover>

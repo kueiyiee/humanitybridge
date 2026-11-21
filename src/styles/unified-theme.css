@@ -393,3 +393,83 @@ body {
   .hb-case-registration input[type="file"] { display: none !important; }
   .hb-case-registration :is(input,select,textarea) { print-color-adjust: exact; }
 }
+
+/* Persistent navigation: keep the public and workspace bars visible during page scroll. */
+.hb-topbar {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 100 !important;
+  isolation: isolate;
+  width: 100%;
+  background: color-mix(in srgb, var(--hb-glass-strong) 92%, transparent) !important;
+  border-bottom: 1px solid var(--hb-glass-border) !important;
+  box-shadow:
+    0 12px 36px -28px rgb(12 24 31 / 42%),
+    inset 0 1px 0 rgb(255 255 255 / 34%) !important;
+  -webkit-backdrop-filter: blur(30px) saturate(175%) !important;
+  backdrop-filter: blur(30px) saturate(175%) !important;
+  transform: translateZ(0);
+}
+.dark .hb-topbar {
+  background: color-mix(in srgb, var(--hb-glass-strong) 94%, transparent) !important;
+  box-shadow:
+    0 14px 40px -28px rgb(0 0 0 / 78%),
+    inset 0 1px 0 rgb(255 255 255 / 8%) !important;
+}
+@supports not (backdrop-filter: blur(1px)) {
+  .hb-topbar { background: var(--hb-bg-deep) !important; }
+}
+
+
+/* Reference-inspired navigation menus: compact, editorial and consistent across themes. */
+.hb-menu-trigger {
+  -webkit-backdrop-filter: blur(22px) saturate(165%);
+  backdrop-filter: blur(22px) saturate(165%);
+}
+.hb-navigation-popover {
+  width: min(21rem, calc(100vw - 1.25rem)) !important;
+  max-height: min(78vh, 42rem) !important;
+  padding: .7rem !important;
+  border-radius: 1.1rem !important;
+  border: 1px solid var(--hb-glass-border) !important;
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--hb-glass-strong) 96%, white 4%), var(--hb-glass)) !important;
+  box-shadow:
+    0 24px 70px -30px rgb(5 15 21 / 45%),
+    inset 0 1px 0 rgb(255 255 255 / 38%) !important;
+  -webkit-backdrop-filter: blur(32px) saturate(175%) !important;
+  backdrop-filter: blur(32px) saturate(175%) !important;
+  transform-origin: top right;
+  animation: hb-menu-in 180ms var(--hb-ease) both;
+}
+.dark .hb-navigation-popover {
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--hb-glass-strong) 96%, white 2%), var(--hb-glass)) !important;
+  box-shadow:
+    0 26px 76px -34px rgb(0 0 0 / 78%),
+    inset 0 1px 0 rgb(255 255 255 / 8%) !important;
+}
+.hb-navigation-popover [data-overflow-item] {
+  min-height: 2.75rem;
+  border-radius: .75rem;
+  transition: background-color 160ms ease, color 160ms ease, transform 160ms ease;
+}
+.hb-navigation-popover [data-overflow-item]:hover {
+  background: var(--hb-accent-soft) !important;
+  color: var(--hb-text-strong) !important;
+}
+.hb-navigation-popover [data-overflow-item]:focus-visible {
+  outline: 2px solid var(--hb-accent) !important;
+  outline-offset: 2px;
+}
+.hb-navigation-popover .border-t,
+.hb-navigation-popover .border-b {
+  border-color: var(--hb-border) !important;
+}
+@keyframes hb-menu-in {
+  from { opacity: 0; transform: translateY(-6px) scale(.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hb-navigation-popover { animation: none; }
+}
