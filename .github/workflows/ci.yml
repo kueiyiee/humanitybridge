@@ -41,6 +41,7 @@ jobs:
         env:
           NODE_ENV: test
           SQLITE_DB_PATH: ./data/humanitybridge-ci.db
+          MFA_ENCRYPTION_KEY: ${{ hashFiles('package.json') }}
           ADMIN_BOOTSTRAP_EMAIL: ci-admin@humanitybridge.test
           ADMIN_BOOTSTRAP_PASSWORD: CI-only-Admin-2026!
           SEED_COORDINATOR_PASSWORD: CI-only-Coordinator-2026!
