@@ -11,6 +11,7 @@ import {
 } from 'recharts';
 import {
   ArrowRight,
+  Bell,
   BookOpen,
   DollarSign,
   FileCheck2,
@@ -27,6 +28,7 @@ import {
 import { DashboardLayout, type DashboardNavItem } from '../../layouts/DashboardLayout';
 import { apiRequest } from '../../services/api';
 import { AdminBankTransfersPanel } from './AdminBankTransfersPanel';
+import { AdminNotificationsPanel } from './AdminNotificationsPanel';
 import {
   AdminCampaignsPanel,
   AdminCasesPanel,
@@ -89,6 +91,7 @@ function formatTimestamp(value: string): string {
 
 const ADMIN_NAV: DashboardNavItem[] = [
   { id: 'overview', label: 'Executive Overview', icon: <LayoutDashboard className="w-4 h-4" />, group: 'Overview', permission: 'admin:dashboard:read' },
+  { id: 'notifications', label: 'Notifications', icon: <Bell className="w-4 h-4" />, group: 'Governance', permission: 'admin:dashboard:read' },
   { id: 'users', label: 'Users & Coordinators', icon: <Users className="w-4 h-4" />, group: 'Operations', permission: 'admin:users:manage' },
   { id: 'cases', label: 'Case Verification', icon: <FileCheck2 className="w-4 h-4" />, group: 'Operations', permission: 'admin:cases:review' },
   { id: 'stories', label: 'Story Moderation', icon: <BookOpen className="w-4 h-4" />, group: 'Operations', permission: 'admin:stories:moderate' },
@@ -106,6 +109,13 @@ export function AdminDashboard() {
   const { data, isPending, isError, error, refetch } = useQuery({
     queryKey: ['admin-dashboard'],
     queryFn: () => apiRequest<AdminDashboardData>('/admin/dashboard'),
+  });
+
+  const { data: notificationsData } = useQuery({
+    queryKey: ['admin-notifications'],
+    queryFn: () => apiRequest<Array<{ id: number; isRead: boolean }>>('/admin/notifications'),
+    staleTime: 20_000,
+    refetchInterval: 60_000,
   });
 
   const dashboard = data?.data;
@@ -127,7 +137,7 @@ export function AdminDashboard() {
       navItems={ADMIN_NAV}
       activeTab={activeTab}
       onSelectTab={setActiveTab}
-      notificationCount={0}
+      notificationCount={notificationsData?.data?.filter((item) => !item.isRead).length ?? 0}
     >
       {activeTab === 'overview' && (
         <div className="space-y-6">
@@ -300,6 +310,7 @@ export function AdminDashboard() {
         </div>
       )}
 
+      {activeTab === 'notifications' && <AdminNotificationsPanel />}
       {activeTab === 'users' && <AdminUsersPanel />}
       {activeTab === 'cases' && <AdminCasesPanel />}
       {activeTab === 'stories' && <AdminStoriesPanel />}
