@@ -36,3 +36,16 @@ test('HMAC verification rejects modified payloads', () => {
   assert.equal(verifyHmac('original-payload', signature, secret), true);
   assert.equal(verifyHmac('modified-payload', signature, secret), false);
 });
+
+test('file signatures validate the complete WebP container marker', () => {
+  const webp = Buffer.from('524946462400000057454250', 'hex');
+  const wav = Buffer.from('524946462400000057415645', 'hex');
+  assert.equal(hasValidMagicSignature(webp, 'image/webp'), true);
+  assert.equal(hasValidMagicSignature(wav, 'image/webp'), false);
+});
+
+test('file signature validation rejects short and mismatched content', () => {
+  assert.equal(hasValidMagicSignature(Buffer.from([0xff, 0xd8]), 'image/jpeg'), false);
+  assert.equal(hasValidMagicSignature(Buffer.from('%PDF-1.7'), 'image/jpeg'), false);
+  assert.equal(hasValidMagicSignature(Buffer.from('%PDF-1.7'), 'application/pdf'), true);
+});
