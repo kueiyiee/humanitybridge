@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { hasValidMagicSignature } from '../src/server/utils/fileValidation';
 import assert from 'node:assert/strict';
 import {
   decryptMfaSecret,
@@ -35,4 +36,26 @@ test('HMAC verification rejects modified payloads', () => {
   const signature = signHmac('original-payload', secret);
   assert.equal(verifyHmac('original-payload', signature, secret), true);
   assert.equal(verifyHmac('modified-payload', signature, secret), false);
+});
+
+test('file signatures validate the complete WebP container marker', () => {
+  const webp = Buffer.from('524946462400000057454250', 'hex');
+  const wav = Buffer.from('524946462400000057415645', 'hex');
+  assert.equal(hasValidMagicSignature(webp, 'image/webp'), true);
+  assert.equal(hasValidMagicSignature(wav, 'image/webp'), false);
+});
+
+test('file signature validation rejects short and mismatched content', () => {
+  assert.equal(hasValidMagicSignature(Buffer.from([0xff, 0xd8]), 'image/jpeg'), false);
+  assert.equal(hasValidMagicSignature(Buffer.from('%PDF-1.7'), 'image/jpeg'), false);
+  assert.equal(hasValidMagicSignature(Buffer.from('%PDF-1.7'), 'application/pdf'), true);
+});
+
+test('JPEG and PNG signatures require their complete file markers', () => {
+  const jpeg = Buffer.from('ffd8ffe000', 'hex');
+  const png = Buffer.from('89504e470d0a1a0a', 'hex');
+  const truncatedPng = Buffer.from('89504e47', 'hex');
+  assert.equal(hasValidMagicSignature(jpeg, 'image/jpeg'), true);
+  assert.equal(hasValidMagicSignature(png, 'image/png'), true);
+  assert.equal(hasValidMagicSignature(truncatedPng, 'image/png'), false);
 });

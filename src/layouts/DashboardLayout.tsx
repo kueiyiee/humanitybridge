@@ -16,6 +16,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { BrandLogo } from '../components/BrandLogo';
 import { OverflowPopover } from '../components/OverflowPopover';
 import { WorkspaceCommandMenu } from '../components/WorkspaceCommandMenu';
+import { HumanitarianParticles } from '../components/HumanitarianParticles';
 
 export interface DashboardNavItem {
   id: string;
@@ -152,7 +153,8 @@ export function DashboardLayout({
   );
 
   return (
-    <div className="hb-dashboard-shell min-h-screen text-slate-900 dark:text-slate-100">
+    <div className="hb-dashboard-shell relative isolate min-h-screen text-slate-900 dark:text-slate-100">
+      <HumanitarianParticles />
       <header className="hb-topbar sticky top-0 z-50 border-b border-slate-200/70 bg-white/75 backdrop-blur-2xl dark:border-white/10 dark:bg-black/65">
         <div className="mx-auto flex h-16 max-w-[1600px] items-center gap-3 px-4 sm:px-6 lg:h-[68px] lg:px-8">
           <Link
@@ -297,9 +299,9 @@ export function DashboardLayout({
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-[1600px] p-4 pb-24 sm:p-6 sm:pb-24 lg:p-8 lg:pb-8 xl:p-10">{children}</main>
+      <main className="relative z-10 mx-auto w-full max-w-[1600px] p-4 pb-24 sm:p-6 sm:pb-24 lg:p-8 lg:pb-8 xl:p-10">{children}</main>
 
-      <nav className="hb-mobile-dock lg:hidden" aria-label={`${title} quick navigation`}>
+      <nav className="hb-mobile-dock relative z-20 lg:hidden" aria-label={`${title} quick navigation`}>
         {visibleNavItems.slice(0, 4).map((item) => (
           <button
             key={item.id}

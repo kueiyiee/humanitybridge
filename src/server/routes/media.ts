@@ -10,6 +10,7 @@ import { type AuthenticatedRequest, requireAuth } from '../middleware/auth';
 import { AppError, asyncHandler } from '../middleware/errorHandler';
 import { signHmac, verifyHmac } from '../utils/crypto';
 import { DASHBOARD_ROLES } from '../../../packages/shared/types';
+import { hasValidMagicSignature } from '../utils/fileValidation';
 
 const router = Router();
 
@@ -23,28 +24,26 @@ const ALLOWED_MIME_TYPES = new Set([
   'application/pdf',
 ]);
 
-const ALLOWED_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.pdf']);
+const ALLOWED_FILE_TYPES: Record<string, string> = {
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.png': 'image/png',
+  '.webp': 'image/webp',
+  '.pdf': 'application/pdf',
+};
 
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
-    if (!ALLOWED_MIME_TYPES.has(file.mimetype) || !ALLOWED_EXTENSIONS.has(ext)) {
+    if (!ALLOWED_MIME_TYPES.has(file.mimetype) || ALLOWED_FILE_TYPES[ext] !== file.mimetype) {
       return cb(new AppError(400, 'Unsupported or unsafe file type. Allowed: JPG, PNG, WebP, PDF.'));
     }
     cb(null, true);
   },
 });
 
-function hasValidMagicSignature(buf: Buffer, mimeType: string): boolean {
-  if (buf.length < 4) return false;
-  if (mimeType === 'image/jpeg') return buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff;
-  if (mimeType === 'image/png') return buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47;
-  if (mimeType === 'image/webp') return buf.subarray(0, 4).toString('ascii') === 'RIFF';
-  if (mimeType === 'application/pdf') return buf.subarray(0, 4).toString('ascii') === '%PDF';
-  return false;
-}
 
 router.post(
   '/upload',
@@ -52,11 +51,18 @@ router.post(
   upload.single('file'),
   asyncHandler(async (req: AuthenticatedRequest, res) => {
     if (!req.file) throw new AppError(400, 'No file uploaded');
+    const requestedScope = req.body?.scope;
+    if (requestedScope && !['PUBLIC_STORY', 'PRIVATE_CASE_EVIDENCE'].includes(requestedScope)) {
+      throw new AppError(400, 'Invalid media storage scope');
+    }
     if (!hasValidMagicSignature(req.file.buffer, req.file.mimetype)) {
       throw new AppError(400, 'File content signature does not match declared MIME type');
     }
 
-    const scope = req.body?.scope === 'PUBLIC_STORY' ? 'PUBLIC_STORY' : 'PRIVATE_CASE_EVIDENCE';
+    const scope = requestedScope === 'PUBLIC_STORY' ? 'PUBLIC_STORY' : 'PRIVATE_CASE_EVIDENCE';
+    if (![DASHBOARD_ROLES.PLATFORM_ADMIN, DASHBOARD_ROLES.COMMUNITY_COORDINATOR].includes(req.user!.role)) {
+      throw new AppError(403, 'Your account is not authorised to upload platform media');
+    }
     if (scope === 'PUBLIC_STORY' && req.file.mimetype === 'application/pdf') {
       throw new AppError(400, 'Public story media must be a safe image format (JPG, PNG, WebP)');
     }
@@ -65,24 +71,35 @@ router.post(
     const safeFilename = `${crypto.randomUUID()}${ext}`;
     const targetDir = scope === 'PUBLIC_STORY' ? env.publicMediaDir : env.privateStorageDir;
     const diskPath = path.join(targetDir, safeFilename);
-    fs.writeFileSync(diskPath, req.file.buffer);
 
-    await db.insert(schema.mediaFiles).values({
-      storageScope: scope,
-      safeFilename,
-      mimeType: req.file.mimetype,
-      sizeBytes: req.file.size,
-      uploadedBy: req.user!.id,
-      altText: String(req.body?.altText || '').slice(0, 240) || null,
-      createdAt: nowUtc(),
-    });
+    let fileRecord: typeof schema.mediaFiles.$inferSelect | undefined;
+    try {
+      await fs.promises.writeFile(diskPath, req.file.buffer, {
+        flag: 'wx',
+        mode: scope === 'PRIVATE_CASE_EVIDENCE' ? 0o600 : 0o644,
+      });
 
-    const createdRows = await db
-      .select()
-      .from(schema.mediaFiles)
-      .where(eq(schema.mediaFiles.safeFilename, safeFilename))
-      .limit(1);
-    const fileRecord = createdRows[0];
+      await db.insert(schema.mediaFiles).values({
+        storageScope: scope,
+        safeFilename,
+        mimeType: req.file.mimetype,
+        sizeBytes: req.file.size,
+        uploadedBy: req.user!.id,
+        altText: String(req.body?.altText || '').slice(0, 240) || null,
+        createdAt: nowUtc(),
+      });
+
+      const createdRows = await db
+        .select()
+        .from(schema.mediaFiles)
+        .where(eq(schema.mediaFiles.safeFilename, safeFilename))
+        .limit(1);
+      fileRecord = createdRows[0];
+      if (!fileRecord) throw new Error('Media metadata could not be confirmed after upload');
+    } catch (error) {
+      await fs.promises.unlink(diskPath).catch(() => undefined);
+      throw error;
+    }
 
     const publicUrl = scope === 'PUBLIC_STORY' ? `/api/v1/media/public/${safeFilename}` : null;
     return res.status(201).json({
@@ -125,6 +142,10 @@ router.get(
 
     const diskPath = path.join(env.publicMediaDir, filename);
     if (!fs.existsSync(diskPath)) throw new AppError(404, 'Media file not found');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Cache-Control', 'no-store');
+    res.type(media.mimeType);
+    if (media.mimeType === 'application/pdf') res.setHeader('Content-Disposition', 'attachment');
     return res.sendFile(diskPath);
   }),
 );
@@ -149,6 +170,7 @@ router.get(
     const payload = `${file.id}:${file.safeFilename}:${req.user!.id}:${expires}`;
     const sig = signHmac(payload, env.signedUrlSecret);
 
+    res.setHeader('Cache-Control', 'no-store');
     return res.json({
       success: true,
       message: 'Expiring signed access URL generated (valid for 5 minutes)',
@@ -186,6 +208,10 @@ router.get(
 
     const diskPath = path.join(env.privateStorageDir, path.basename(file.safeFilename));
     if (!fs.existsSync(diskPath)) throw new AppError(404, 'File missing from private storage');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.type(file.mimeType);
+    res.setHeader('Content-Disposition', 'attachment');
     return res.sendFile(diskPath);
   }),
 );
