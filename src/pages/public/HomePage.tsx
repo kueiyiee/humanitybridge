@@ -383,127 +383,36 @@ export function HomePage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-20 lg:px-10">
-        <SectionHeading
-          eyebrow="Current programmes"
-          title="Community programmes, built for lasting impact"
-          description="Explore active initiatives and review confirmed progress before contributing."
-          action={{ label: 'All campaigns', to: '/campaigns' }}
-        />
-        {overviewLoading ? (
-          <div className="grid gap-5 md:grid-cols-3" aria-label="Loading campaigns">
-            {[1, 2, 3].map((item) => (
-              <div key={item} className="h-80 animate-pulse rounded-2xl bg-[#e9e9df]" />
-            ))}
-          </div>
-        ) : overviewError ? (
-          <SectionError>Programme information is temporarily unavailable. Please try again later.</SectionError>
-        ) : campaigns.length === 0 ? (
-          <EmptyState>There are no active campaigns at present. Published programmes will appear here when available.</EmptyState>
-        ) : (
-          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-            {campaigns.map((campaign) => {
-              const target = Number(campaign.targetAmount) || 0;
-              const confirmed = Number(campaign.raisedAmount) || 0;
-              const progress = target > 0 ? Math.min(100, Math.round((confirmed / target) * 100)) : 0;
-              const currency = (campaign.currency || 'USD').toUpperCase();
-              const formatMoney = (value: number) =>
-                new Intl.NumberFormat(undefined, { style: 'currency', currency, maximumFractionDigits: 0 }).format(value);
-
-              return (
-                <article key={campaign.id} className="flex flex-col overflow-hidden rounded-2xl border border-[#e5e5dc] bg-white">
-                  <div className="aspect-[8/5] overflow-hidden bg-[#e8e8de]">
-                    <ResilientImage
-                      src={campaign.coverImageUrl}
-                      alt={campaign.title}
-                      className="h-full w-full object-cover"
-                      fallbackTitle={campaign.title}
-                    />
-                  </div>
-                  <div className="flex flex-1 flex-col p-5 sm:p-6">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-[#55745d]">Active programme</p>
-                    <h3 className="mt-2 font-editorial text-xl font-semibold leading-snug text-[#223b2b]">{campaign.title}</h3>
-                    <p className="mt-2 flex-1 text-sm leading-6 text-[#657168]">{campaign.summary}</p>
-                    <div className="mt-5">
-                      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 text-xs">
-                        <span className="font-semibold text-[#294b34]">
-                          {formatMoney(confirmed)} confirmed
-                        </span>
-                        {target > 0 && <span className="text-[#718076]">of {formatMoney(target)}</span>}
-                      </div>
-                      {target > 0 && (
-                        <div
-                          className="mt-2 h-2 overflow-hidden rounded-full bg-[#e9ebe3]"
-                          role="progressbar"
-                          aria-label={`${campaign.title} confirmed contributions`}
-                          aria-valuemin={0}
-                          aria-valuemax={target}
-                          aria-valuenow={Math.min(confirmed, target)}
-                        >
-                          <div className="h-full rounded-full bg-[#658567]" style={{ width: `${progress}%` }} />
-                        </div>
-                      )}
-                    </div>
-                    <Link
-                      to={`/campaigns/${campaign.slug}`}
-                      className="mt-5 inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-[#b9c9b9] px-4 text-sm font-semibold text-[#28583c] transition-colors hover:bg-[#f4f6f1] focus-visible:outline"
-                    >
-                      View programme <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                    </Link>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        )}
-      </section>
-
-      <section className="border-y border-[#e4e5da] bg-white">
-        <div className="mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-20 lg:px-10">
-          <SectionHeading
-            eyebrow="A considered process"
-            title="From identified need to accountable action"
-            description="A transparent process that keeps communities, safeguarding and follow-up at its centre."
-          />
-          <ol className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {steps.map(({ number, title, description, icon: Icon }) => (
-              <li key={number} className="rounded-2xl border border-[#e5e6dc] bg-[#fbfbf8] p-5 sm:p-6">
-                <div className="flex items-center justify-between">
-                  <span className="font-mono-tabular text-sm font-semibold text-[#a1814b]">{number}</span>
-                  <Icon className="h-5 w-5 text-[#54745b]" aria-hidden="true" />
-                </div>
-                <h3 className="mt-5 font-editorial text-lg font-semibold text-[#294633]">{title}</h3>
-                <p className="mt-2 text-sm leading-6 text-[#667269]">{description}</p>
-              </li>
-            ))}
-          </ol>
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-20 lg:px-10">
-        <div className="grid gap-10 rounded-[1.5rem] bg-[#e9ede4] p-6 sm:p-9 lg:grid-cols-[0.8fr_1.2fr] lg:items-center lg:p-12">
-          <div>
-            <p className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-[#54745b]">
+      <section className="hb-trust-section mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-20 lg:px-10" aria-labelledby="trust-care-heading">
+        <div className="hb-trust-panel">
+          <div className="hb-trust-intro">
+            <p className="hb-trust-eyebrow">
               <ShieldCheck className="h-4 w-4" aria-hidden="true" />
               Trust and care
             </p>
-            <h2 className="mt-4 font-editorial text-3xl font-semibold leading-tight text-[#203c2a] sm:text-4xl">
+            <h2 id="trust-care-heading" className="hb-trust-heading">
               Every action must be accountable.
             </h2>
-            <div className="mt-6 flex flex-col items-start gap-3">
-              <Link to="/impact" className="text-sm font-semibold text-[#28583c] underline decoration-[#9bac9b] underline-offset-4 hover:text-[#173d29]">
-                Explore our accountability framework
+            <p className="hb-trust-summary">
+              Clear safeguards, careful review and reliable records guide how HumanityBridge works with communities.
+            </p>
+            <nav aria-label="Trust and safeguarding resources" className="hb-trust-links">
+              <Link to="/impact" className="hb-trust-link">
+                Explore our accountability framework <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
               </Link>
-              <Link to="/policies/safeguarding" className="text-sm font-semibold text-[#28583c] underline decoration-[#9bac9b] underline-offset-4 hover:text-[#173d29]">
-                Read our safeguarding policy
+              <Link to="/policies/safeguarding" className="hb-trust-link">
+                Read our safeguarding policy <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
               </Link>
-            </div>
+            </nav>
           </div>
-          <ul className="grid gap-3 sm:grid-cols-2">
-            {principles.map((principle) => (
-              <li key={principle.title} className="rounded-xl border border-white/80 bg-white/75 p-5">
-                <h3 className="text-sm font-semibold text-[#304936]">{principle.title}</h3>
-                <p className="mt-2 text-sm leading-6 text-[#69756b]">{principle.description}</p>
+          <ul className="hb-trust-principles">
+            {principles.map((principle, index) => (
+              <li key={principle.title} className="hb-trust-principle">
+                <span className="hb-trust-index" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
+                <div className="min-w-0">
+                  <h3>{principle.title}</h3>
+                  <p>{principle.description}</p>
+                </div>
               </li>
             ))}
           </ul>
