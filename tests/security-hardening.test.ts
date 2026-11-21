@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { hasValidMagicSignature } from '../src/server/utils/fileValidation';
 import assert from 'node:assert/strict';
 import {
   decryptMfaSecret,
