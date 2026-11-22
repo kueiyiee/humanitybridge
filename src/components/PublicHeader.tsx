@@ -46,7 +46,7 @@ export function PublicHeader() {
         onChange={(event) => setLocale(event.currentTarget.value as AppLocale)}
         aria-label="Select language"
         className={compact
-          ? 'h-10 w-[10.5rem] rounded-full border border-[var(--hb-border)] bg-[var(--hb-glass)] px-3 text-[12px] font-semibold text-[var(--hb-text)] outline-none transition hover:bg-[var(--hb-glass-strong)] focus-visible:ring-2 focus-visible:ring-[var(--hb-accent)]'
+          ? 'h-10 w-[6.75rem] sm:w-[8.5rem] xl:w-[10.5rem] rounded-full border border-[var(--hb-border)] bg-[var(--hb-glass)] px-2 sm:px-3 text-[11px] sm:text-[12px] font-semibold text-[var(--hb-text)] outline-none transition hover:bg-[var(--hb-glass-strong)] focus-visible:ring-2 focus-visible:ring-[var(--hb-accent)]'
           : 'min-h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none transition focus-visible:ring-2 focus-visible:ring-[var(--hb-accent)] dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100'}
       >
         <option value="en">English</option>
@@ -93,8 +93,9 @@ export function PublicHeader() {
           ))}
         </nav>
 
-        <div className="hidden shrink-0 items-center gap-2 xl:flex">
-          {languageSelector('desktop-language', true)}
+        <div className="flex shrink-0 items-center gap-2">
+          {languageSelector('header-language', true)}
+          <div className="hidden shrink-0 items-center gap-2 xl:flex">
           <button
             type="button"
             onClick={toggleTheme}
@@ -112,9 +113,8 @@ export function PublicHeader() {
             {t('donateNow')}
             <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
           </Link>
-        </div>
-
-        <div className="xl:hidden">
+          </div>
+          <div className="xl:hidden">
           <OverflowPopover
             label="More navigation options"
             trigger={<EllipsisVertical className="h-5 w-5" aria-hidden="true" />}
@@ -155,12 +155,12 @@ export function PublicHeader() {
                   <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
                 </Link>
               </div>
-              <div className="space-y-3 border-t border-slate-200 pt-3 dark:border-slate-800">
-                {languageSelector('mobile-language')}
+              <div className="border-t border-slate-200 pt-3 dark:border-slate-800">
                 {themeToggle}
               </div>
             </div>
           </OverflowPopover>
+          </div>
         </div>
       </div>
     </header>
