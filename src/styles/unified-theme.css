@@ -615,3 +615,49 @@ body {
 @media (min-width: 768px) and (max-width: 1023px) {
   .hb-trust-panel { grid-template-columns: minmax(0, 1fr); gap: 2.5rem; }
 }
+
+
+/* Public topbar: clean horizontal navigation inspired by the reference layout. */
+.hb-topbar > div {
+  min-height: 4rem;
+}
+.hb-topbar .hb-public-nav-link {
+  color: var(--hb-muted) !important;
+  text-decoration: none;
+}
+.hb-topbar .hb-public-nav-link:hover,
+.hb-topbar .hb-public-nav-link[aria-current="page"] {
+  color: var(--hb-text-strong) !important;
+}
+.hb-topbar .hb-public-nav-link::after {
+  background: var(--hb-accent-strong);
+}
+.hb-topbar select {
+  min-width: 0;
+  border-radius: 999px !important;
+  background: var(--hb-glass) !important;
+  color: var(--hb-text) !important;
+}
+.hb-topbar select:focus-visible {
+  outline: 2px solid var(--hb-accent) !important;
+  outline-offset: 2px;
+}
+.hb-topbar a:focus-visible,
+.hb-topbar button:focus-visible {
+  outline-color: var(--hb-accent) !important;
+}
+@media (min-width: 1280px) and (max-width: 1439px) {
+  .hb-topbar .hb-public-nav-link {
+    padding-left: .35rem;
+    padding-right: .35rem;
+    font-size: 12px;
+  }
+  .hb-topbar > div {
+    gap: .75rem;
+  }
+}
+@media (max-width: 1279px) {
+  .hb-topbar > div {
+    min-height: 4rem;
+  }
+}
