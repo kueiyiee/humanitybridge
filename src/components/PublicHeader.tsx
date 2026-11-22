@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, NavLink } from 'react-router-dom';
-import { EllipsisVertical, Moon, Sun } from 'lucide-react';
+import { ArrowUpRight, EllipsisVertical, Moon, Sun } from 'lucide-react';
 import { BrandLogo } from './BrandLogo';
 import { OverflowPopover } from './OverflowPopover';
 import { useTheme } from '../contexts/ThemeContext';
@@ -16,10 +16,10 @@ const publicLinks = [
 ];
 
 function publicNavClass(isActive: boolean) {
-  return `inline-flex min-h-10 items-center whitespace-nowrap border-b-2 px-0.5 text-[13px] font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--hb-accent)] ${
+  return `hb-public-nav-link group relative inline-flex min-h-11 items-center whitespace-nowrap px-2 text-[13px] font-semibold tracking-[0.01em] transition-colors duration-200 focus-visible:rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--hb-accent)] after:absolute after:inset-x-2 after:bottom-1 after:h-[2px] after:origin-left after:rounded-full after:bg-[var(--hb-accent-strong)] after:transition-transform after:duration-200 ${
     isActive
-      ? 'border-[var(--hb-accent)] text-[var(--hb-text-strong)]'
-      : 'border-transparent text-[var(--hb-muted)] hover:border-[var(--hb-border)] hover:text-[var(--hb-text-strong)]'
+      ? 'text-[var(--hb-text-strong)] after:scale-x-100'
+      : 'text-[var(--hb-muted)] after:scale-x-0 hover:text-[var(--hb-text-strong)] group-hover:after:scale-x-100'
   }`;
 }
 
@@ -35,14 +35,19 @@ export function PublicHeader() {
   const { theme, toggleTheme } = useTheme();
   const { locale, setLocale, t } = useLocale();
 
-  const languageSelector = (id: string) => (
-    <label className="block" htmlFor={id}>
-      <span className="mb-1.5 block text-[11px] font-semibold text-slate-500 dark:text-slate-400">Language</span>
+  const languageSelector = (id: string, compact = false) => (
+    <label className={compact ? 'block shrink-0' : 'block'} htmlFor={id}>
+      <span className={compact ? 'sr-only' : 'mb-1.5 block text-[11px] font-semibold text-slate-500 dark:text-slate-400'}>
+        Language
+      </span>
       <select
         id={id}
         value={locale}
         onChange={(event) => setLocale(event.currentTarget.value as AppLocale)}
-        className="min-h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none transition focus-visible:ring-2 focus-visible:ring-[#51745a] dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+        aria-label="Select language"
+        className={compact
+          ? 'h-10 w-[10.5rem] rounded-full border border-[var(--hb-border)] bg-[var(--hb-glass)] px-3 text-[12px] font-semibold text-[var(--hb-text)] outline-none transition hover:bg-[var(--hb-glass-strong)] focus-visible:ring-2 focus-visible:ring-[var(--hb-accent)]'
+          : 'min-h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none transition focus-visible:ring-2 focus-visible:ring-[var(--hb-accent)] dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100'}
       >
         <option value="en">English</option>
         <option value="nus">Thok Nath (Nuer) · review in progress</option>
@@ -68,16 +73,19 @@ export function PublicHeader() {
 
   return (
     <header className="hb-topbar sticky top-0 z-50 border-b border-slate-200/70 bg-white/75 text-slate-900 backdrop-blur-2xl dark:border-white/10 dark:bg-black/65 dark:text-slate-100">
-      <div className="mx-auto flex h-[60px] max-w-[1440px] items-center justify-between gap-4 px-4 sm:px-6 lg:h-16 lg:px-8">
+      <div className="mx-auto flex h-[64px] max-w-[1480px] items-center justify-between gap-4 px-4 sm:px-6 xl:h-[76px] xl:px-8">
         <Link
           to="/"
-          className="inline-flex shrink-0 items-center rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#51745a]"
+          className="inline-flex shrink-0 items-center rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--hb-accent)]"
           aria-label="HumanityBridge home"
         >
-          <BrandLogo className="h-[40px] w-[120px]" />
+          <BrandLogo className="h-[42px] w-[132px] xl:h-[46px] xl:w-[148px]" />
         </Link>
 
-        <nav aria-label="Primary navigation" className="hidden min-w-0 flex-1 items-center justify-center gap-5 lg:flex xl:gap-7">
+        <nav
+          aria-label="Primary navigation"
+          className="hidden min-w-0 flex-1 items-center justify-center gap-1 xl:flex 2xl:gap-2"
+        >
           {publicLinks.map(({ to, label }) => (
             <NavLink key={to} to={to} className={({ isActive }) => publicNavClass(isActive)}>
               {label}
@@ -85,13 +93,13 @@ export function PublicHeader() {
           ))}
         </nav>
 
-        <div className="hidden shrink-0 items-center gap-2 lg:flex">
-          {languageSelector('desktop-language')}
+        <div className="hidden shrink-0 items-center gap-2 xl:flex">
+          {languageSelector('desktop-language', true)}
           <button
             type="button"
             onClick={toggleTheme}
             aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#51745a] dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--hb-border)] bg-[var(--hb-glass)] text-[var(--hb-muted)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[var(--hb-glass-strong)] hover:text-[var(--hb-text-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--hb-accent)]"
           >
             {theme === 'dark'
               ? <Sun className="h-4 w-4" aria-hidden="true" />
@@ -99,17 +107,18 @@ export function PublicHeader() {
           </button>
           <Link
             to="/donate"
-            className="inline-flex min-h-10 items-center justify-center rounded-lg border border-[var(--hb-glass-border)] bg-[var(--hb-primary)] px-4 text-[13px] font-semibold text-white shadow-sm transition-all hover:-translate-y-0.5 hover:bg-[var(--hb-primary-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--hb-accent)] dark:text-slate-950"
+            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-full border border-[var(--hb-glass-border)] bg-[var(--hb-primary)] px-5 text-[13px] font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[var(--hb-primary-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--hb-accent)] dark:text-slate-950"
           >
             {t('donateNow')}
+            <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
           </Link>
         </div>
 
-        <div className="lg:hidden">
+        <div className="xl:hidden">
           <OverflowPopover
             label="More navigation options"
             trigger={<EllipsisVertical className="h-5 w-5" aria-hidden="true" />}
-            triggerClassName="hb-menu-trigger inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--hb-glass-border)] bg-[var(--hb-glass)] text-[var(--hb-text)] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[var(--hb-glass-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--hb-accent)]"
+            triggerClassName="hb-menu-trigger inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--hb-glass-border)] bg-[var(--hb-glass)] text-[var(--hb-text)] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[var(--hb-glass-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--hb-accent)]"
             panelClassName="hb-navigation-popover"
           >
             <div className="space-y-3">
@@ -140,9 +149,10 @@ export function PublicHeader() {
                   to="/donate"
                   data-overflow-item
                   data-overflow-close
-                  className="flex min-h-11 items-center rounded-lg bg-[#24563a] px-3 text-sm font-semibold text-white transition-colors hover:bg-[#183f2b] dark:bg-cyan-300 dark:text-slate-950 dark:hover:bg-cyan-200"
+                  className="flex min-h-11 items-center justify-center gap-2 rounded-full bg-[var(--hb-primary)] px-3 text-sm font-semibold text-white transition-colors hover:bg-[var(--hb-primary-hover)] dark:text-slate-950"
                 >
                   {t('donateNow')}
+                  <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
                 </Link>
               </div>
               <div className="space-y-3 border-t border-slate-200 pt-3 dark:border-slate-800">
