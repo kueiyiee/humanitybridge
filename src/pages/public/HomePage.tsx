@@ -419,178 +419,20 @@ export function HomePage() {
         </div>
       </section>
 
-      <section
-        aria-labelledby="our-beginning-heading"
-        className="border-y border-[#e4e5da] bg-[#f1f0e7] dark:border-[#354738] dark:bg-[#141e17]"
-      >
-        <div className="mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-20 lg:px-10">
-          <div className="grid gap-10">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#52745d]">
-                Our beginning · A gift rooted in service
-              </p>
-              <h2
-                id="our-beginning-heading"
-                className="mt-4 max-w-2xl font-editorial text-3xl font-semibold leading-tight tracking-tight text-[#183b2b] sm:text-4xl lg:text-5xl"
-              >
-                A Technology Gift Inspired by Community Service.
-              </h2>
-              <div className="mt-7 max-w-2xl space-y-4 text-[15px] leading-7 text-[#59675d]">
-                <p>
-                  HumanityBridge was conceived and developed by Kuei Poch Kuei, a fourth-year Computer Science student at Dilla University, and presented to Paul Ruot Bayoch Gtaluak as a technology gift inspired by community service.
-                </p>
-                <p>
-                  The gift recognises Paul’s commitment to listening to community members, identifying humanitarian needs, and documenting circumstances so that people can be connected with appropriate support.
-                </p>
-                <p>
-                  The initiative was formally communicated and presented on Monday, 16 November 2026, at 2:55 p.m.
-                </p>
-                <p>
-                  The platform provides a structured environment for documenting community needs, managing reviewed humanitarian cases, and connecting people with individuals and organisations willing to help.
-                </p>
-                <p>
-                  Its purpose is straightforward: help communities make their needs visible while ensuring that assistance is handled with dignity, care, and accountability.
-                </p>
-              </div>
-
-              <div className="mt-8 border-l border-[#bca36e] pl-5 sm:pl-6">
-                <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#8b7041]">
-                  Initiative milestone
-                </p>
-                <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                  <time dateTime="2026-11-16T14:55" className="font-editorial text-xl font-semibold text-[#294633] sm:text-2xl">
-                    Monday, 16 November 2026
-                  </time>
-                  <span className="text-sm font-semibold tabular-nums text-[#8b7041]">2:55 PM</span>
-                </div>
-                <p className="mt-2 text-sm leading-6 text-[#657168]">
-                  Initiative communicated and HumanityBridge presented as a technology gift.
-                </p>
-              </div>
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <article className="rounded-2xl border border-[#e2e2d7] bg-white p-6 shadow-[0_12px_36px_-28px_rgba(15,23,42,0.28)] sm:p-7">
-                <div className="flex items-start gap-4">
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#edf1e8] text-[#416348]">
-                    <Gift className="h-5 w-5" aria-hidden="true" />
-                  </span>
-                  <div>
-                    <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#8b7041]">
-                      Initiator and technology creator
-                    </p>
-                    <h3 className="mt-2 font-editorial text-2xl font-semibold leading-tight text-[#203c2a]">
-                      Kuei Poch Kuei
-                    </h3>
-                    <p className="mt-2 text-sm font-medium leading-6 text-[#45594a]">
-                      Fourth-year Computer Science Student, Dilla University
-                    </p>
-                  </div>
-                </div>
-                <p className="mt-5 text-sm leading-6 text-[#657168]">
-                  The individual who conceived, developed, and presented HumanityBridge as a technology gift in recognition of community service.
-                </p>
-                <div className="mt-5 grid gap-3 border-t border-[#ecece4] pt-5 sm:grid-cols-2">
-                  <a
-                    href="https://www.kueiyiee.tech"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="group rounded-xl border border-[#e5e5dc] p-4 transition-colors hover:border-[#9eaf9d] hover:bg-[#f8f9f5] focus-visible:outline"
-                  >
-                    <span className="block text-xs font-bold uppercase tracking-wide text-[#294633]">
-                      KUEIYIEE TECHNOLOGIES
-                    </span>
-                    <span className="mt-1 flex items-center justify-between gap-2 text-xs text-[#68776b]">
-                      Official Technology Company
-                      <ArrowUpRight className="h-4 w-4 shrink-0 text-[#52745d]" aria-hidden="true" />
-                    </span>
-                  </a>
-                  <a
-                    href="https://kuei-portfolio.vercel.app"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="group rounded-xl border border-[#e5e5dc] p-4 transition-colors hover:border-[#9eaf9d] hover:bg-[#f8f9f5] focus-visible:outline"
-                  >
-                    <span className="block text-xs font-bold uppercase tracking-wide text-[#294633]">
-                      Personal Portfolio
-                    </span>
-                    <span className="mt-1 flex items-center justify-between gap-2 text-xs text-[#68776b]">
-                      Professional Portfolio
-                      <ArrowUpRight className="h-4 w-4 shrink-0 text-[#52745d]" aria-hidden="true" />
-                    </span>
-                  </a>
-                </div>
-              </article>
-
-              <article className="rounded-2xl border border-[#e2e2d7] bg-white p-6 shadow-[0_12px_36px_-28px_rgba(15,23,42,0.28)] sm:p-7">
-                <div className="flex items-start gap-4">
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#f2eee3] text-[#8b7041]">
-                    <HeartHandshake className="h-5 w-5" aria-hidden="true" />
-                  </span>
-                  <div>
-                    <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#8b7041]">
-                      Community-service inspiration
-                    </p>
-                    <h3 className="mt-2 font-editorial text-2xl font-semibold leading-tight text-[#203c2a]">
-                      Paul Ruot Bayoch Gtaluak
-                    </h3>
-                    <p className="mt-2 text-sm font-medium leading-6 text-[#45594a]">
-                      Community-Service Inspiration and Recipient of the Gift
-                    </p>
-                  </div>
-                </div>
-                <p className="mt-5 text-sm leading-6 text-[#657168]">
-                  Recognised for his commitment to listening to community members, identifying humanitarian needs, and documenting circumstances to help connect people with support.
-                </p>
-              </article>
-            </div>
+      <section className="border-y border-[#d9dee1] bg-transparent">
+        <div className="mx-auto grid max-w-7xl gap-8 px-5 py-14 sm:px-8 sm:py-16 lg:grid-cols-[1fr_auto] lg:items-center lg:px-10">
+          <div className="max-w-3xl">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#697278]">Our purpose</p>
+            <h2 className="mt-3 font-editorial text-3xl font-semibold leading-tight tracking-tight text-[#252a2e] sm:text-4xl">
+              Technology in service of human dignity.
+            </h2>
+            <p className="mt-4 max-w-2xl text-base leading-7 text-[#697278]">
+              HumanityBridge was created to help communities document humanitarian needs, share their stories with consent, and connect with responsible support. Learn about the people, principles and work behind the initiative.
+            </p>
           </div>
-
-          <aside
-            aria-labelledby="technology-creator-contact-heading"
-            className="mt-10 rounded-[1.5rem] bg-[#1e4932] p-6 text-white sm:p-9 lg:mt-14 lg:flex lg:items-center lg:justify-between lg:gap-10 lg:p-10"
-          >
-            <div className="max-w-2xl">
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#d7c08c]">
-                Professional contact
-              </p>
-              <h3
-                id="technology-creator-contact-heading"
-                className="mt-3 font-editorial text-2xl font-semibold leading-tight sm:text-3xl"
-              >
-                Connect with the Technology Creator
-              </h3>
-              <p className="mt-3 text-sm leading-6 text-[#e2e8df] sm:text-base">
-                Interested in the development of HumanityBridge, technology partnerships, software engineering, digital transformation, or related initiatives?
-              </p>
-              <p className="mt-2 text-sm leading-6 text-[#e2e8df]">
-                Visit KUEIYIEE TECHNOLOGIES or explore Kuei Poch Kuei’s professional portfolio to learn more and find the appropriate contact channels.
-              </p>
-              <p className="mt-3 text-xs leading-5 text-[#d4dfd4]">
-                These professional links are for technology-related enquiries; HumanityBridge donations and humanitarian enquiries remain separate.
-              </p>
-            </div>
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row lg:mt-0 lg:shrink-0 lg:flex-col xl:flex-row">
-              <a
-                href="https://www.kueiyiee.tech"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-[#f1e7ce] px-5 text-sm font-semibold text-[#294633] transition-colors hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-              >
-                Visit KUEIYIEE TECHNOLOGIES
-                <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
-              </a>
-              <a
-                href="https://kuei-portfolio.vercel.app"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg border border-white/40 px-5 text-sm font-semibold text-white transition-colors hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-              >
-                Explore Professional Portfolio
-                <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
-              </a>
-            </div>
-          </aside>
+          <Link to="/about" className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-[#30373c] underline decoration-[#aeb5ba] underline-offset-4 hover:text-[#111518] focus-visible:outline">
+            About HumanityBridge <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
+          </Link>
         </div>
       </section>
 
