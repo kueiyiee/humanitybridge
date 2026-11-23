@@ -185,27 +185,27 @@ export function HomePage() {
       <section className="overflow-hidden bg-[#f1f0e7]">
         <div className="mx-auto grid max-w-7xl items-center gap-10 px-5 py-12 sm:px-8 sm:py-16 lg:grid-cols-2 lg:gap-16 lg:px-10 lg:py-20">
           <div className="max-w-xl">
-            <p className="inline-flex items-center gap-2 rounded-full border border-[#d6dfd3] bg-white/70 px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.15em] text-[#416348]">
+            <p className="hb-home-kicker inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.15em]">
               <span className="h-1.5 w-1.5 rounded-full bg-[#b38b45]" aria-hidden="true" />
               HumanityBridge · Local stories, accountable support
             </p>
-            <h1 className="mt-7 font-editorial text-[2.65rem] font-semibold leading-[1.08] tracking-tight text-[#183b2b] sm:text-6xl">
+            <h1 className="hb-home-headline mt-7 font-editorial text-[2.65rem] font-semibold leading-[1.08] tracking-tight sm:text-6xl">
               {t('heroHeadline')}
             </h1>
-            <p className="mt-6 max-w-lg text-base leading-7 text-[#56645a] sm:text-lg sm:leading-8">
+            <p className="hb-home-copy mt-6 max-w-lg text-base leading-7 sm:text-lg sm:leading-8">
               {t('heroSub')}
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link
                 to="/stories"
-                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-[#20583a] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#17472e] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#20583a]"
+                className="hb-home-primary-action inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
               >
                 {t('ctaStories')}
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Link>
               <Link
                 to="/cases"
-                className="inline-flex min-h-12 items-center justify-center rounded-lg border border-[#b8c5b8] bg-white/60 px-5 text-sm font-semibold text-[#294633] transition-colors hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#20583a]"
+                className="hb-home-secondary-action inline-flex min-h-12 items-center justify-center rounded-xl border px-5 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
               >
                 {t('ctaDifference')}
               </Link>
