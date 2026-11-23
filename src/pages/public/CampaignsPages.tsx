@@ -36,20 +36,16 @@ export function CampaignsPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <div className="max-w-2xl">
-        <p className="text-xs font-semibold uppercase tracking-widest text-[#16865D] dark:text-[#1FA977]">
-          Coordinated Humanitarian Relief
-        </p>
-        <h1 className="mt-2 font-editorial text-4xl font-semibold text-[#0B1F3A] dark:text-white">
-          Campaigns
-        </h1>
-        <p className="mt-3 text-base text-slate-600 dark:text-slate-300">
+      <div className="hb-page-intro max-w-2xl">
+        <p className="hb-eyebrow">Coordinated humanitarian relief</p>
+        <h1 className="hb-page-title mt-2">Campaigns</h1>
+        <p className="hb-page-description mt-3">
           Campaigns connect to reviewed humanitarian needs. Published contribution totals reflect confirmed records;
           online payments are not enabled.
         </p>
       </div>
 
-      <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-between items-stretch sm:items-center">
+      <div className="hb-campaign-toolbar mt-8 flex flex-col gap-4 rounded-2xl border p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
         <div className="relative flex-1 max-w-md">
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" aria-hidden="true" />
           <input
@@ -58,19 +54,17 @@ export function CampaignsPage() {
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search campaigns..."
             aria-label="Search campaigns"
-            className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-white dark:bg-[#0D223D] border border-slate-200 dark:border-slate-700 text-sm"
+            className="hb-themed-input w-full rounded-xl border py-3 pl-10 pr-4 text-sm"
           />
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Filter campaigns by status">
           {['', 'ACTIVE', 'COMPLETED'].map((st) => (
             <button
               key={st || 'ALL'}
               type="button"
               onClick={() => setStatus(st)}
-              className={`px-3.5 py-2 rounded-lg text-xs font-medium transition-colors ${
-                status === st
-                  ? 'bg-[#0B1F3A] dark:bg-[#00BCEB] text-white dark:text-[#071324]'
-                  : 'bg-white dark:bg-[#0D223D] border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'
+              className={`hb-filter-pill min-h-10 rounded-xl border px-4 py-2.5 text-xs font-bold tracking-wide transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--hb-accent)] ${
+                status === st ? 'hb-filter-pill-active' : ''
               }`}
             >
               {st || 'All Campaigns'}
@@ -86,7 +80,7 @@ export function CampaignsPage() {
           ))}
         </div>
       ) : campaigns.length === 0 ? (
-        <div className="mt-10 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0D223D] p-12 text-center">
+        <div className="hb-empty-state mt-10 rounded-2xl border p-10 text-center sm:p-14">
           <p className="text-sm text-[#748196] dark:text-slate-400">No campaigns found matching your selection.</p>
         </div>
       ) : (
@@ -96,7 +90,7 @@ export function CampaignsPage() {
             return (
               <article
                 key={camp.id}
-                className="bg-white dark:bg-[#0D223D] border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden flex flex-col"
+                className="hb-campaign-card flex flex-col overflow-hidden rounded-2xl border"
               >
                 <div className="aspect-[4/3] overflow-hidden bg-slate-100 dark:bg-slate-900">
                   <ResilientImage
@@ -107,27 +101,27 @@ export function CampaignsPage() {
                   />
                 </div>
                 <div className="p-6 flex-1 flex flex-col">
-                  <p className="text-xs font-medium text-[#16865D] dark:text-[#1FA977]">{camp.status}</p>
-                  <h2 className="mt-2 font-editorial text-xl font-semibold text-[#0B1F3A] dark:text-white">
+                  <p className="hb-status-label text-xs font-bold uppercase tracking-[0.14em]">{camp.status}</p>
+                  <h2 className="hb-card-title mt-2 font-editorial text-xl font-semibold">
                     {camp.title}
                   </h2>
-                  <p className="mt-2 text-sm text-slate-600 dark:text-slate-300 leading-relaxed flex-1">
+                  <p className="hb-card-copy mt-2 flex-1 text-sm leading-relaxed">
                     {camp.summary}
                   </p>
                   <div className="mt-5">
                     <div className="flex justify-between text-xs mb-1.5">
                       <span className="font-mono-tabular font-semibold">${camp.raisedAmount.toLocaleString()}</span>
-                      <span className="font-mono-tabular text-[#748196] dark:text-slate-400">
+                      <span className="hb-muted-copy font-mono-tabular">
                         of ${camp.targetAmount.toLocaleString()} ({pct}%)
                       </span>
                     </div>
                     <div className="h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
-                      <div className="h-full bg-[#16865D] dark:bg-[#00BCEB]" style={{ width: `${pct}%` }} />
+                      <div className="hb-progress-fill h-full" style={{ width: `${pct}%` }} />
                     </div>
                   </div>
                   <Link
                     to={`/campaigns/${camp.slug}`}
-                    className="mt-5 block text-center py-2.5 rounded-lg bg-[#0B1F3A] dark:bg-[#00BCEB] text-white dark:text-[#071324] text-sm font-semibold hover:bg-[#123F69] transition-colors"
+                    className="hb-primary-action mt-5 block rounded-xl py-3 text-center text-sm font-bold transition-colors"
                   >
                     View Campaign
                   </Link>

@@ -1245,3 +1245,210 @@ body { background:var(--hb-app-background); color:var(--hb-copy); }
   html { scroll-behavior:auto !important; }
   *,*::before,*::after { animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; }
 }
+
+
+/* Theme-safe public controls, campaign filters and institutional content. */
+:root {
+  --hb-ui-surface: #ffffff;
+  --hb-ui-surface-soft: #f3f5f5;
+  --hb-ui-text: #202528;
+  --hb-ui-muted: #59646a;
+  --hb-ui-border: #d5dadd;
+  --hb-ui-accent: #303a40;
+  --hb-ui-accent-contrast: #ffffff;
+  --hb-ui-focus: #687d8b;
+}
+.dark {
+  --hb-ui-surface: #202428;
+  --hb-ui-surface-soft: #292e33;
+  --hb-ui-text: #f3f5f6;
+  --hb-ui-muted: #c0c7cb;
+  --hb-ui-border: #485158;
+  --hb-ui-accent: #d8dfe3;
+  --hb-ui-accent-contrast: #171b1e;
+  --hb-ui-focus: #a9c0ce;
+}
+.hb-language-menu {
+  color: var(--hb-ui-text);
+  background: var(--hb-ui-surface);
+  border-color: var(--hb-ui-border);
+  box-shadow: 0 22px 60px -28px rgb(0 0 0 / 38%), 0 2px 10px rgb(0 0 0 / 8%);
+}
+.hb-language-menu [role="menuitemradio"] { color: var(--hb-ui-text); }
+.hb-language-menu [role="menuitemradio"][aria-checked="true"] {
+  background: var(--hb-ui-surface-soft);
+  color: var(--hb-ui-text);
+  box-shadow: inset 3px 0 0 var(--hb-ui-focus);
+}
+.hb-language-menu [role="menuitemradio"]:hover { background: var(--hb-ui-surface-soft); }
+.hb-public-shell .hb-page-intro .hb-eyebrow,
+.hb-institutional-page .hb-eyebrow {
+  color: var(--hb-ui-muted);
+  font-size: .7rem;
+  font-weight: 800;
+  letter-spacing: .17em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+.hb-page-title {
+  color: var(--hb-ui-text);
+  font-weight: 700;
+  letter-spacing: -.045em;
+  line-height: 1.08;
+}
+.hb-page-description { color: var(--hb-ui-muted); }
+.hb-campaign-toolbar {
+  background: var(--hb-ui-surface);
+  border-color: var(--hb-ui-border);
+  box-shadow: 0 14px 38px -32px rgb(0 0 0 / 36%);
+}
+.hb-themed-input,
+.hb-themed-select {
+  min-height: 2.9rem;
+  color: var(--hb-ui-text);
+  background-color: var(--hb-ui-surface);
+  border-color: var(--hb-ui-border);
+  box-shadow: inset 0 1px 2px rgb(0 0 0 / 3%);
+}
+.hb-themed-input::placeholder { color: var(--hb-ui-muted); opacity: .85; }
+.hb-themed-input:focus,
+.hb-themed-select:focus {
+  border-color: var(--hb-ui-focus);
+  outline: 3px solid color-mix(in srgb, var(--hb-ui-focus) 28%, transparent);
+  outline-offset: 1px;
+}
+.hb-themed-select option {
+  color: var(--hb-ui-text);
+  background: var(--hb-ui-surface);
+}
+.hb-filter-pill {
+  color: var(--hb-ui-muted);
+  background: var(--hb-ui-surface-soft);
+  border-color: var(--hb-ui-border);
+}
+.hb-filter-pill:hover {
+  color: var(--hb-ui-text);
+  border-color: var(--hb-ui-focus);
+  background: var(--hb-ui-surface);
+}
+.hb-filter-pill-active {
+  color: var(--hb-ui-accent-contrast);
+  background: var(--hb-ui-accent);
+  border-color: var(--hb-ui-accent);
+  box-shadow: 0 5px 16px -12px rgb(0 0 0 / 70%);
+}
+.hb-filter-pill-active:hover { color: var(--hb-ui-accent-contrast); background: var(--hb-ui-accent); }
+.hb-campaign-card {
+  color: var(--hb-ui-text);
+  background: var(--hb-ui-surface);
+  border-color: var(--hb-ui-border);
+  box-shadow: 0 18px 44px -36px rgb(0 0 0 / 42%);
+}
+.hb-campaign-card > div:last-child { background: transparent; }
+.hb-status-label { color: var(--hb-ui-muted); }
+.hb-card-title { color: var(--hb-ui-text); }
+.hb-card-copy { color: var(--hb-ui-muted); }
+.hb-muted-copy { color: var(--hb-ui-muted); }
+.hb-progress-fill { background: var(--hb-ui-accent); }
+.hb-primary-action {
+  color: var(--hb-ui-accent-contrast);
+  background: var(--hb-ui-accent);
+}
+.hb-primary-action:hover { filter: brightness(.9); }
+.hb-empty-state {
+  color: var(--hb-ui-muted);
+  background: var(--hb-ui-surface);
+  border-color: var(--hb-ui-border);
+}
+.hb-mission-hero {
+  color: var(--hb-ui-text);
+  border-color: var(--hb-ui-border);
+  background:
+    radial-gradient(ellipse at 88% 12%, color-mix(in srgb, var(--hb-ui-focus) 18%, transparent), transparent 42%),
+    linear-gradient(135deg, var(--hb-ui-surface), var(--hb-ui-surface-soft));
+}
+.hb-mission-hero-mark {
+  position: absolute;
+  right: 2rem;
+  bottom: -3.2rem;
+  color: color-mix(in srgb, var(--hb-ui-muted) 12%, transparent);
+  font-size: clamp(8rem, 20vw, 16rem);
+  font-weight: 900;
+  letter-spacing: -.12em;
+  line-height: 1;
+  pointer-events: none;
+  user-select: none;
+}
+.hb-statement-panel {
+  min-width: 0;
+  padding: clamp(1.5rem, 4vw, 2.5rem);
+  border: 1px solid var(--hb-ui-border);
+  border-radius: 1.35rem;
+  background: var(--hb-ui-surface);
+  box-shadow: 0 18px 44px -38px rgb(0 0 0 / 42%);
+}
+.hb-statement-panel-alt {
+  background: var(--hb-ui-surface-soft);
+}
+.hb-statement-kicker {
+  color: var(--hb-ui-muted);
+  font-size: .68rem;
+  font-weight: 800;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+}
+.hb-statement-title {
+  max-width: 24rem;
+  margin-top: 1rem;
+  color: var(--hb-ui-text);
+  font-size: clamp(1.65rem, 3vw, 2.25rem);
+  font-weight: 700;
+  letter-spacing: -.04em;
+  line-height: 1.15;
+  text-wrap: balance;
+}
+.hb-statement-copy {
+  max-width: 34rem;
+  margin-top: 1rem;
+  color: var(--hb-ui-muted);
+  font-size: .98rem;
+  line-height: 1.8;
+}
+.hb-section-title {
+  color: var(--hb-ui-text);
+  font-size: clamp(1.8rem, 3.5vw, 2.5rem);
+  font-weight: 700;
+  letter-spacing: -.04em;
+}
+.hb-values-list {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: .75rem;
+}
+.hb-value-item {
+  display: flex;
+  min-height: 3.8rem;
+  align-items: center;
+  gap: 1rem;
+  border-bottom: 1px solid var(--hb-ui-border);
+  padding: .65rem .2rem;
+  color: var(--hb-ui-text);
+}
+.hb-value-item span {
+  color: var(--hb-ui-muted);
+  font-size: .68rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  letter-spacing: .1em;
+}
+.hb-value-item strong { font-size: .92rem; font-weight: 650; }
+@media (min-width: 640px) {
+  .hb-values-list { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 2rem; }
+}
+@media (min-width: 1024px) {
+  .hb-values-list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 639px) {
+  .hb-mission-hero-mark { right: .5rem; bottom: -1.6rem; font-size: 8rem; }
+  .hb-statement-panel { border-radius: 1.1rem; }
+}

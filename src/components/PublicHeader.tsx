@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
-import { ArrowUpRight, Check, EllipsisVertical, Globe2, HeartHandshake, Moon, Sun } from 'lucide-react';
+import { ArrowUpRight, Check, ChevronDown, EllipsisVertical, Globe2, HeartHandshake, Moon, Sun } from 'lucide-react';
 import { BrandLogo } from './BrandLogo';
 import { OverflowPopover } from './OverflowPopover';
 import { useTheme } from '../contexts/ThemeContext';
@@ -93,20 +93,23 @@ export function PublicHeader() {
               aria-expanded={languageMenuOpen}
               aria-controls="hb-language-menu"
               title={locale === 'en' ? 'Language: English (British)' : 'Language: Thok Nath'}
-              className={iconButtonClass}
+              className={`${iconButtonClass} h-10 w-10 gap-1.5 rounded-full px-0 sm:w-[76px] sm:px-3`}
             >
               <Globe2 className="h-[18px] w-[18px]" aria-hidden="true" />
+              <span className="hidden text-[10px] font-extrabold tracking-[0.12em] sm:inline">{locale === 'en' ? 'EN' : 'NUS'}</span>
+              <ChevronDown className={`hidden h-3.5 w-3.5 opacity-70 transition-transform sm:inline ${languageMenuOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
             </button>
             {languageMenuOpen && (
               <div
                 id="hb-language-menu"
                 role="menu"
                 aria-label="Choose website language"
-                className="absolute right-0 top-[calc(100%+12px)] z-[70] w-56 overflow-hidden rounded-2xl border border-[var(--hb-glass-border)] bg-[var(--hb-glass-strong)] p-2 text-[var(--hb-text)] shadow-2xl shadow-black/15 backdrop-blur-2xl"
+                className="hb-language-menu absolute right-0 top-[calc(100%+12px)] z-[70] w-[min(18rem,calc(100vw-1.5rem))] overflow-hidden rounded-2xl border p-2 shadow-2xl backdrop-blur-2xl"
               >
-                <p className="px-3 pb-2 pt-1 text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--hb-muted)]">
-                  Website language
-                </p>
+                <div className="mb-1 flex items-center justify-between px-3 pb-2 pt-1">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--hb-muted)]">Website language</p>
+                  <span className="rounded-full border border-[var(--hb-glass-border)] px-2 py-0.5 text-[9px] font-bold tracking-wide text-[var(--hb-muted)]">LANGUAGE</span>
+                </div>
                 <button
                   type="button"
                   role="menuitemradio"

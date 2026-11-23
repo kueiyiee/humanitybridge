@@ -97,47 +97,66 @@ export function AboutUsPage() {
 }
 
 export function MissionVisionPage() {
-  return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-14 space-y-10">
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-widest text-[#16865D] dark:text-[#1FA977]">
-          Purpose & Values
-        </p>
-        <h1 className="mt-2 font-editorial text-4xl font-semibold text-[#0B1F3A] dark:text-white">
-          Mission & Vision
-        </h1>
-      </div>
+  const values = [
+    'Human Dignity',
+    'Compassion',
+    'Integrity',
+    'Transparency',
+    'Accountability',
+    'Community Empowerment',
+    'Inclusion',
+    'Trust',
+    'Responsible Humanitarian Action',
+  ];
 
-      <div className="bg-white dark:bg-[#0D223D] border border-slate-200 dark:border-slate-800 rounded-xl p-8 space-y-6">
-        <div>
-          <h2 className="font-editorial text-2xl font-semibold text-[#0B1F3A] dark:text-white">Core Mission</h2>
-          <p className="mt-2 text-base text-slate-600 dark:text-slate-300 leading-relaxed">
+  return (
+    <main className="hb-institutional-page mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
+      <header className="hb-mission-hero relative overflow-hidden rounded-[1.75rem] border px-6 py-9 sm:px-10 sm:py-12 lg:px-14">
+        <p className="hb-eyebrow">Purpose, direction and principles</p>
+        <h1 className="hb-page-title mt-3 max-w-3xl text-4xl sm:text-5xl">Mission &amp; Vision</h1>
+        <p className="hb-page-description mt-4 max-w-2xl text-base leading-7 sm:text-lg">
+          A clear commitment to human dignity, community-led action and responsible support.
+        </p>
+        <div className="hb-mission-hero-mark" aria-hidden="true">HB</div>
+      </header>
+
+      <section className="mt-7 grid gap-5 lg:grid-cols-2" aria-label="Mission and vision statements">
+        <article className="hb-statement-panel">
+          <span className="hb-statement-kicker">01 / Our mission</span>
+          <h2 className="hb-statement-title">Connect people with meaningful support.</h2>
+          <p className="hb-statement-copy">
             To connect vulnerable communities with opportunities, resources, and compassionate assistance while preserving
             human dignity, privacy, transparency, and accountability.
           </p>
+        </article>
+        <article className="hb-statement-panel hb-statement-panel-alt">
+          <span className="hb-statement-kicker">02 / Our vision</span>
+          <h2 className="hb-statement-title">A future where every community can be heard.</h2>
+          <p className="hb-statement-copy">
+            To help build inclusive communities where genuine needs are recognised, people are treated with respect,
+            and responsible support reaches those who need it through trusted, transparent connections.
+          </p>
+        </article>
+      </section>
+
+      <section className="mt-12 sm:mt-16" aria-labelledby="hb-guiding-values">
+        <div className="max-w-2xl">
+          <p className="hb-eyebrow">The principles behind our work</p>
+          <h2 id="hb-guiding-values" className="hb-section-title mt-2">Guiding values</h2>
+          <p className="hb-page-description mt-3">
+            These principles shape how we listen, document needs, protect personal information and remain accountable.
+          </p>
         </div>
-        <div className="pt-6 border-t border-slate-100 dark:border-slate-800">
-          <h2 className="font-editorial text-2xl font-semibold text-[#0B1F3A] dark:text-white">Guiding Values</h2>
-          <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm font-medium text-slate-700 dark:text-slate-200">
-            {[
-              'Human Dignity',
-              'Compassion',
-              'Integrity',
-              'Transparency',
-              'Accountability',
-              'Community Empowerment',
-              'Inclusion',
-              'Trust',
-              'Responsible Humanitarian Action',
-            ].map((val) => (
-              <div key={val} className="p-3.5 rounded-lg bg-[#F7F9FC] dark:bg-[#071324] border border-slate-200 dark:border-slate-800">
-                {val}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
+        <ul className="hb-values-list mt-7">
+          {values.map((value, index) => (
+            <li key={value} className="hb-value-item">
+              <span aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
+              <strong>{value}</strong>
+            </li>
+          ))}
+        </ul>
+      </section>
+    </main>
   );
 }
 

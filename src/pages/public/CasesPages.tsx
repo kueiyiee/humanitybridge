@@ -68,7 +68,7 @@ export function PeopleInNeedPage() {
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by reference (e.g. HB-CASE-2026-101) or keyword..."
             aria-label="Search verified cases"
-            className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-white dark:bg-[#0D223D] border border-slate-200 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-[#00BCEB]"
+            className="hb-themed-input w-full rounded-xl border py-3 pl-10 pr-4 text-sm"
           />
         </div>
         <div className="md:col-span-3">
@@ -76,7 +76,7 @@ export function PeopleInNeedPage() {
             value={category}
             onChange={(e) => setCategory(e.target.value)}
             aria-label="Filter by category"
-            className="w-full py-2.5 px-3 rounded-lg bg-white dark:bg-[#0D223D] border border-slate-200 dark:border-slate-700 text-sm"
+            className="hb-themed-select w-full rounded-xl border px-3 py-3 text-sm"
           >
             <option value="">All Categories</option>
             {categories.map((c) => (
@@ -107,7 +107,7 @@ export function PeopleInNeedPage() {
           ))}
         </div>
       ) : cases.length === 0 ? (
-        <div className="mt-10 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0D223D] p-12 text-center">
+        <div className="hb-empty-state mt-10 rounded-2xl border p-10 text-center sm:p-14">
           <p className="text-sm text-[#748196] dark:text-slate-400">
             No verified public cases match your search criteria.
           </p>
