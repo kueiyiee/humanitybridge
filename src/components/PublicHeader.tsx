@@ -92,11 +92,11 @@ export function PublicHeader() {
               aria-haspopup="menu"
               aria-expanded={languageMenuOpen}
               aria-controls="hb-language-menu"
-              title={locale === 'en' ? 'Language: English (British)' : 'Language: Thok Nath'}
+              title={locale === 'en' ? 'Language: English (British)' : 'Language: Thok Nath (NATH)'}
               className={`${iconButtonClass} h-10 w-10 gap-1.5 rounded-full px-0 sm:w-[76px] sm:px-3`}
             >
               <Globe2 className="h-[18px] w-[18px]" aria-hidden="true" />
-              <span className="hidden text-[10px] font-extrabold tracking-[0.12em] sm:inline">{locale === 'en' ? 'EN' : 'NUS'}</span>
+              <span className="hidden text-[10px] font-extrabold tracking-[0.12em] sm:inline">{locale === 'en' ? 'EN' : 'NATH'}</span>
               <ChevronDown className={`hidden h-3.5 w-3.5 opacity-70 transition-transform sm:inline ${languageMenuOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
             </button>
             {languageMenuOpen && (
@@ -127,7 +127,7 @@ export function PublicHeader() {
                   onClick={() => chooseLocale('nus')}
                   className="flex min-h-11 w-full items-center justify-between rounded-xl px-3 text-left text-sm font-semibold transition-colors hover:bg-[var(--hb-glass)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--hb-accent)]"
                 >
-                  <span>Thok Nath (Nuer)</span>
+                  <span>Thok Nath (NATH)</span>
                   {locale === 'nus' && <Check className="h-4 w-4 text-[var(--hb-accent-strong)]" aria-hidden="true" />}
                 </button>
               </div>

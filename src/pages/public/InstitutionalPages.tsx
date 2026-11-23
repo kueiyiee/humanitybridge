@@ -85,10 +85,10 @@ export function AboutUsPage() {
       </div>
 
       <div className="flex flex-wrap gap-4">
-        <Link to="/mission" className="px-5 py-2.5 rounded-lg bg-[#0B1F3A] dark:bg-[#00BCEB] text-white dark:text-[#071324] text-sm font-semibold">
+        <Link to="/mission" className="hb-primary-action inline-flex min-h-11 items-center justify-center rounded-xl px-5 py-3 text-sm font-bold transition-colors">
           Explore Mission & Vision
         </Link>
-        <Link to="/how-it-works" className="px-5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 text-sm font-semibold">
+        <Link to="/how-it-works" className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[var(--hb-ui-border)] px-5 py-3 text-sm font-semibold text-[var(--hb-ui-text)] transition-colors hover:bg-[var(--hb-ui-surface-soft)]">
           How Verification Works
         </Link>
       </div>
