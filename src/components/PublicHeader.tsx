@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
-import { ArrowUpRight, Check, EllipsisVertical, Globe2, Moon, Sun } from 'lucide-react';
+import { ArrowUpRight, Check, EllipsisVertical, Globe2, HeartHandshake, Moon, Sun } from 'lucide-react';
 import { BrandLogo } from './BrandLogo';
 import { OverflowPopover } from './OverflowPopover';
 import { useTheme } from '../contexts/ThemeContext';
@@ -35,6 +35,23 @@ export function PublicHeader() {
   const { theme, toggleTheme } = useTheme();
   const { locale, setLocale, t } = useLocale();
   const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
+  const languageMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!languageMenuOpen) return;
+    const closeOnOutsidePointer = (event: PointerEvent) => {
+      if (!languageMenuRef.current?.contains(event.target as Node)) setLanguageMenuOpen(false);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setLanguageMenuOpen(false);
+    };
+    document.addEventListener('pointerdown', closeOnOutsidePointer);
+    document.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.removeEventListener('pointerdown', closeOnOutsidePointer);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [languageMenuOpen]);
 
   const chooseLocale = (nextLocale: AppLocale) => {
     setLocale(nextLocale);
@@ -67,7 +84,7 @@ export function PublicHeader() {
         </nav>
 
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-          <div className="relative">
+          <div className="relative" ref={languageMenuRef}>
             <button
               type="button"
               onClick={() => setLanguageMenuOpen((open) => !open)}
@@ -126,12 +143,15 @@ export function PublicHeader() {
               : <Moon className="h-[18px] w-[18px]" aria-hidden="true" />}
           </button>
 
-          <div className="hidden shrink-0 items-center gap-2 xl:flex">
+          <div className="flex shrink-0 items-center gap-1.5">
             <Link
               to="/donate"
-              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-full border border-[var(--hb-glass-border)] bg-[var(--hb-primary)] px-5 text-[13px] font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[var(--hb-primary-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--hb-accent)] dark:text-slate-950"
+              aria-label="Donate to HumanityBridge"
+              title="Donate to HumanityBridge"
+              className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-full border border-[var(--hb-glass-border)] bg-[var(--hb-primary)] px-3 sm:gap-2 sm:px-4 xl:px-5 text-[12px] sm:text-[13px] font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[var(--hb-primary-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--hb-accent)] dark:text-slate-950"
             >
-              {t('donateNow')}
+              <HeartHandshake className="h-4 w-4" aria-hidden="true" />
+              <span className="hidden sm:inline">{t('donateNow')}</span>
               <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
             </Link>
           </div>
@@ -166,17 +186,7 @@ export function PublicHeader() {
                     ))}
                   </nav>
                 </section>
-                <div className="border-t border-slate-200 pt-3 dark:border-slate-800">
-                  <Link
-                    to="/donate"
-                    data-overflow-item
-                    data-overflow-close
-                    className="flex min-h-11 items-center justify-center gap-2 rounded-full bg-[var(--hb-primary)] px-3 text-sm font-semibold text-white transition-colors hover:bg-[var(--hb-primary-hover)] dark:text-slate-950"
-                  >
-                    {t('donateNow')}
-                    <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
-                  </Link>
-                </div>
+
               </div>
             </OverflowPopover>
           </div>
