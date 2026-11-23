@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 
 export type AppLocale = 'en' | 'nus';
 
@@ -11,10 +11,9 @@ const DICTIONARY: Record<AppLocale, Record<string, string>> = {
     ctaDifference: 'Support a community',
     donateNow: 'Donate Now',
   },
-  // Nuer (Thok Nath) uses the Google Translate language code `nus`.
-  // Keep English fallback until each public-facing string has been reviewed by a fluent speaker.
+  // Thok Nath (Nuer) is selectable and persists as a locale. Public copy remains
+  // on the English fallback until translations have been reviewed by fluent speakers.
   nus: {},
-
 };
 
 interface LocaleContextValue {
@@ -26,9 +25,33 @@ interface LocaleContextValue {
 
 const LocaleContext = createContext<LocaleContextValue | undefined>(undefined);
 
+function getInitialLocale(): AppLocale {
+  if (typeof window === 'undefined') return 'en';
+  try {
+    return window.localStorage.getItem('hb-locale') === 'nus' ? 'nus' : 'en';
+  } catch {
+    return 'en';
+  }
+}
+
 export function LocaleProvider({ children }: { children: React.ReactNode }) {
-  const [locale, setLocale] = useState<AppLocale>('en');
+  const [locale, setLocaleState] = useState<AppLocale>(getInitialLocale);
   const dir = 'ltr';
+
+  const setLocale = (nextLocale: AppLocale) => {
+    setLocaleState(nextLocale);
+    try {
+      window.localStorage.setItem('hb-locale', nextLocale);
+    } catch {
+      // Locale selection still works for the current session if storage is unavailable.
+    }
+  };
+
+  useEffect(() => {
+    document.documentElement.lang = locale === 'nus' ? 'nus' : 'en-GB';
+    document.documentElement.dir = dir;
+  }, [locale, dir]);
+
   const t = (key: string) => DICTIONARY[locale]?.[key] || DICTIONARY.en[key] || key;
 
   return (
