@@ -1669,3 +1669,36 @@ body { background:var(--hb-app-background); color:var(--hb-copy); }
   .hb-dashboard-shell main article:hover,
   .hb-dashboard-shell main section[class*="rounded"][class*="border"]:hover { transform:none; }
 }
+
+/* Purple identity for navigation, chart series and dashboard utility controls. */
+.hb-dashboard-shell {
+  --hb-brand-primary:#7653d6;
+  --hb-brand-primary-hover:#6040bd;
+  --hb-brand-link:#6748c5;
+  --hb-brand-accent:#b49af4;
+}
+.dark .hb-dashboard-shell {
+  --hb-brand-primary:#b39af7;
+  --hb-brand-primary-hover:#c9baff;
+  --hb-brand-link:#c8b7ff;
+  --hb-brand-accent:#8d72db;
+}
+.hb-dashboard-shell > header nav button[aria-current="page"] {
+  color:var(--hb-dash-accent-strong) !important;
+  border-bottom-color:var(--hb-dash-accent) !important;
+}
+.hb-dashboard-shell > header nav button[aria-current="page"] span:last-child {
+  background:var(--hb-dash-accent) !important;
+}
+.hb-dashboard-shell > header nav button:not([aria-current="page"]):hover {
+  background:var(--hb-dash-accent-soft) !important;
+  color:var(--hb-dash-accent-strong) !important;
+}
+.hb-dashboard-shell > header button[aria-label*="theme"] {
+  color:var(--hb-dash-accent-strong) !important;
+}
+.hb-dashboard-shell main [class*="bg-amber-"] {
+  border-color:rgba(217,154,48,.22);
+}
+.hb-dashboard-shell main [class*="text-rose-"] { color:#b74660 !important; }
+.dark .hb-dashboard-shell main [class*="text-rose-"] { color:#ff9caf !important; }
