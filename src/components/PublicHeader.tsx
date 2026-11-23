@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
-import { ArrowUpRight, EllipsisVertical, Moon, Sun } from 'lucide-react';
+import { ArrowUpRight, Check, EllipsisVertical, Globe2, Moon, Sun } from 'lucide-react';
 import { BrandLogo } from './BrandLogo';
 import { OverflowPopover } from './OverflowPopover';
 import { useTheme } from '../contexts/ThemeContext';
@@ -34,52 +34,25 @@ function MobileNavClass(isActive: boolean) {
 export function PublicHeader() {
   const { theme, toggleTheme } = useTheme();
   const { locale, setLocale, t } = useLocale();
+  const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
 
-  const languageSelector = (id: string, compact = false) => (
-    <label className={compact ? 'block shrink-0' : 'block'} htmlFor={id}>
-      <span className={compact ? 'sr-only' : 'mb-1.5 block text-[11px] font-semibold text-slate-500 dark:text-slate-400'}>
-        Language
-      </span>
-      <select
-        id={id}
-        value={locale}
-        onChange={(event) => setLocale(event.currentTarget.value as AppLocale)}
-        aria-label="Select language"
-        className={compact
-          ? 'h-10 w-[10.5rem] rounded-full border border-[var(--hb-border)] bg-[var(--hb-glass)] px-3 text-[12px] font-semibold text-[var(--hb-text)] outline-none transition hover:bg-[var(--hb-glass-strong)] focus-visible:ring-2 focus-visible:ring-[var(--hb-accent)]'
-          : 'min-h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none transition focus-visible:ring-2 focus-visible:ring-[var(--hb-accent)] dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100'}
-      >
-        <option value="en">English</option>
-        <option value="nus">Thok Nath (Nuer) · review in progress</option>
-      </select>
-    </label>
-  );
+  const chooseLocale = (nextLocale: AppLocale) => {
+    setLocale(nextLocale);
+    setLanguageMenuOpen(false);
+  };
 
-  const themeToggle = (
-    <button
-      type="button"
-      onClick={toggleTheme}
-      data-overflow-item
-      data-overflow-close
-      className="inline-flex min-h-10 w-full items-center gap-3 rounded-lg px-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
-      aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
-    >
-      {theme === 'dark'
-        ? <Sun className="h-4 w-4" aria-hidden="true" />
-        : <Moon className="h-4 w-4" aria-hidden="true" />}
-      {theme === 'dark' ? 'Light theme' : 'Dark theme'}
-    </button>
-  );
+  const iconButtonClass =
+    'inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[var(--hb-glass-border)] bg-[var(--hb-glass)] text-[var(--hb-muted)] shadow-sm backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--hb-accent)] hover:bg-[var(--hb-glass-strong)] hover:text-[var(--hb-text-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--hb-accent)]';
 
   return (
     <header className="hb-topbar sticky top-0 z-50 border-b border-slate-200/70 bg-white/75 text-slate-900 backdrop-blur-2xl dark:border-white/10 dark:bg-black/65 dark:text-slate-100">
-      <div className="mx-auto flex h-[64px] max-w-[1480px] items-center justify-between gap-4 px-4 sm:px-6 xl:h-[76px] xl:px-8">
+      <div className="mx-auto flex h-[64px] max-w-[1480px] items-center justify-between gap-2 px-3 sm:gap-4 sm:px-6 xl:h-[76px] xl:px-8">
         <Link
           to="/"
-          className="inline-flex shrink-0 items-center rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--hb-accent)]"
+          className="inline-flex min-w-0 shrink items-center rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--hb-accent)]"
           aria-label="HumanityBridge home"
         >
-          <BrandLogo className="h-[42px] w-[132px] xl:h-[46px] xl:w-[148px]" />
+          <BrandLogo className="h-[39px] w-[122px] sm:h-[42px] sm:w-[132px] xl:h-[46px] xl:w-[148px]" />
         </Link>
 
         <nav
@@ -93,74 +66,120 @@ export function PublicHeader() {
           ))}
         </nav>
 
-        <div className="hidden shrink-0 items-center gap-2 xl:flex">
-          {languageSelector('desktop-language', true)}
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setLanguageMenuOpen((open) => !open)}
+              aria-label="Choose language"
+              aria-haspopup="menu"
+              aria-expanded={languageMenuOpen}
+              aria-controls="hb-language-menu"
+              title={locale === 'en' ? 'Language: English (British)' : 'Language: Thok Nath'}
+              className={iconButtonClass}
+            >
+              <Globe2 className="h-[18px] w-[18px]" aria-hidden="true" />
+            </button>
+            {languageMenuOpen && (
+              <div
+                id="hb-language-menu"
+                role="menu"
+                aria-label="Choose website language"
+                className="absolute right-0 top-[calc(100%+12px)] z-[70] w-56 overflow-hidden rounded-2xl border border-[var(--hb-glass-border)] bg-[var(--hb-glass-strong)] p-2 text-[var(--hb-text)] shadow-2xl shadow-black/15 backdrop-blur-2xl"
+              >
+                <p className="px-3 pb-2 pt-1 text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--hb-muted)]">
+                  Website language
+                </p>
+                <button
+                  type="button"
+                  role="menuitemradio"
+                  aria-checked={locale === 'en'}
+                  onClick={() => chooseLocale('en')}
+                  className="flex min-h-11 w-full items-center justify-between rounded-xl px-3 text-left text-sm font-semibold transition-colors hover:bg-[var(--hb-glass)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--hb-accent)]"
+                >
+                  <span>English (British)</span>
+                  {locale === 'en' && <Check className="h-4 w-4 text-[var(--hb-accent-strong)]" aria-hidden="true" />}
+                </button>
+                <button
+                  type="button"
+                  role="menuitemradio"
+                  aria-checked={locale === 'nus'}
+                  onClick={() => chooseLocale('nus')}
+                  className="flex min-h-11 w-full items-center justify-between rounded-xl px-3 text-left text-sm font-semibold transition-colors hover:bg-[var(--hb-glass)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--hb-accent)]"
+                >
+                  <span>Thok Nath (Nuer)</span>
+                  {locale === 'nus' && <Check className="h-4 w-4 text-[var(--hb-accent-strong)]" aria-hidden="true" />}
+                </button>
+              </div>
+            )}
+          </div>
+
           <button
             type="button"
             onClick={toggleTheme}
             aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--hb-border)] bg-[var(--hb-glass)] text-[var(--hb-muted)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[var(--hb-glass-strong)] hover:text-[var(--hb-text-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--hb-accent)]"
+            title={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+            className={iconButtonClass}
           >
             {theme === 'dark'
-              ? <Sun className="h-4 w-4" aria-hidden="true" />
-              : <Moon className="h-4 w-4" aria-hidden="true" />}
+              ? <Sun className="h-[18px] w-[18px]" aria-hidden="true" />
+              : <Moon className="h-[18px] w-[18px]" aria-hidden="true" />}
           </button>
-          <Link
-            to="/donate"
-            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-full border border-[var(--hb-glass-border)] bg-[var(--hb-primary)] px-5 text-[13px] font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[var(--hb-primary-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--hb-accent)] dark:text-slate-950"
-          >
-            {t('donateNow')}
-            <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
-          </Link>
-        </div>
 
-        <div className="xl:hidden">
-          <OverflowPopover
-            label="More navigation options"
-            trigger={<EllipsisVertical className="h-5 w-5" aria-hidden="true" />}
-            triggerClassName="hb-menu-trigger inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--hb-glass-border)] bg-[var(--hb-glass)] text-[var(--hb-text)] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[var(--hb-glass-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--hb-accent)]"
-            panelClassName="hb-navigation-popover"
-          >
-            <div className="space-y-3">
-              <section aria-labelledby="public-navigation-heading">
-                <div className="mb-2 border-b border-[var(--hb-border)] px-3 pb-3 pt-2">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--hb-accent-strong)]">HumanityBridge</p>
-                  <h2 id="public-navigation-heading" className="mt-1 text-base font-semibold tracking-tight text-[var(--hb-text-strong)]">
-                    Explore
-                  </h2>
-                  <p className="mt-1 text-xs leading-relaxed text-[var(--hb-muted)]">Navigate our stories, support pathways and community impact.</p>
+          <div className="hidden shrink-0 items-center gap-2 xl:flex">
+            <Link
+              to="/donate"
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-full border border-[var(--hb-glass-border)] bg-[var(--hb-primary)] px-5 text-[13px] font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[var(--hb-primary-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--hb-accent)] dark:text-slate-950"
+            >
+              {t('donateNow')}
+              <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
+          </div>
+
+          <div className="xl:hidden">
+            <OverflowPopover
+              label="More navigation options"
+              trigger={<EllipsisVertical className="h-5 w-5" aria-hidden="true" />}
+              triggerClassName="hb-menu-trigger inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--hb-glass-border)] bg-[var(--hb-glass)] text-[var(--hb-text)] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[var(--hb-glass-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--hb-accent)]"
+              panelClassName="hb-navigation-popover"
+            >
+              <div className="space-y-3">
+                <section aria-labelledby="public-navigation-heading">
+                  <div className="mb-2 border-b border-[var(--hb-border)] px-3 pb-3 pt-2">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--hb-accent-strong)]">HumanityBridge</p>
+                    <h2 id="public-navigation-heading" className="mt-1 text-base font-semibold tracking-tight text-[var(--hb-text-strong)]">
+                      Explore
+                    </h2>
+                    <p className="mt-1 text-xs leading-relaxed text-[var(--hb-muted)]">Navigate our stories, support pathways and community impact.</p>
+                  </div>
+                  <nav aria-label="Public navigation" className="space-y-0.5">
+                    {publicLinks.map(({ to, label }) => (
+                      <NavLink
+                        key={to}
+                        to={to}
+                        data-overflow-item
+                        data-overflow-close
+                        className={({ isActive }) => MobileNavClass(isActive)}
+                      >
+                        {label}
+                      </NavLink>
+                    ))}
+                  </nav>
+                </section>
+                <div className="border-t border-slate-200 pt-3 dark:border-slate-800">
+                  <Link
+                    to="/donate"
+                    data-overflow-item
+                    data-overflow-close
+                    className="flex min-h-11 items-center justify-center gap-2 rounded-full bg-[var(--hb-primary)] px-3 text-sm font-semibold text-white transition-colors hover:bg-[var(--hb-primary-hover)] dark:text-slate-950"
+                  >
+                    {t('donateNow')}
+                    <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
+                  </Link>
                 </div>
-                <nav aria-label="Public navigation" className="space-y-0.5">
-                  {publicLinks.map(({ to, label }) => (
-                    <NavLink
-                      key={to}
-                      to={to}
-                      data-overflow-item
-                      data-overflow-close
-                      className={({ isActive }) => MobileNavClass(isActive)}
-                    >
-                      {label}
-                    </NavLink>
-                  ))}
-                </nav>
-              </section>
-              <div className="border-t border-slate-200 pt-3 dark:border-slate-800">
-                <Link
-                  to="/donate"
-                  data-overflow-item
-                  data-overflow-close
-                  className="flex min-h-11 items-center justify-center gap-2 rounded-full bg-[var(--hb-primary)] px-3 text-sm font-semibold text-white transition-colors hover:bg-[var(--hb-primary-hover)] dark:text-slate-950"
-                >
-                  {t('donateNow')}
-                  <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
-                </Link>
               </div>
-              <div className="space-y-3 border-t border-slate-200 pt-3 dark:border-slate-800">
-                {languageSelector('mobile-language')}
-                {themeToggle}
-              </div>
-            </div>
-          </OverflowPopover>
+            </OverflowPopover>
+          </div>
         </div>
       </div>
     </header>
