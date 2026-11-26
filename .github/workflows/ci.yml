@@ -36,6 +36,12 @@ jobs:
       - name: SQLite schema regression tests
         run: bun run test:sqlite
 
+      - name: SQLite database integrity check
+        run: bun run db:sqlite:check
+        env:
+          NODE_ENV: test
+          SQLITE_DB_PATH: ./data/humanitybridge-check.db
+
       - name: Security regression tests
         run: bun run test:security
 
