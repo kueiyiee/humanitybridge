@@ -35,7 +35,7 @@ test('SQLite bootstrap creates the core HumanityBridge schema and remains idempo
     ];
 
     for (const table of requiredTables) {
-      assert.ok(tables.has(table), \`Required SQLite table is missing: \${table}\`);
+      assert.ok(tables.has(table), `Required SQLite table is missing: ${table}`);
     }
 
     const cmsColumns = new Set(
@@ -43,7 +43,7 @@ test('SQLite bootstrap creates the core HumanityBridge schema and remains idempo
         .map((column) => column.name),
     );
     for (const column of ['type', 'slug', 'title', 'body_json', 'status', 'published_at', 'deleted_at']) {
-      assert.ok(cmsColumns.has(column), \`Required CMS column is missing: \${column}\`);
+      assert.ok(cmsColumns.has(column), `Required CMS column is missing: ${column}`);
     }
 
     const integrity = sqlite.prepare('PRAGMA integrity_check').get() as { integrity_check: string };
