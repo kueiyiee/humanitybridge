@@ -58,7 +58,7 @@ function formatCompactCurrency(value: number): string {
   }).format(value);
 }
 
-const panelClass = 'hb-admin-panel rounded-2xl border border-slate-200 bg-white/80 p-5 shadow-sm dark:border-slate-800 dark:bg-[#0D223D]/90 sm:p-6';
+const panelClass = 'hb-admin-panel rounded-2xl border border-slate-200 bg-white/80 p-5 shadow-sm dark:border-slate-800 dark:bg-[#171b1e]/90 sm:p-6';
 
 export function AdminDashboardOverview({
   data,
@@ -83,10 +83,10 @@ export function AdminDashboardOverview({
 
   return (
     <div className="hb-admin-overview space-y-7">
-      <header className="hb-admin-hero flex flex-col gap-4 rounded-3xl border border-slate-200 bg-gradient-to-br from-white via-white to-emerald-50/70 p-5 shadow-sm dark:border-slate-800 dark:from-[#0D223D] dark:via-[#0D223D] dark:to-emerald-950/20 sm:p-7 lg:flex-row lg:items-end lg:justify-between">
+      <header className="hb-admin-hero flex flex-col gap-4 rounded-3xl border border-slate-200 bg-gradient-to-br from-white via-white to-slate-100/70 p-5 shadow-sm dark:border-slate-800 dark:from-[#171b1e] dark:via-[#171b1e] dark:to-[#20272b] sm:p-7 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-emerald-800 dark:text-emerald-300">Platform administration</p>
-          <h1 className="mt-2 font-editorial text-3xl font-semibold tracking-tight text-[#0B1F3A] dark:text-white sm:text-4xl">
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--hb-accent-strong)]">Platform administration</p>
+          <h1 className="mt-2 font-editorial text-3xl font-semibold tracking-tight text-[var(--hb-text-strong)] dark:text-white sm:text-4xl">
             Executive Overview
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300">
@@ -147,7 +147,7 @@ export function AdminDashboardOverview({
                 <h2 id="admin-queue-heading" className="font-editorial text-lg font-semibold">Pending governance queue</h2>
                 <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Prioritized workspaces for administrative review.</p>
               </div>
-              <span className={`rounded-full px-3 py-1 text-xs font-bold ${pendingTotal > 0 ? 'bg-amber-100 text-amber-900 dark:bg-amber-950/50 dark:text-amber-200' : 'bg-emerald-100 text-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-200'}`}>
+              <span className={`rounded-full px-3 py-1 text-xs font-bold ${pendingTotal > 0 ? 'bg-amber-100 text-amber-900 dark:bg-amber-950/50 dark:text-amber-200' : 'bg-cyan-50 text-cyan-900 dark:bg-cyan-950/40 dark:text-cyan-200'}`}>
                 {pendingTotal > 0 ? `${pendingTotal.toLocaleString()} open items` : 'All queues clear'}
               </span>
             </div>
@@ -157,7 +157,7 @@ export function AdminDashboardOverview({
                   key={queue.tab}
                   type="button"
                   onClick={() => onNavigate(queue.tab)}
-                  className="flex w-full items-center gap-4 py-3 text-left transition-colors hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#51745a] dark:hover:bg-slate-900/50"
+                  className="flex w-full items-center gap-4 py-3 text-left transition-colors hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--hb-accent)] dark:hover:bg-slate-900/50"
                   aria-label={`Open ${queue.label}: ${queue.count} pending`}
                 >
                   <span className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${queue.count > 0 ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-200' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'}`} aria-hidden="true">
@@ -229,7 +229,7 @@ export function AdminDashboardOverview({
                 <h2 id="recent-audit-heading" className="font-editorial text-lg font-semibold">Recent administrative activity</h2>
                 <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Latest recorded governance events.</p>
               </div>
-              <button type="button" onClick={() => onNavigate('audit')} className="inline-flex items-center gap-1 text-xs font-semibold text-[#20583a] hover:underline dark:text-cyan-300">
+              <button type="button" onClick={() => onNavigate('audit')} className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--hb-accent-strong)] hover:underline dark:text-cyan-300">
                 Open audit logs <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
               </button>
             </div>
