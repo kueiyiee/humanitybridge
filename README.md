@@ -71,21 +71,42 @@ Contributors should independently confirm the organisation's authorised banking 
 
 ## Local Development
 
-Requirements: Node.js 22 and npm.
+Requirements: Node.js 22.13 or newer and npm 10 or newer.
 
     npm install
     cp .env.example .env
     npm run dev
 
+SQLite is the default local database. Keep `USE_MYSQL=false`, leave `DATABASE_URL` empty and optionally set `SQLITE_DB_PATH`. The application creates the database and initial schema automatically.
+
 The local backend and frontend share http://localhost:3001. The API documentation is at
-http://localhost:3001/api-docs.
+http://localhost:3001/api-docs, and readiness can be checked at
+http://localhost:3001/api/health/ready.
 
-Port 3001 and Vite HMR WebSocket port 26000 can be changed in `.env` with `PORT` and
-`VITE_HMR_PORT`. Do not set these development values in production deployments.
+Set `OWNER_ADMIN_INITIAL_PASSWORD` in your private `.env` file, then run
+`npm run owner:configure` to create or verify the owner administrator. The setup utility
+preserves an existing password and account history. It does not create synthetic public
+stories or case records.
 
-For local database setup, use the repository's documented SQLite development configuration. For production, configure MySQL 8 and apply the database migrations:
+SQLite verification commands:
 
-    npm run db:migrate
+    npm run db:sqlite:check
+    npm run test:sqlite
+
+Run the complete local quality suite:
+
+    npm run lint
+    npm run test:sqlite
+    npm run test:security
+    npm test
+    npm run build
+
+The Drizzle Kit migration files currently target MySQL 8 only. Do not run
+`npm run db:migrate` or `npm run db:generate` against SQLite. Production remains
+MySQL-only and requires reviewed migrations, durable S3-compatible media storage,
+HTTPS and independently generated secrets. See
+[Development and Operations](docs/DEVELOPMENT-AND-OPERATIONS.md) and
+[System Architecture](docs/architecture.md).
 
 ## Automated Tests
 
