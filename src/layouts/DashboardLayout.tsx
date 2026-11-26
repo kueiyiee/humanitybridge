@@ -153,6 +153,7 @@ export function DashboardLayout({
 
   return (
     <div className={`hb-dashboard-shell hb-admin-console relative isolate min-h-screen overflow-x-clip text-[var(--hb-text)] ${adminVariant ? 'is-admin-console' : ''} ${isSidebarCollapsed ? 'is-sidebar-collapsed' : ''}`}>
+      <a className="hb-skip-link" href="#workspace-main">Skip to workspace content</a>
       <HumanitarianParticles />
 
       {mobileNavigationOpen && (
@@ -302,7 +303,7 @@ export function DashboardLayout({
           </div>
         </header>
 
-        <main className="hb-console-content relative z-10 mx-auto w-full max-w-[1640px] p-4 pb-24 sm:p-6 sm:pb-24 lg:p-8 lg:pb-10 xl:p-10">
+        <main id="workspace-main" tabIndex={-1} className="hb-console-content relative z-10 mx-auto w-full max-w-[1640px] p-4 pb-24 sm:p-6 sm:pb-24 lg:p-8 lg:pb-10 xl:p-10">
           <PageTransition key={activeTab}>{children}</PageTransition>
         </main>
       </div>
