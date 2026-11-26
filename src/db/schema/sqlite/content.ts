@@ -1,6 +1,4 @@
 import { sqliteTable, integer, text, uniqueIndex, index } from 'drizzle-orm/sqlite-core';
-import { users } from './index';
-
 export const cmsContent = sqliteTable(
   'cms_content',
   {
@@ -12,7 +10,7 @@ export const cmsContent = sqliteTable(
     summary: text('summary').notNull(),
     bodyJson: text('body_json').notNull(),
     category: text('category'),
-    authorId: integer('author_id').notNull().references(() => users.id),
+    authorId: integer('author_id').notNull(),
     authorDepartment: text('author_department'),
     location: text('location'),
     coverImageUrl: text('cover_image_url'),
