@@ -23,6 +23,7 @@ import {
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiBlob, apiRequest } from '../../services/api';
 import { AdminDocumentEditor } from './AdminDocumentEditor';
+import { DocumentRecordDetails } from './DocumentRecordDetails';
 
 type DocumentType = {
   id: number;
@@ -118,7 +119,7 @@ const EMPTY_PROFILE: OrganisationProfile = {
 };
 
 const SECTIONS: Array<{ id: CentreSection; label: string; icon: React.ReactNode }> = [
-  { id: 'editor', label: 'Editor', icon: <FilePlus2 className="h-4 w-4" /> },
+  { id: 'editor', label: 'Document editor', icon: <FilePlus2 className="h-4 w-4" /> },
   { id: 'overview', label: 'Overview', icon: <FileCheck2 className="h-4 w-4" /> },
   { id: 'templates', label: 'Templates', icon: <Files className="h-4 w-4" /> },
   { id: 'issued', label: 'Issued', icon: <BadgeCheck className="h-4 w-4" /> },
@@ -170,7 +171,7 @@ const primaryButtonClass = 'inline-flex min-h-10 items-center justify-center gap
 
 export function AdminDocumentCentre() {
   const queryClient = useQueryClient();
-  const [section, setSection] = useState<CentreSection>('editor');
+  const [section, setSection] = useState<CentreSection>('overview');
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [profileDraft, setProfileDraft] = useState<OrganisationProfile>(EMPTY_PROFILE);
   const [typeDraft, setTypeDraft] = useState({
@@ -536,12 +537,18 @@ export function AdminDocumentCentre() {
         <div className="pointer-events-none absolute -right-10 -top-20 h-64 w-64 rounded-full bg-white/80 blur-3xl dark:bg-white/5" />
         <div className="relative flex flex-wrap items-end justify-between gap-5">
           <div className="max-w-3xl">
+            <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Governance · Registry · Verification</p>
             <h1 className="font-editorial text-3xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-4xl">Document Centre</h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300">Controlled document issuance</p>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300">Create, approve, issue and verify controlled organisational documents through one accountable registry.</p>
           </div>
-          <button type="button" className={buttonClass} onClick={() => void refreshDocumentData()}>
-            <RefreshCw className="h-4 w-4" /> Refresh
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button type="button" className={buttonClass} onClick={() => void refreshDocumentData()}>
+              <RefreshCw className="h-4 w-4" /> Refresh
+            </button>
+            <button type="button" className={primaryButtonClass} onClick={() => { setFeedback(null); setSection('editor'); }}>
+              <FilePlus2 className="h-4 w-4" /> Create document
+            </button>
+          </div>
         </div>
       </header>
 
@@ -1081,7 +1088,9 @@ export function AdminDocumentCentre() {
               <button type="button" className={buttonClass} onClick={() => setSelectedRecordId(null)}>Close</button>
             </div>
             {selectedRecordQuery.isPending ? <LoadingMessage /> : selectedRecordQuery.isError ? <p role="alert" className="mt-5 text-sm text-rose-600">{messageOf(selectedRecordQuery.error)}</p> : (
-              <pre className="mt-5 whitespace-pre-wrap break-words rounded-xl bg-slate-50 p-4 text-xs leading-5 text-slate-700 dark:bg-black/30 dark:text-slate-300">{JSON.stringify(selectedRecordQuery.data?.data, null, 2)}</pre>
+              <div className="mt-5">
+                <DocumentRecordDetails record={(selectedRecordQuery.data?.data || {}) as Record<string, unknown>} />
+              </div>
             )}
           </section>
         </div>
