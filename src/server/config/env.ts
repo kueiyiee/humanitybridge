@@ -43,6 +43,17 @@ export function validateProductionEnvironment(): void {
     throw new Error('MEDIA_STORAGE_PROVIDER must be either local or s3.');
   }
 
+  const productionUrl = (() => {
+    try {
+      return new URL(env.appUrl);
+    } catch {
+      throw new Error('Production requires APP_URL to be a valid HTTPS origin.');
+    }
+  })();
+  if (productionUrl.protocol !== 'https:') {
+    throw new Error('Production requires APP_URL to use HTTPS.');
+  }
+
   const requiredSecrets: Array<[string, string]> = [
     ['SESSION_SECRET', env.sessionSecret],
     ['CSRF_SECRET', env.csrfSecret],
@@ -51,17 +62,7 @@ export function validateProductionEnvironment(): void {
 
   for (const [name, value] of requiredSecrets) {
     if (value.length < 32) {
-      throw new Error(`Production requires ${name} to contain at least 32 characters.`);
-    }
-
-    let productionUrl: URL;
-    try {
-      productionUrl = new URL(env.appUrl);
-    } catch {
-      throw new Error('Production requires APP_URL to be a valid HTTPS origin.');
-    }
-    if (productionUrl.protocol !== 'https:') {
-      throw new Error('Production requires APP_URL to use HTTPS.');
+      throw new Error(\`Production requires \${name} to contain at least 32 characters.\`);
     }
   }
 
@@ -73,6 +74,8 @@ export function validateProductionEnvironment(): void {
     throw new Error('COOKIE_SECURE=true is required in production.');
   }
 
+  // SQLite is deliberately supported for local development and automated tests.
+  // Production remains MySQL-only until a separately reviewed deployment decision changes this invariant.
   if (process.env.USE_MYSQL !== 'true' || !process.env.DATABASE_URL?.startsWith('mysql://')) {
     throw new Error('Production must use a configured MySQL DATABASE_URL.');
   }
