@@ -1,11 +1,14 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { m } from 'motion/react';
 import {
   Bell,
   ChevronDown,
-  EllipsisVertical,
-  ExternalLink,
+  ChevronsLeft,
+  ChevronsRight,
+  Ellipsis,
   LogOut,
+  Menu,
   Moon,
   ShieldAlert,
   ShieldCheck,
@@ -17,6 +20,7 @@ import { BrandLogo } from '../components/BrandLogo';
 import { OverflowPopover } from '../components/OverflowPopover';
 import { WorkspaceCommandMenu } from '../components/WorkspaceCommandMenu';
 import { HumanitarianParticles } from '../components/HumanitarianParticles';
+import { motionTokens, PageTransition } from '../components/motion/MotionPrimitives';
 
 export interface DashboardNavItem {
   id: string;
@@ -33,7 +37,19 @@ interface DashboardLayoutProps {
   activeTab: string;
   onSelectTab: (id: string) => void;
   notificationCount?: number;
+  footerStatus?: React.ReactNode;
+  variant?: 'admin' | 'default';
   children: React.ReactNode;
+}
+
+const COLLAPSED_STORAGE_KEY = 'hb_admin_sidebar_collapsed';
+
+function getInitialSidebarState() {
+  try {
+    return window.localStorage.getItem(COLLAPSED_STORAGE_KEY) === 'true';
+  } catch {
+    return false;
+  }
 }
 
 export function DashboardLayout({
@@ -43,11 +59,15 @@ export function DashboardLayout({
   activeTab,
   onSelectTab,
   notificationCount = 0,
+  footerStatus,
+  variant = 'default',
   children,
 }: DashboardLayoutProps) {
   const { user, permissions, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
+  const [mobileNavigationOpen, setMobileNavigationOpen] = React.useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = React.useState(getInitialSidebarState);
   const visibleNavItems = navItems.filter((item) => !item.permission || permissions.includes(item.permission));
   const overviewItems = visibleNavItems.filter((item) => item.group === 'Overview');
   const groupedItems = new Map<string, DashboardNavItem[]>();
@@ -58,14 +78,28 @@ export function DashboardLayout({
     groupedItems.set(group, [...(groupedItems.get(group) || []), item]);
   }
 
-  const activeItem = visibleNavItems.find((item) => item.id === activeTab);
-  const settingsItem = visibleNavItems.find((item) => item.id === 'settings');
   const notificationsItem = visibleNavItems.find((item) => item.id === 'notifications');
   const initials = (user?.displayName || user?.email || 'U').slice(0, 1).toUpperCase();
+  const adminVariant = variant === 'admin';
+  const isSidebarCollapsed = adminVariant && sidebarCollapsed;
+
+  React.useEffect(() => {
+    if (!adminVariant) return;
+    try {
+      window.localStorage.setItem(COLLAPSED_STORAGE_KEY, String(sidebarCollapsed));
+    } catch {
+      // The sidebar remains usable for the current session.
+    }
+  }, [adminVariant, sidebarCollapsed]);
 
   const handleLogout = async () => {
     await logout();
     navigate('/login', { replace: true });
+  };
+
+  const selectTab = (id: string) => {
+    onSelectTab(id);
+    setMobileNavigationOpen(false);
   };
 
   const renderNavigationItem = (item: DashboardNavItem, inPopover = false) => {
@@ -76,239 +110,209 @@ export function DashboardLayout({
         type="button"
         data-overflow-item={inPopover ? true : undefined}
         data-overflow-close={inPopover ? true : undefined}
+        aria-label={isSidebarCollapsed && !inPopover && !mobileNavigationOpen ? item.label : undefined}
         aria-current={active ? 'page' : undefined}
-        onClick={() => onSelectTab(item.id)}
-        className={`flex min-h-10 items-center gap-3 text-left text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#51745a] ${
-          inPopover
-            ? `w-full rounded-lg px-3 ${active ? 'bg-slate-100 text-slate-950 dark:bg-slate-800 dark:text-white' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-slate-800/70 dark:hover:text-white'}`
-            : `w-auto whitespace-nowrap rounded-t-lg border-b-2 px-2 ${active ? 'border-[#24563a] text-slate-950 dark:border-cyan-300 dark:text-white' : 'border-transparent text-slate-600 hover:border-slate-300 hover:text-slate-950 dark:text-slate-300 dark:hover:border-slate-600 dark:hover:text-white'}`
-        }`}
+        title={isSidebarCollapsed && !inPopover && !mobileNavigationOpen ? item.label : undefined}
+        onClick={() => selectTab(item.id)}
+        className={`hb-sidebar-nav-item ${active ? 'is-active' : ''} ${isSidebarCollapsed && !inPopover && !mobileNavigationOpen ? 'is-collapsed' : ''} ${inPopover ? 'is-popover-item' : ''}`}
       >
-        <span className="shrink-0" aria-hidden="true">{item.icon}</span>
-        <span className="min-w-0 flex-1 truncate">{item.label}</span>
-        {active && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#24563a] dark:bg-cyan-300" aria-hidden="true" />}
+        <span className="hb-sidebar-nav-icon" aria-hidden="true">{item.icon}</span>
+        <span className="hb-sidebar-nav-label">{item.label}</span>
+        {item.id === 'notifications' && notificationCount > 0 && (
+          <span className="hb-sidebar-nav-count">{notificationCount > 99 ? '99+' : notificationCount}</span>
+        )}
+        {active && (
+          <m.span
+            className="hb-sidebar-active-marker"
+            initial={{ opacity: 0, scale: 0.65 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: motionTokens.duration.quick, ease: motionTokens.ease }}
+            aria-hidden="true"
+          />
+        )}
       </button>
     );
   };
 
-  const renderMobileNavigation = () => (
-    <div className="space-y-3">
-      <div className="rounded-lg bg-slate-50 px-3 py-2.5 dark:bg-slate-800/70">
-        <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">{user?.displayName || 'Account'}</p>
-        <p className="truncate text-xs text-slate-500 dark:text-slate-400">{user?.email}</p>
-        <div className="mt-2 flex items-center gap-1.5 text-[11px] text-slate-600 dark:text-slate-300">
-          {user?.mfaEnabled
-            ? <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
-            : <ShieldAlert className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" aria-hidden="true" />}
-          {user?.mfaEnabled ? 'MFA enabled' : 'MFA not enabled'}
-        </div>
-      </div>
-
-      <nav aria-label={`${title} navigation`} className="space-y-3">
-        {overviewItems.length > 0 && (
-          <section aria-label="Overview">
-            {overviewItems.map((item) => renderNavigationItem(item, true))}
-          </section>
-        )}
-        {Array.from(groupedItems.entries()).map(([group, items]) => (
-          <section key={group} aria-labelledby={`mobile-nav-${group.replace(/\W+/g, '-').toLowerCase()}`}>
-            <h2
-              id={`mobile-nav-${group.replace(/\W+/g, '-').toLowerCase()}`}
-              className="px-3 pb-1 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400"
-            >
-              {group}
-            </h2>
-            <div className="space-y-0.5">
-              {items.map((item) => renderNavigationItem(item, true))}
-            </div>
-          </section>
-        ))}
-      </nav>
-
-      <div className="space-y-1 border-t border-slate-200 pt-3 dark:border-slate-800">
-        <button
-          type="button"
-          data-overflow-item
-          data-overflow-close
-          onClick={toggleTheme}
-          className="flex min-h-10 w-full items-center gap-3 rounded-lg px-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
-        >
-          {theme === 'dark'
-            ? <Sun className="h-4 w-4" aria-hidden="true" />
-            : <Moon className="h-4 w-4" aria-hidden="true" />}
-          {theme === 'dark' ? 'Light theme' : 'Dark theme'}
-        </button>
-        <button
-          type="button"
-          data-overflow-item
-          data-overflow-close
-          onClick={() => void handleLogout()}
-          className="flex min-h-10 w-full items-center gap-3 rounded-lg px-3 text-sm font-semibold text-rose-700 transition-colors hover:bg-rose-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-600 dark:text-rose-300 dark:hover:bg-rose-950/30"
-        >
-          <LogOut className="h-4 w-4" aria-hidden="true" />
-          Sign out
-        </button>
-      </div>
-    </div>
+  const renderSidebarNavigation = (inPopover = false) => (
+    <nav aria-label={`${title} navigation`} className="hb-sidebar-navigation">
+      {overviewItems.length > 0 && (
+        <section className="hb-sidebar-section" aria-label="Executive">
+          {(!isSidebarCollapsed || mobileNavigationOpen) && <p className="hb-sidebar-section-label">Executive</p>}
+          {overviewItems.map((item) => renderNavigationItem(item, inPopover))}
+        </section>
+      )}
+      {Array.from(groupedItems.entries()).map(([group, items]) => (
+        <section className="hb-sidebar-section" key={group} aria-label={group}>
+          {(!isSidebarCollapsed || mobileNavigationOpen) && <p className="hb-sidebar-section-label">{group}</p>}
+          {items.map((item) => renderNavigationItem(item, inPopover))}
+        </section>
+      ))}
+    </nav>
   );
 
   return (
-    <div className="hb-dashboard-shell relative isolate min-h-screen overflow-x-clip text-slate-900 dark:text-slate-100">
+    <div className={`hb-dashboard-shell hb-admin-console relative isolate min-h-screen overflow-x-clip text-[var(--hb-text)] ${adminVariant ? 'is-admin-console' : ''} ${isSidebarCollapsed ? 'is-sidebar-collapsed' : ''}`}>
       <HumanitarianParticles />
-      <header className="hb-topbar sticky top-0 z-50 border-b border-slate-200/70 bg-white/75 backdrop-blur-2xl dark:border-white/10 dark:bg-black/65">
-        <div className="mx-auto flex h-16 max-w-[1600px] items-center gap-3 px-4 sm:px-6 lg:h-[68px] lg:px-8">
-          <Link
-            to="/"
-            aria-label="HumanityBridge home"
-            className="inline-flex shrink-0 items-center rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#51745a]"
-          >
-            <BrandLogo className="h-[40px] w-[120px]" />
+
+      {mobileNavigationOpen && (
+        <button
+          type="button"
+          className="hb-sidebar-backdrop"
+          aria-label="Close navigation"
+          onClick={() => setMobileNavigationOpen(false)}
+        />
+      )}
+
+      <aside className={`hb-console-sidebar ${mobileNavigationOpen ? 'is-mobile-open' : ''}`} aria-label={`${title} sidebar`}>
+        <div className="hb-sidebar-brand">
+          <Link to="/" aria-label="HumanityBridge home" className="hb-sidebar-logo">
+            <BrandLogo className="h-10 w-[132px]" />
           </Link>
-
-          <div className="hidden min-w-0 shrink-0 md:block">
-            <p className="max-w-[150px] truncate text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">{roleLabel}</p>
-            <p className="max-w-[150px] truncate text-xs font-semibold text-slate-800 dark:text-slate-100">{activeItem?.label || title}</p>
+          <div className="hb-sidebar-identity">
+            <p>{title}</p>
+            <span>{roleLabel}</span>
           </div>
+          <button
+            type="button"
+            className="hb-mobile-sidebar-close"
+            aria-label="Close navigation"
+            onClick={() => setMobileNavigationOpen(false)}
+          >
+            <span aria-hidden="true">×</span>
+          </button>
+        </div>
 
-          <nav aria-label={`${title} navigation`} className="hidden min-w-0 flex-1 items-center justify-center gap-1 lg:flex xl:gap-2">
-            {overviewItems.map((item) => renderNavigationItem(item))}
-            {Array.from(groupedItems.entries()).map(([group, items]) => {
-              const groupIsActive = items.some((item) => item.id === activeTab);
-              return (
-                <OverflowPopover
-                  key={group}
-                  label={`${group} navigation`}
-                  trigger={(
-                    <>
-                      <span>{group}</span>
-                      <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" />
-                    </>
-                  )}
-                  triggerClassName={`inline-flex min-h-10 items-center gap-1.5 whitespace-nowrap rounded-lg border border-transparent px-3 text-[13px] font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--hb-accent)] ${
-                    groupIsActive
-                      ? 'border-[var(--hb-border)] bg-[var(--hb-accent-soft)] text-[var(--hb-text-strong)]'
-                      : 'text-[var(--hb-muted)] hover:border-[var(--hb-border)] hover:bg-[var(--hb-glass)] hover:text-[var(--hb-text-strong)]'
-                  }`}
-                  panelClassName="hb-navigation-popover"
-                >
-                  <div className="space-y-0.5">
-                    <p className="px-3 pb-1 pt-2 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">{group}</p>
-                    {items.map((item) => renderNavigationItem(item, true))}
-                  </div>
-                </OverflowPopover>
-              );
-            })}
-          </nav>
+        <div className="hb-sidebar-scroll">
+          {renderSidebarNavigation()}
+        </div>
 
-          <div className="flex min-w-0 flex-1 justify-end px-1 xl:justify-center">
-            <WorkspaceCommandMenu items={visibleNavItems} onSelect={onSelectTab} />
+        <div className="hb-sidebar-footer">
+          {footerStatus}
+          <div className="hb-sidebar-admin-card">
+            <span className="hb-sidebar-admin-avatar">{initials}</span>
+            <span className="hb-sidebar-admin-copy">
+              <strong>{user?.displayName || 'Administrator'}</strong>
+              <small>Secure workspace</small>
+            </span>
+            {user?.mfaEnabled
+              ? <ShieldCheck className="h-4 w-4 shrink-0" aria-label="MFA enabled" />
+              : <ShieldAlert className="h-4 w-4 shrink-0" aria-label="MFA not enabled" />}
           </div>
-
-          <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
-            {notificationsItem && (
-              <button
-                type="button"
-                onClick={() => onSelectTab(notificationsItem.id)}
-                aria-label={notificationCount > 0 ? `${notificationCount} unread notifications` : 'Notifications'}
-                aria-current={activeTab === notificationsItem.id ? 'page' : undefined}
-                className="relative inline-flex h-10 w-10 items-center justify-center rounded-lg text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#51745a] dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
-              >
-                <Bell className="h-4 w-4" aria-hidden="true" />
-                {notificationCount > 0 && (
-                  <span className="absolute right-1.5 top-1.5 min-w-4 rounded-full bg-rose-600 px-1 text-center text-[9px] font-bold leading-4 text-white">
-                    {notificationCount > 99 ? '99+' : notificationCount}
-                  </span>
-                )}
-              </button>
-            )}
-
+          <div className="hb-sidebar-footer-actions">
+            <button type="button" onClick={() => void handleLogout()} aria-label="Sign out" title="Sign out">
+              <LogOut className="h-4 w-4" aria-hidden="true" />
+              {!isSidebarCollapsed && <span>Sign out</span>}
+            </button>
+          </div>
+          {adminVariant && (
             <button
               type="button"
-              onClick={toggleTheme}
-              aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
-              className="hidden h-10 w-10 items-center justify-center rounded-lg text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#51745a] dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white lg:inline-flex"
+              className="hb-sidebar-collapse"
+              onClick={() => setSidebarCollapsed((current) => !current)}
+              aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             >
-              {theme === 'dark'
-                ? <Sun className="h-4 w-4" aria-hidden="true" />
-                : <Moon className="h-4 w-4" aria-hidden="true" />}
+              {isSidebarCollapsed ? <ChevronsRight className="h-4 w-4" /> : <ChevronsLeft className="h-4 w-4" />}
+              {!isSidebarCollapsed && <span>Collapse menu</span>}
+            </button>
+          )}
+        </div>
+      </aside>
+
+      <div className="hb-console-main">
+        <header className="hb-topbar hb-console-topbar">
+          <div className="hb-topbar-inner">
+            <button
+              type="button"
+              className="hb-mobile-nav-trigger"
+              aria-label="Open navigation"
+              aria-expanded={mobileNavigationOpen}
+              onClick={() => setMobileNavigationOpen(true)}
+            >
+              <Menu className="h-5 w-5" aria-hidden="true" />
             </button>
 
-            <div className="hidden lg:block">
-              <OverflowPopover
-                label="Account menu"
-                trigger={(
-                  <>
-                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-900 text-xs font-bold text-white dark:bg-cyan-300 dark:text-slate-950">{initials}</span>
-                    <span className="hidden min-w-0 text-left xl:block">
-                      <span className="block max-w-[145px] truncate text-xs font-semibold text-slate-800 dark:text-slate-100">{user?.displayName || 'Account'}</span>
-                      <span className="block text-[10px] text-slate-500 dark:text-slate-400">{roleLabel}</span>
-                    </span>
-                    <ChevronDown className="hidden h-3.5 w-3.5 text-slate-500 xl:block" aria-hidden="true" />
-                  </>
-                )}
-                triggerClassName="inline-flex min-h-10 items-center gap-2 rounded-lg px-2 transition-colors hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#51745a] dark:hover:bg-slate-800"
-              >
-                <div className="space-y-3">
-                  <div className="px-3 py-2">
-                    <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">{user?.displayName || 'Account'}</p>
-                    <p className="truncate text-xs text-slate-500 dark:text-slate-400">{user?.email}</p>
-                    <p className="mt-2 flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
-                      {user?.mfaEnabled
-                        ? <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
-                        : <ShieldAlert className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" aria-hidden="true" />}
-                      {user?.mfaEnabled ? 'MFA enabled' : 'MFA not enabled'}
-                    </p>
-                  </div>
-                  {settingsItem && (
-                    <button
-                      type="button"
-                      data-overflow-item
-                      data-overflow-close
-                      onClick={() => onSelectTab(settingsItem.id)}
-                      className="flex min-h-10 w-full items-center gap-3 rounded-lg px-3 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
-                    >
-                      <ExternalLink className="h-4 w-4" aria-hidden="true" />
-                      Account settings
-                    </button>
-                  )}
-                  <div className="border-t border-slate-200 pt-2 dark:border-slate-800">
-                    <button
-                      type="button"
-                      data-overflow-item
-                      data-overflow-close
-                      onClick={() => void handleLogout()}
-                      className="flex min-h-10 w-full items-center gap-3 rounded-lg px-3 text-left text-sm font-semibold text-rose-700 transition-colors hover:bg-rose-50 dark:text-rose-300 dark:hover:bg-rose-950/30"
-                    >
-                      <LogOut className="h-4 w-4" aria-hidden="true" />
-                      Sign out
-                    </button>
-                  </div>
-                </div>
-              </OverflowPopover>
+            <div className="hb-topbar-breadcrumb">
+              <span>{roleLabel}</span>
+              <ChevronDown className="h-3 w-3 -rotate-90" aria-hidden="true" />
+              <strong>{visibleNavItems.find((item) => item.id === activeTab)?.label || title}</strong>
             </div>
 
-            <div className="lg:hidden">
-              <OverflowPopover
-                label="Workspace navigation and account options"
-                trigger={<EllipsisVertical className="h-5 w-5" aria-hidden="true" />}
-                triggerClassName="hb-menu-trigger inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--hb-glass-border)] bg-[var(--hb-glass)] text-[var(--hb-text)] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[var(--hb-glass-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--hb-accent)]"
-                panelClassName="hb-navigation-popover hb-dashboard-navigation-popover"
+            <WorkspaceCommandMenu items={visibleNavItems} onSelect={selectTab} />
+
+            <div className="hb-topbar-actions">
+              {notificationsItem && (
+                <button
+                  type="button"
+                  onClick={() => selectTab(notificationsItem.id)}
+                  aria-label={notificationCount > 0 ? `${notificationCount} unread notifications` : 'Notifications'}
+                  aria-current={activeTab === notificationsItem.id ? 'page' : undefined}
+                  className="hb-topbar-icon-button"
+                >
+                  <Bell className="h-[17px] w-[17px]" aria-hidden="true" />
+                  {notificationCount > 0 && <span className="hb-notification-pulse">{notificationCount > 99 ? '99+' : notificationCount}</span>}
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={toggleTheme}
+                aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+                className="hb-topbar-icon-button"
               >
-                {renderMobileNavigation()}
-              </OverflowPopover>
+                {theme === 'dark' ? <Sun className="h-[17px] w-[17px]" aria-hidden="true" /> : <Moon className="h-[17px] w-[17px]" aria-hidden="true" />}
+              </button>
+
+              <div className="hb-account-menu">
+                <OverflowPopover
+                  label="Account menu"
+                  trigger={(
+                    <>
+                      <span className="hb-account-avatar">{initials}</span>
+                      <span className="hidden min-w-0 text-left xl:block">
+                        <span className="block max-w-[145px] truncate text-xs font-semibold text-[var(--hb-text-strong)]">{user?.displayName || 'Account'}</span>
+                        <span className="block text-[10px] text-[var(--hb-muted)]">{roleLabel}</span>
+                      </span>
+                      <ChevronDown className="hidden h-3.5 w-3.5 text-[var(--hb-muted)] xl:block" aria-hidden="true" />
+                    </>
+                  )}
+                  triggerClassName="hb-account-trigger"
+                >
+                  <div className="space-y-3">
+                    <div className="px-3 py-2">
+                      <p className="truncate text-sm font-semibold text-[var(--hb-text-strong)]">{user?.displayName || 'Account'}</p>
+                      <p className="truncate text-xs text-[var(--hb-muted)]">{user?.email}</p>
+                      <p className="mt-2 flex items-center gap-1.5 text-[11px] text-[var(--hb-muted)]">
+                        {user?.mfaEnabled
+                          ? <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
+                          : <ShieldAlert className="h-3.5 w-3.5" aria-hidden="true" />}
+                        {user?.mfaEnabled ? 'MFA enabled' : 'MFA not enabled'}
+                      </p>
+                    </div>
+                    <div className="border-t border-[var(--hb-border)] pt-2">
+                      <button type="button" data-overflow-item data-overflow-close onClick={() => void handleLogout()} className="hb-sidebar-nav-item is-popover-item">
+                        <LogOut className="h-4 w-4" aria-hidden="true" />
+                        <span>Sign out</span>
+                      </button>
+                    </div>
+                  </div>
+                </OverflowPopover>
+              </div>
+
             </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-      <main className="relative z-10 mx-auto w-full max-w-[1600px] p-4 pb-24 sm:p-6 sm:pb-24 lg:p-8 lg:pb-8 xl:p-10">{children}</main>
+        <main className="hb-console-content relative z-10 mx-auto w-full max-w-[1640px] p-4 pb-24 sm:p-6 sm:pb-24 lg:p-8 lg:pb-10 xl:p-10">
+          <PageTransition key={activeTab}>{children}</PageTransition>
+        </main>
+      </div>
 
-      <nav className="hb-mobile-dock relative z-20 lg:hidden" aria-label={`${title} quick navigation`}>
+      <nav className="hb-mobile-dock lg:hidden" aria-label={`${title} quick navigation`}>
         {visibleNavItems.slice(0, 4).map((item) => (
           <button
             key={item.id}
             type="button"
-            onClick={() => onSelectTab(item.id)}
+            onClick={() => selectTab(item.id)}
             aria-current={activeTab === item.id ? 'page' : undefined}
             className={activeTab === item.id ? 'is-active' : ''}
           >
@@ -316,8 +320,8 @@ export function DashboardLayout({
             <span>{item.label}</span>
           </button>
         ))}
-        <button type="button" onClick={() => onSelectTab(notificationsItem?.id || settingsItem?.id || 'overview')}>
-          <span aria-hidden="true"><EllipsisVertical className="h-4 w-4" /></span>
+        <button type="button" onClick={() => setMobileNavigationOpen(true)} aria-label="Open all workspace sections">
+          <span aria-hidden="true"><Ellipsis className="h-4 w-4" /></span>
           <span>More</span>
         </button>
       </nav>

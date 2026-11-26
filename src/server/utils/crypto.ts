@@ -9,6 +9,13 @@ const ARGON_PARAMS = {
   dkLen: 32,
 };
 
+export class MfaSecretAuthenticationError extends Error {
+  constructor() {
+    super('MFA secret authentication failed. Verify the encryption key or reset MFA after key loss.');
+    this.name = 'MfaSecretAuthenticationError';
+  }
+}
+
 export function hashPasswordArgon2id(password: string): string {
   const salt = crypto.randomBytes(16);
   const derived = argon2id(utf8ToBytes(password), salt, ARGON_PARAMS);
@@ -169,8 +176,15 @@ export function decryptMfaSecret(envelope: string): string {
 
   const decipher = crypto.createDecipheriv('aes-256-gcm', Buffer.from(keyHex, 'hex'), Buffer.from(ivHex, 'hex'));
   decipher.setAuthTag(Buffer.from(tagHex, 'hex'));
-  return Buffer.concat([
-    decipher.update(Buffer.from(ciphertextHex, 'hex')),
-    decipher.final(),
-  ]).toString('utf8');
+  try {
+    return Buffer.concat([
+      decipher.update(Buffer.from(ciphertextHex, 'hex')),
+      decipher.final(),
+    ]).toString('utf8');
+  } catch (error) {
+    if (error instanceof Error && error.message === 'Unsupported state or unable to authenticate data') {
+      throw new MfaSecretAuthenticationError();
+    }
+    throw error;
+  }
 }

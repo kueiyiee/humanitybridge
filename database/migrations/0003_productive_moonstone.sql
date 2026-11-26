@@ -1,0 +1,1 @@
+ALTER TABLE `campaign_publications` ADD CONSTRAINT `ux_campaign_publications_campaign` UNIQUE(`campaign_id`);

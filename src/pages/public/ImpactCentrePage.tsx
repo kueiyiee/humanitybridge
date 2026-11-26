@@ -32,40 +32,47 @@ import {
 } from 'recharts';
 import { apiRequest } from '../../services/api';
 import { useTheme } from '../../contexts/ThemeContext';
+import { z } from 'zod';
 
-interface ImpactData {
-  regionalImpact: Array<{
-    regionName: string;
-    country: string;
-    verifiedCases: number;
-    peopleSupported: number;
-    assistanceDistributedUsd: number;
-    reportingStatus: string;
-  }>;
-  categoryBreakdown: Array<{
-    categoryName: string;
-    caseCount: number;
-    peopleCount: number;
-  }>;
-  financialSummary: {
-    confirmedDonationsUsd: number;
-    confirmedDonationCount: number;
-    distributedAssistanceUsd: number;
-    distributedCount: number;
-  };
-  peopleSupported: number;
-  activeRegionsCount: number;
-  trendSeries: Array<{
-    period: string;
-    confirmedDonations: number;
-    assistanceDistributed: number;
-  }>;
-  reportingPeriod: string;
-  reportingStatus: string;
-  lastUpdatedAt: string;
-  verificationStatus: string;
-  privacyThreshold: number;
-}
+const impactDataSchema = z.object({
+  regionalImpact: z.array(z.object({
+    country: z.string(),
+    verifiedCases: z.number().nonnegative(),
+    reportedPeopleAcrossCases: z.number().nonnegative(),
+    assistanceDistributedUsd: z.number().nonnegative(),
+    reportingStatus: z.string(),
+  })),
+  categoryBreakdown: z.array(z.object({
+    categoryName: z.string(),
+    caseCount: z.number().nonnegative(),
+    peopleCount: z.number().nonnegative(),
+  })),
+  financialSummary: z.object({
+    confirmedDonationsUsd: z.number().nonnegative(),
+    confirmedDonationCount: z.number().nonnegative(),
+    distributedAssistanceUsd: z.number().nonnegative(),
+    distributedCount: z.number().nonnegative(),
+  }),
+  verifiedPublicCases: z.number().nonnegative(),
+  reportedPeopleAcrossCases: z.number().nonnegative(),
+  uniqueBeneficiaries: z.null(),
+  uniqueBeneficiariesUnavailableReason: z.string(),
+  activeCampaigns: z.number().nonnegative(),
+  completedProjects: z.null(),
+  completedProjectsUnavailableReason: z.string(),
+  countriesCoveredCount: z.number().nonnegative(),
+  trendSeries: z.array(z.object({
+    period: z.string(),
+    confirmedDonations: z.number().nonnegative(),
+    assistanceDistributed: z.number().nonnegative(),
+  })),
+  reportingPeriod: z.enum(['30d', '90d', '12m', 'all']),
+  reportingStatus: z.enum(['AVAILABLE', 'EMPTY']),
+  lastUpdatedAt: z.union([z.string(), z.date()]),
+  privacyThreshold: z.number().positive(),
+});
+
+type ImpactData = z.infer<typeof impactDataSchema>;
 
 const silverPalette = ['#2b2d2f', '#55595c', '#7b8083', '#a4a8aa', '#c7c9ca'];
 
@@ -117,14 +124,36 @@ export function ImpactCentrePage() {
   const { theme } = useTheme();
   const [period, setPeriod] = useState<'30d' | '90d' | '12m' | 'all'>('12m');
   const [search, setSearch] = useState('');
-  const [sort, setSort] = useState<'regionName' | 'country' | 'verifiedCases' | 'peopleSupported' | 'assistanceDistributedUsd'>('peopleSupported');
+  const [sort, setSort] = useState<'country' | 'verifiedCases' | 'reportedPeopleAcrossCases' | 'assistanceDistributedUsd'>('reportedPeopleAcrossCases');
   const [ascending, setAscending] = useState(false);
   const [page, setPage] = useState(1);
   const pageSize = 8;
 
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isPending, isFetching, isError, refetch } = useQuery({
     queryKey: ['public-impact', period],
-    queryFn: () => apiRequest<ImpactData>(`/impact?period=${period}`),
+    queryFn: async ({ signal }) => {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 12_000);
+      const cancelRequest = () => controller.abort();
+      signal.addEventListener('abort', cancelRequest, { once: true });
+      try {
+        const response = await apiRequest<unknown>(`/public/impact/summary?period=${period}`, {
+          signal: controller.signal,
+        });
+        return { ...response, data: impactDataSchema.parse(response.data) };
+      } catch (error) {
+        if (controller.signal.aborted && !signal.aborted) {
+          throw new Error('The impact report request timed out. Please try again.');
+        }
+        throw error;
+      } finally {
+        clearTimeout(timeout);
+        signal.removeEventListener('abort', cancelRequest);
+      }
+    },
+    retry: false,
+    staleTime: 15_000,
+    refetchOnWindowFocus: true,
   });
   const impact = data?.data;
   const chartText = theme === 'dark' ? '#c4c7c9' : '#4b5053';
@@ -133,7 +162,7 @@ export function ImpactCentrePage() {
   const tableRows = useMemo(() => {
     if (!impact) return [];
     const filtered = impact.regionalImpact.filter((row) =>
-      row.regionName.toLowerCase().includes(search.trim().toLowerCase()),
+      row.country.toLowerCase().includes(search.trim().toLowerCase()),
     );
     return [...filtered].sort((a, b) => {
       const av = typeof a[sort] === 'string' ? String(a[sort]).toLowerCase() : Number(a[sort]);
@@ -172,77 +201,109 @@ export function ImpactCentrePage() {
       <div className="mt-8 flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-white/70 px-4 py-3 text-xs text-slate-600 backdrop-blur dark:border-slate-800 dark:bg-slate-900/70 dark:text-slate-300">
         <span className="inline-flex items-center gap-2 font-semibold">
           <span className="h-2 w-2 rounded-full bg-slate-700 dark:bg-slate-200" aria-hidden="true" />
-          {impact?.reportingStatus || 'Database reporting status'}
+          {isPending ? 'Retrieving database report' : isError ? 'Reporting data unavailable' :
+            impact?.reportingStatus === 'EMPTY' ? 'No verified public records yet' : 'Live database reporting'}
         </span>
         <span aria-hidden="true" className="text-slate-300 dark:text-slate-700">|</span>
-        <span>{impact ? `Updated ${new Date(impact.lastUpdatedAt).toLocaleString()}` : 'Waiting for database response'}</span>
-        {impact && <span className="rounded-md border border-slate-200 px-2 py-1 dark:border-slate-700">{impact.verificationStatus}</span>}
+        <span>{impact ? `Updated ${new Date(impact.lastUpdatedAt).toLocaleString()}` : 'Last successful update unavailable'}</span>
+        {impact && impact.reportingStatus !== 'EMPTY' &&
+          <span className="rounded-md border border-slate-200 px-2 py-1 dark:border-slate-700">Verified public records</span>}
+        <button type="button" onClick={() => void refetch({ cancelRefetch: true })} disabled={isFetching}
+          className="ml-auto rounded-md border border-slate-300 px-3 py-1.5 font-semibold transition-colors hover:bg-slate-100 disabled:opacity-50 dark:border-slate-700 dark:hover:bg-slate-800">
+          {isFetching ? 'Refreshing…' : 'Refresh'}
+        </button>
       </div>
 
-      {isLoading ? (
+      {isPending ? (
         <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4" aria-label="Loading impact metrics">
           {[1, 2, 3, 4].map((item) => <div key={item} className="h-48 animate-pulse rounded-xl border border-slate-200 bg-slate-100 dark:border-slate-800 dark:bg-slate-900" />)}
         </div>
       ) : isError || !impact ? (
-        <div className="mt-8 rounded-xl border border-slate-300 bg-white p-8 text-center dark:border-slate-800 dark:bg-slate-900">
-          <p className="text-sm text-slate-600 dark:text-slate-300">Impact information is temporarily unavailable.</p>
-          <button type="button" onClick={() => refetch()} className="mt-4 rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white dark:bg-slate-100 dark:text-slate-950">Try again</button>
+        <div role="alert" className="mt-8 rounded-xl border border-slate-300 bg-white p-8 text-center dark:border-slate-800 dark:bg-slate-900">
+          <p className="font-semibold text-slate-950 dark:text-white">Impact reporting data could not be retrieved.</p>
+          <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">The public site is available; please try requesting the report again.</p>
+          <button type="button" onClick={() => void refetch({ cancelRefetch: true })} disabled={isFetching}
+            className="mt-4 rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white disabled:opacity-50 dark:bg-slate-100 dark:text-slate-950">
+            {isFetching ? 'Retrying…' : 'Try again'}
+          </button>
+        </div>
+      ) : impact.reportingStatus === 'EMPTY' ? (
+        <div className="mt-8 rounded-xl border border-slate-200 bg-white p-8 dark:border-slate-800 dark:bg-slate-900/75">
+          <p className="font-editorial text-xl font-semibold text-slate-950 dark:text-white">Verified impact records are not available yet.</p>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300">
+            No published, verified public case, active campaign, confirmed USD donation, or qualifying assistance distribution was found in the reporting database. This report does not substitute sample figures for live records.
+          </p>
+          <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">Last checked {new Date(impact.lastUpdatedAt).toLocaleString()}.</p>
         </div>
       ) : (
         <>
-          <section aria-label="Headline impact metrics" className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <section aria-label="Headline impact metrics" className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             <MetricCard
-              icon={<CircleDollarSign className="h-5 w-5" />}
-              label="Confirmed Donations"
-              value={money(impact.financialSummary.confirmedDonationsUsd)}
-              detail={`${impact.financialSummary.confirmedDonationCount} confirmed settlements`}
-              explanation="Only records with confirmed donation status contribute."
-            />
-            <MetricCard
-              icon={<HandHeart className="h-5 w-5" />}
-              label="Assistance Distributed"
-              value={money(impact.financialSummary.distributedAssistanceUsd)}
-              detail={`${impact.financialSummary.distributedCount} completed distribution records`}
-              explanation="Distribution records linked to verified, public humanitarian cases."
+              icon={<FileCheck2 className="h-5 w-5" />}
+              label="Verified Public Cases"
+              value={impact.verifiedPublicCases.toLocaleString()}
+              detail="Verified, consent-cleared records"
+              explanation="Only active public case approvals are included; rejected, withdrawn, and deleted records are excluded."
             />
             <MetricCard
               icon={<Users className="h-5 w-5" />}
-              label="People Supported"
-              value={impact.peopleSupported.toLocaleString()}
-              detail="Published case-level people totals"
-              explanation="Aggregated from affected-count fields; each approved public case is counted once."
+              label="Reported People Across Cases"
+              value={impact.reportedPeopleAcrossCases.toLocaleString()}
+              detail="Case-reported affected counts; not deduplicated"
+              explanation={impact.uniqueBeneficiariesUnavailableReason}
+            />
+            <MetricCard
+              icon={<BarChart3 className="h-5 w-5" />}
+              label="Active Campaigns"
+              value={impact.activeCampaigns.toLocaleString()}
+              detail="Currently active and not deleted"
+              explanation="Campaign records are counted only while their database status is ACTIVE."
             />
             <MetricCard
               icon={<MapPinned className="h-5 w-5" />}
-              label="Active Regions Covered"
-              value={impact.activeRegionsCount.toLocaleString()}
-              detail="Verified regional corridors"
-              explanation={`Regions must meet the ${impact.privacyThreshold}-person aggregation threshold.`}
+              label="Countries Covered"
+              value={impact.countriesCoveredCount.toLocaleString()}
+              detail={`${impact.privacyThreshold}+ verified cases per country`}
+              explanation="Sub-country locations are not published; country aggregates below the minimum case threshold are suppressed."
+            />
+            <MetricCard
+              icon={<CircleDollarSign className="h-5 w-5" />}
+              label="Confirmed Donations (USD)"
+              value={money(impact.financialSummary.confirmedDonationsUsd)}
+              detail={`${impact.financialSummary.confirmedDonationCount} confirmed settlements`}
+              explanation="Only confirmed USD donation records with a confirmation timestamp contribute; other currencies are not converted or combined."
+            />
+            <MetricCard
+              icon={<HandHeart className="h-5 w-5" />}
+              label="Assistance Distributed (USD)"
+              value={money(impact.financialSummary.distributedAssistanceUsd)}
+              detail={`${impact.financialSummary.distributedCount} completed distribution records`}
+              explanation="USD distributions linked to consent-cleared verified public cases are included."
             />
           </section>
 
           <section className="mt-8 grid gap-6 lg:grid-cols-2">
             <article className="min-w-0 rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900/75 sm:p-6">
-              <h2 className="font-editorial text-xl font-semibold text-slate-950 dark:text-white">People Supported by Region</h2>
-              <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">Verified public case totals, sorted by population.</p>
+              <h2 className="font-editorial text-xl font-semibold text-slate-950 dark:text-white">Reported Case Reach by Country</h2>
+              <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">Case-reported affected counts (not deduplicated); countries require at least {impact.privacyThreshold} verified public cases.</p>
               {impact.regionalImpact.length ? (
-                <div className="mt-5 h-80" role="img" aria-label="Horizontal bar chart of people supported by region">
+                <div className="mt-5 h-80" role="img" aria-label="Horizontal bar chart of case-reported reach by country">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={impact.regionalImpact} layout="vertical" margin={{ top: 5, right: 12, bottom: 5, left: 0 }}>
                       <CartesianGrid stroke={gridStroke} strokeDasharray="3 3" horizontal={false} />
                       <XAxis type="number" tick={{ fill: chartText, fontSize: 11 }} axisLine={{ stroke: gridStroke }} />
-                      <YAxis type="category" dataKey="regionName" width={118} tick={{ fill: chartText, fontSize: 11 }} axisLine={false} tickLine={false} />
+                      <YAxis type="category" dataKey="country" width={118} tick={{ fill: chartText, fontSize: 11 }} axisLine={false} tickLine={false} />
                       <Tooltip cursor={{ fill: theme === 'dark' ? '#202326' : '#f1f2f2' }} contentStyle={{ background: theme === 'dark' ? '#1b1d20' : '#fff', border: `1px solid ${gridStroke}`, borderRadius: 8, color: chartText }} />
-                      <Bar dataKey="peopleSupported" name="People supported" fill={theme === 'dark' ? '#bfc2c4' : '#303438'} radius={[0, 4, 4, 0]} />
+                      <Bar dataKey="reportedPeopleAcrossCases" name="Reported people across cases" fill={theme === 'dark' ? '#bfc2c4' : '#303438'} radius={[0, 4, 4, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
-              ) : <div className="mt-5 flex h-80 items-center justify-center rounded-lg border border-dashed border-slate-300 text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">No qualifying regional records are available.</div>}
+              ) : <div className="mt-5 flex h-80 items-center justify-center rounded-lg border border-dashed border-slate-300 text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">No country currently meets the privacy threshold.</div>}
             </article>
 
             <article className="min-w-0 rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900/75 sm:p-6">
               <h2 className="font-editorial text-xl font-semibold text-slate-950 dark:text-white">Assistance Sector Distribution</h2>
-              <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">People reached across verified case categories.</p>
+              <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">Case-reported affected counts by category; people are not deduplicated across cases.</p>
               {impact.categoryBreakdown.length ? (
                 <div className="mt-5 grid min-h-80 items-center gap-4 sm:grid-cols-[minmax(0,1fr)_180px]">
                   <div className="relative h-72">
@@ -256,7 +317,7 @@ export function ImpactCentrePage() {
                     </ResponsiveContainer>
                     <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
                       <span className="text-2xl font-semibold text-slate-950 dark:text-white">{impact.categoryBreakdown.reduce((sum, row) => sum + row.peopleCount, 0).toLocaleString()}</span>
-                      <span className="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400">People reached</span>
+                      <span className="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400">Reported reach</span>
                     </div>
                   </div>
                   <ul className="space-y-2" aria-label="Assistance sector legend">
@@ -275,7 +336,8 @@ export function ImpactCentrePage() {
           <section className="mt-6 grid gap-6 lg:grid-cols-[0.85fr_1.15fr]">
             <article className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900/75 sm:p-6">
               <h2 className="font-editorial text-xl font-semibold text-slate-950 dark:text-white">Financial Accountability Overview</h2>
-              <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">Confirmed records compared using USD values.</p>
+              <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">Confirmed USD donations and verified USD distributions.</p>
+              {impact.financialSummary.confirmedDonationsUsd > 0 || impact.financialSummary.distributedAssistanceUsd > 0 ? (
               <div className="mt-5 h-72">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={[
@@ -290,13 +352,14 @@ export function ImpactCentrePage() {
                   </BarChart>
                 </ResponsiveContainer>
               </div>
+              ) : <div className="mt-5 flex h-72 items-center justify-center rounded-lg border border-dashed border-slate-300 text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">No confirmed USD financial records are available.</div>}
             </article>
 
             <article className="min-w-0 rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900/75 sm:p-6">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <h2 className="font-editorial text-xl font-semibold text-slate-950 dark:text-white">Impact Activity Over Time</h2>
-                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Verified donations and completed distributions.</p>
+                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Confirmed USD donations and verified USD distributions.</p>
                 </div>
                 <label className="text-xs font-semibold text-slate-600 dark:text-slate-300">
                   <span className="sr-only">Reporting period</span>
@@ -332,9 +395,9 @@ export function ImpactCentrePage() {
                 <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Privacy-filtered, approved public regional records.</p>
               </div>
               <label className="relative block w-full sm:w-64">
-                <span className="sr-only">Search community corridors</span>
+                <span className="sr-only">Search countries</span>
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <input value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} placeholder="Search community corridor" className="min-h-10 w-full rounded-lg border border-slate-300 bg-white pl-9 pr-3 text-xs text-slate-900 outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
+                <input value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} placeholder="Search country" className="min-h-10 w-full rounded-lg border border-slate-300 bg-white pl-9 pr-3 text-xs text-slate-900 outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" />
               </label>
             </div>
             {visibleRows.length ? (
@@ -344,10 +407,9 @@ export function ImpactCentrePage() {
                     <thead className="bg-slate-50 text-xs text-slate-500 dark:bg-slate-950/60 dark:text-slate-400">
                       <tr>
                         {[
-                          ['regionName', 'Community Corridor'],
                           ['country', 'Country'],
                           ['verifiedCases', 'Verified Cases'],
-                          ['peopleSupported', 'People Supported'],
+                          ['reportedPeopleAcrossCases', 'Reported Reach*'],
                           ['assistanceDistributedUsd', 'Assistance Distributed'],
                         ].map(([key, label]) => (
                           <th key={key} scope="col" className="px-5 py-3 font-semibold">
@@ -359,11 +421,10 @@ export function ImpactCentrePage() {
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                       {visibleRows.map((row) => (
-                        <tr key={`${row.country}-${row.regionName}`}>
-                          <td className="px-5 py-4 font-semibold text-slate-900 dark:text-slate-100">{row.regionName}</td>
+                        <tr key={row.country}>
                           <td className="px-5 py-4 text-slate-600 dark:text-slate-300">{row.country}</td>
                           <td className="px-5 py-4 font-mono-tabular text-slate-700 dark:text-slate-300">{row.verifiedCases.toLocaleString()}</td>
-                          <td className="px-5 py-4 font-mono-tabular font-semibold text-slate-900 dark:text-slate-100">{row.peopleSupported.toLocaleString()}</td>
+                          <td className="px-5 py-4 font-mono-tabular font-semibold text-slate-900 dark:text-slate-100">{row.reportedPeopleAcrossCases.toLocaleString()}</td>
                           <td className="px-5 py-4 font-mono-tabular text-slate-700 dark:text-slate-300">{money(row.assistanceDistributedUsd)}</td>
                           <td className="px-5 py-4"><span className="inline-flex items-center gap-1.5 rounded-full border border-slate-300 px-2.5 py-1 text-[11px] font-semibold text-slate-600 dark:border-slate-700 dark:text-slate-300"><ShieldCheck className="h-3 w-3" />Verified public</span></td>
                         </tr>
@@ -372,7 +433,7 @@ export function ImpactCentrePage() {
                   </table>
                 </div>
                 <div className="flex items-center justify-between border-t border-slate-200 px-5 py-3 text-xs text-slate-500 dark:border-slate-800 dark:text-slate-400">
-                  <span>{tableRows.length} corridor{tableRows.length === 1 ? '' : 's'}</span>
+                  <span>{tableRows.length} countr{tableRows.length === 1 ? 'y' : 'ies'}</span>
                   <div className="flex items-center gap-2">
                     <button type="button" disabled={page === 1} onClick={() => setPage((value) => value - 1)} aria-label="Previous page" className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-300 disabled:opacity-40 dark:border-slate-700"><ChevronLeft className="h-4 w-4" /></button>
                     <span>Page {page} of {pageCount}</span>
@@ -382,7 +443,7 @@ export function ImpactCentrePage() {
               </>
             ) : (
               <div className="px-6 py-12 text-center text-sm text-slate-500 dark:text-slate-400">
-                {search ? 'No community corridors match this search.' : 'No qualifying aggregated regional records are available.'}
+                {search ? 'No countries match this search.' : `No country has ${impact.privacyThreshold} or more verified public cases.`}
               </div>
             )}
           </section>
@@ -407,8 +468,9 @@ export function ImpactCentrePage() {
             <div className="mt-6 grid gap-4 text-xs leading-6 text-slate-600 dark:text-slate-300 sm:grid-cols-2">
               <p><strong className="text-slate-900 dark:text-white">Confirmed donation:</strong> a database record with confirmed status.</p>
               <p><strong className="text-slate-900 dark:text-white">Distributed assistance:</strong> a distribution record linked to a verified, public humanitarian case.</p>
-              <p><strong className="text-slate-900 dark:text-white">People supported:</strong> the published affected-count total for each approved public case, counted once per case.</p>
-              <p><strong className="text-slate-900 dark:text-white">Regional coverage:</strong> distinct approved community locations containing verified public cases meeting the aggregation threshold.</p>
+              <p><strong className="text-slate-900 dark:text-white">Reported reach:</strong> sum of case-reported affected counts; it is not a deduplicated beneficiary count. No stable privacy-safe beneficiary identifier exists in the current schema, so unique beneficiaries are unavailable.</p>
+              <p><strong className="text-slate-900 dark:text-white">Geographic coverage:</strong> country-level aggregates only, with at least {impact.privacyThreshold} distinct verified public cases per country; sub-country locations are suppressed.</p>
+              <p><strong className="text-slate-900 dark:text-white">Projects and programmes:</strong> not reported because the current database has no separate projects or programme records.</p>
             </div>
           </section>
 

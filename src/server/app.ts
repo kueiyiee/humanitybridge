@@ -14,6 +14,12 @@ import donationRoutes from './routes/donations';
 import coordinatorRoutes from './routes/coordinator';
 import adminRoutes from './routes/admin';
 import mediaRoutes from './routes/media';
+import { adminDocumentRoutes, publicDocumentRoutes } from './routes/documents';
+import {
+  adminContentRoutes,
+  coordinatorContentRoutes,
+  publicContentRoutes,
+} from './routes/content';
 
 export function createApiApp() {
   const app = express();
@@ -29,12 +35,23 @@ export function createApiApp() {
   );
 
   app.use(cookieParser());
-  app.use(express.json({
+  const captureRawBody = (req: express.Request, _res: express.Response, buffer: Buffer) => {
+    (req as typeof req & { rawBody?: Buffer }).rawBody = Buffer.from(buffer);
+  };
+  const standardJsonParser = express.json({
     limit: '2mb',
-    verify: (req, _res, buffer) => {
-      (req as typeof req & { rawBody?: Buffer }).rawBody = Buffer.from(buffer);
-    },
-  }));
+    verify: captureRawBody,
+  });
+  const documentEditorJsonParser = express.json({
+    limit: '8mb',
+    verify: captureRawBody,
+  });
+  app.use((req, res, next) => {
+    const parser = req.path.startsWith('/api/v1/admin/documents/editor/')
+      ? documentEditorJsonParser
+      : standardJsonParser;
+    parser(req, res, next);
+  });
   app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 
   const globalLimiter = rateLimit({
@@ -88,9 +105,14 @@ export function createApiApp() {
 
   app.use('/api/v1/auth', authRoutes);
   app.use('/api/v1', publicRoutes);
+  app.use('/api/v1', publicContentRoutes);
   app.use('/api/v1', donationRoutes);
   app.use('/api/v1/coordinator', coordinatorRoutes);
+  app.use('/api/v1/coordinator/cms-content', coordinatorContentRoutes);
   app.use('/api/v1/admin', adminRoutes);
+  app.use('/api/v1/admin/cms-content', adminContentRoutes);
+  app.use('/api/v1/admin/documents', adminDocumentRoutes);
+  app.use('/api/v1/public/documents', publicDocumentRoutes);
   app.use('/api/v1/media', mediaRoutes);
 
   app.use('/api', (_req, res) => {

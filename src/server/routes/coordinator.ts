@@ -12,6 +12,7 @@ import { type AuthenticatedRequest, requireRole } from '../middleware/auth';
 import { AppError, asyncHandler } from '../middleware/errorHandler';
 import { generateReferenceCode } from '../utils/crypto';
 import { writeAuditLog } from '../services/auditService';
+import { validateStoryImageUrl } from '../services/storyMediaValidation';
 
 const router = Router();
 
@@ -415,6 +416,9 @@ router.post(
   '/stories',
   asyncHandler(async (req: AuthenticatedRequest, res) => {
     const parsed = createStorySchema.parse(req.body);
+    const coverImageUrl = parsed.coverImageUrl
+      ? await validateStoryImageUrl(parsed.coverImageUrl)
+      : null;
     if (parsed.isMinorSubject && !parsed.guardianConsentRecorded) {
       throw new AppError(400, 'Minor-related stories require documented guardian consent');
     }
@@ -432,7 +436,7 @@ router.post(
       regionName: parsed.regionName,
       excerpt: parsed.excerpt,
       body: parsed.body,
-      coverImageUrl: parsed.coverImageUrl || null,
+      coverImageUrl,
       anonymousPublication: parsed.anonymousPublication || parsed.isMinorSubject,
       isMinorSubject: parsed.isMinorSubject,
       status,

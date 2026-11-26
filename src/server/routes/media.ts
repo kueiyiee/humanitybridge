@@ -3,24 +3,46 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { Router } from 'express';
 import multer from 'multer';
-import { and, eq, isNull, or } from 'drizzle-orm';
+import { and, eq, gt, inArray, isNull, like, lte, or } from 'drizzle-orm';
 import { db, schema, nowUtc } from '../../db/index';
 import { env } from '../config/env';
 import { type AuthenticatedRequest, requireAuth } from '../middleware/auth';
 import { AppError, asyncHandler } from '../middleware/errorHandler';
 import { signHmac, verifyHmac } from '../utils/crypto';
-import { DASHBOARD_ROLES } from '../../../packages/shared/types';
+import { DASHBOARD_ROLES, hasPermission } from '../../../packages/shared/types';
 import { hasValidMagicSignature } from '../utils/fileValidation';
+import { deletePublicMedia, readPublicMedia, storePublicMedia } from '../services/mediaStorage';
 
 const router = Router();
 
+async function assertPrivateEvidenceAccess(
+  user: NonNullable<AuthenticatedRequest['user']>,
+  file: typeof schema.mediaFiles.$inferSelect,
+) {
+  if (user.role === DASHBOARD_ROLES.PLATFORM_ADMIN || file.uploadedBy === user.id) return;
+  if (!hasPermission(user.role, 'admin:cases:confidential')) {
+    throw new AppError(403, 'Access denied to confidential evidence file');
+  }
+  const linkedCases = await db.select({ regionName: schema.communityLocations.regionName })
+    .from(schema.caseDocuments)
+    .innerJoin(schema.humanitarianCases, eq(schema.caseDocuments.caseId, schema.humanitarianCases.id))
+    .innerJoin(schema.communityLocations, eq(schema.humanitarianCases.locationId, schema.communityLocations.id))
+    .where(eq(schema.caseDocuments.storageKey, file.safeFilename));
+  const hasAssignedRegion = linkedCases.some(({ regionName }) =>
+    Boolean(user.region && regionName &&
+      user.region.trim().toLocaleLowerCase() === regionName.trim().toLocaleLowerCase()),
+  );
+  if (!hasAssignedRegion) throw new AppError(403, 'Evidence is outside your assigned region');
+}
+
 fs.mkdirSync(env.privateStorageDir, { recursive: true });
-fs.mkdirSync(env.publicMediaDir, { recursive: true });
+if (env.mediaStorageProvider === 'local') fs.mkdirSync(env.publicMediaDir, { recursive: true });
 
 const ALLOWED_MIME_TYPES = new Set([
   'image/jpeg',
   'image/png',
   'image/webp',
+  'image/avif',
   'application/pdf',
 ]);
 
@@ -29,6 +51,7 @@ const ALLOWED_FILE_TYPES: Record<string, string> = {
   '.jpeg': 'image/jpeg',
   '.png': 'image/png',
   '.webp': 'image/webp',
+  '.avif': 'image/avif',
   '.pdf': 'application/pdf',
 };
 
@@ -60,11 +83,21 @@ router.post(
     }
 
     const scope = requestedScope === 'PUBLIC_STORY' ? 'PUBLIC_STORY' : 'PRIVATE_CASE_EVIDENCE';
-    if (![DASHBOARD_ROLES.PLATFORM_ADMIN, DASHBOARD_ROLES.COMMUNITY_COORDINATOR].includes(req.user!.role)) {
+    const canUploadPublicMedia = hasPermission(req.user!.role, 'admin:stories:moderate') ||
+      hasPermission(req.user!.role, 'admin:stories:publish') ||
+      hasPermission(req.user!.role, 'admin:news:manage') ||
+      hasPermission(req.user!.role, 'admin:news:publish') ||
+      hasPermission(req.user!.role, 'coordinator:content:submit');
+    if (scope === 'PUBLIC_STORY' && !canUploadPublicMedia) {
+      throw new AppError(403, 'Your account is not authorised to upload public content media');
+    }
+    if (scope === 'PRIVATE_CASE_EVIDENCE' &&
+      req.user!.role !== DASHBOARD_ROLES.PLATFORM_ADMIN &&
+      req.user!.role !== DASHBOARD_ROLES.COMMUNITY_COORDINATOR) {
       throw new AppError(403, 'Your account is not authorised to upload platform media');
     }
     if (scope === 'PUBLIC_STORY' && req.file.mimetype === 'application/pdf') {
-      throw new AppError(400, 'Public story media must be a safe image format (JPG, PNG, WebP)');
+      throw new AppError(400, 'Public story media must be a supported image format');
     }
 
     const ext = path.extname(req.file.originalname).toLowerCase();
@@ -74,10 +107,11 @@ router.post(
 
     let fileRecord: typeof schema.mediaFiles.$inferSelect | undefined;
     try {
-      await fs.promises.writeFile(diskPath, req.file.buffer, {
-        flag: 'wx',
-        mode: scope === 'PRIVATE_CASE_EVIDENCE' ? 0o600 : 0o644,
-      });
+      if (scope === 'PUBLIC_STORY') {
+        await storePublicMedia(safeFilename, req.file.buffer, req.file.mimetype);
+      } else {
+        await fs.promises.writeFile(diskPath, req.file.buffer, { flag: 'wx', mode: 0o600 });
+      }
 
       await db.insert(schema.mediaFiles).values({
         storageScope: scope,
@@ -97,7 +131,15 @@ router.post(
       fileRecord = createdRows[0];
       if (!fileRecord) throw new Error('Media metadata could not be confirmed after upload');
     } catch (error) {
-      await fs.promises.unlink(diskPath).catch(() => undefined);
+      try {
+        if (scope === 'PUBLIC_STORY') await deletePublicMedia(safeFilename);
+        else await fs.promises.unlink(diskPath);
+      } catch (cleanupError) {
+        throw new AggregateError(
+          [error, cleanupError],
+          'Media upload failed and its incomplete storage object could not be removed',
+        );
+      }
       throw error;
     }
 
@@ -129,24 +171,115 @@ router.get(
     const publicStory = await db.select({ id: schema.stories.id })
       .from(schema.stories)
       .innerJoin(schema.storyConsents, eq(schema.stories.id, schema.storyConsents.storyId))
+      .leftJoin(schema.storyMedia, eq(schema.storyMedia.storyId, schema.stories.id))
       .where(and(
-        eq(schema.stories.coverImageUrl, `/api/v1/media/public/${filename}`),
+        or(
+          eq(schema.stories.coverImageUrl, `/api/v1/media/public/${filename}`),
+          eq(schema.storyMedia.url, `/api/v1/media/public/${filename}`),
+        ),
         eq(schema.stories.status, 'PUBLISHED'),
         eq(schema.storyConsents.consentStory, true),
         eq(schema.storyConsents.consentMedia, true),
         or(eq(schema.stories.isMinorSubject, false), eq(schema.storyConsents.guardianConsentRecorded, true)),
         isNull(schema.storyConsents.withdrawnAt),
         isNull(schema.stories.deletedAt),
-      )).limit(1);
-    if (!publicStory[0]) throw new AppError(404, 'Media is not approved for public publication');
+      ))
+      .limit(1);
+    if (!publicStory[0]) {
+      const now = nowUtc();
+      const publicContent = await db.select({ id: schema.cmsContent.id })
+        .from(schema.cmsContent)
+        .where(and(
+          isNull(schema.cmsContent.deletedAt),
+          or(
+            eq(schema.cmsContent.status, 'PUBLISHED'),
+            and(
+              eq(schema.cmsContent.status, 'SCHEDULED'),
+              lte(schema.cmsContent.scheduledAt, now),
+            ),
+          ),
+          or(isNull(schema.cmsContent.expiresAt), gt(schema.cmsContent.expiresAt, now)),
+          or(
+            eq(schema.cmsContent.coverImageUrl, `/api/v1/media/public/${filename}`),
+            like(schema.cmsContent.bodyJson, `%/api/v1/media/public/${filename}%`),
+            like(schema.cmsContent.attachmentsJson, `%/api/v1/media/public/${filename}%`),
+          ),
+        ))
+        .limit(1);
+      if (!publicContent[0]) throw new AppError(404, 'Media is not approved for public publication');
+    }
 
-    const diskPath = path.join(env.publicMediaDir, filename);
-    if (!fs.existsSync(diskPath)) throw new AppError(404, 'Media file not found');
+    const contents = await readPublicMedia(filename);
+    if (!contents) throw new AppError(404, 'Media file not found');
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Cache-Control', 'no-store');
     res.type(media.mimeType);
     if (media.mimeType === 'application/pdf') res.setHeader('Content-Disposition', 'attachment');
-    return res.sendFile(diskPath);
+    return res.send(contents);
+  }),
+);
+
+router.get(
+  '/library',
+  requireAuth,
+  asyncHandler(async (req: AuthenticatedRequest, res) => {
+    if (!hasPermission(req.user!.role, 'admin:stories:moderate') &&
+      !hasPermission(req.user!.role, 'admin:stories:publish') &&
+      !hasPermission(req.user!.role, 'admin:news:manage') &&
+      !hasPermission(req.user!.role, 'admin:news:publish') &&
+      !hasPermission(req.user!.role, 'coordinator:content:submit')) {
+      throw new AppError(403, 'You are not authorised to browse the public media library');
+    }
+    const search = String(req.query.q || '').trim().toLowerCase();
+    const files = await db.select({
+      id: schema.mediaFiles.id,
+      safeFilename: schema.mediaFiles.safeFilename,
+      mimeType: schema.mediaFiles.mimeType,
+      sizeBytes: schema.mediaFiles.sizeBytes,
+      altText: schema.mediaFiles.altText,
+      createdAt: schema.mediaFiles.createdAt,
+      uploadedBy: schema.mediaFiles.uploadedBy,
+    }).from(schema.mediaFiles)
+      .where(eq(schema.mediaFiles.storageScope, 'PUBLIC_STORY'))
+      .orderBy(schema.mediaFiles.createdAt);
+    const filtered = files.filter((file) => !search || file.safeFilename.toLowerCase().includes(search) ||
+      (file.altText || '').toLowerCase().includes(search));
+    const urls = filtered.map((file) => `/api/v1/media/public/${file.safeFilename}`);
+    const references = urls.length
+      ? await db.select({
+          url: schema.storyMedia.url,
+          storyId: schema.stories.id,
+          storyTitle: schema.stories.title,
+          storyStatus: schema.stories.status,
+        }).from(schema.storyMedia)
+          .innerJoin(schema.stories, eq(schema.storyMedia.storyId, schema.stories.id))
+          .where(inArray(schema.storyMedia.url, urls))
+      : [];
+    const covers = urls.length
+      ? await db.select({
+          url: schema.stories.coverImageUrl,
+          storyId: schema.stories.id,
+          storyTitle: schema.stories.title,
+          storyStatus: schema.stories.status,
+        }).from(schema.stories)
+          .where(inArray(schema.stories.coverImageUrl, urls))
+      : [];
+    return res.json({
+      success: true,
+      message: 'Story media library loaded',
+      data: filtered.map((file) => {
+        const uses = [...references, ...covers].filter((use) =>
+          use.url === `/api/v1/media/public/${file.safeFilename}`,
+        );
+        return {
+          ...file,
+          publicUrl: `/api/v1/media/public/${file.safeFilename}`,
+          usageCount: uses.length,
+          usedInPublishedContent: uses.some((use) => use.storyStatus === 'PUBLISHED'),
+          stories: uses.map((use) => ({ id: use.storyId, title: use.storyTitle, status: use.storyStatus })),
+        };
+      }),
+    });
   }),
 );
 
@@ -162,9 +295,7 @@ router.get(
       throw new AppError(404, 'Private evidence file not found');
     }
 
-    if (req.user!.role !== DASHBOARD_ROLES.PLATFORM_ADMIN && file.uploadedBy !== req.user!.id) {
-      throw new AppError(403, 'Access denied to confidential evidence file');
-    }
+    await assertPrivateEvidenceAccess(req.user!, file);
 
     const expires = Date.now() + 5 * 60 * 1000;
     const payload = `${file.id}:${file.safeFilename}:${req.user!.id}:${expires}`;
@@ -197,9 +328,7 @@ router.get(
     if (!file || file.storageScope !== 'PRIVATE_CASE_EVIDENCE') {
       throw new AppError(404, 'Private evidence file not found');
     }
-    if (req.user!.role !== DASHBOARD_ROLES.PLATFORM_ADMIN && file.uploadedBy !== req.user!.id) {
-      throw new AppError(403, 'Access denied to confidential evidence file');
-    }
+    await assertPrivateEvidenceAccess(req.user!, file);
 
     const payload = `${file.id}:${file.safeFilename}:${req.user!.id}:${expires}`;
     if (!verifyHmac(payload, sig, env.signedUrlSecret)) {

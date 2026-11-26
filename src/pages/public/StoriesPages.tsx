@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, ArrowRight, Search, ShieldCheck } from 'lucide-react';
 import { apiRequest } from '../../services/api';
 import { ResilientImage } from '../../components/ResilientImage';
+import { renderStoryBody } from '../../utils/storyContent';
 
 interface StoryItem {
   id: number;
@@ -12,10 +13,12 @@ interface StoryItem {
   regionName: string;
   excerpt: string;
   coverImageUrl: string | null;
+  coverAltText: string | null;
   anonymousPublication: boolean;
   publishedAt: string | null;
   categoryName: string;
   categorySlug: string;
+  media?: Array<{ url: string; altText: string; caption: string | null }>;
 }
 
 export function OurStoriesPage() {
@@ -118,7 +121,7 @@ export function OurStoriesPage() {
               <div className="aspect-[4/3] overflow-hidden bg-slate-100 dark:bg-slate-900">
                 <ResilientImage
                   src={story.coverImageUrl}
-                  alt={story.title}
+                  alt={story.coverAltText || story.title}
                   className="w-full h-full object-cover"
                   fallbackTitle={story.title}
                 />
@@ -159,10 +162,59 @@ interface StoryDetail extends StoryItem {
 
 export function StoryDetailsPage() {
   const { slug } = useParams();
+  const [shareMessage, setShareMessage] = useState('');
   const { data, isLoading, isError } = useQuery({
     queryKey: ['story-detail', slug],
     queryFn: () => apiRequest<StoryDetail>(`/stories/${slug}`),
   });
+
+  useEffect(() => {
+    const story = data?.data;
+    if (!story) return;
+    const previousTitle = document.title;
+    const tags = [
+      ['name', 'description', story.excerpt],
+      ['property', 'og:title', story.title],
+      ['property', 'og:description', story.excerpt],
+      ['property', 'og:type', 'article'],
+      ['property', 'og:url', new URL(`/stories/${story.slug}`, window.location.origin).href],
+      ...(story.coverImageUrl
+        ? [['property', 'og:image', new URL(story.coverImageUrl, window.location.origin).href]]
+        : []),
+    ];
+    const previous = tags.map(([attribute, name]) => {
+      let element = document.head.querySelector<HTMLMetaElement>(`meta[${attribute}="${name}"]`);
+      const created = !element;
+      if (!element) {
+        element = document.createElement('meta');
+        element.setAttribute(attribute, name);
+        document.head.appendChild(element);
+      }
+      const oldContent = element.getAttribute('content');
+      return { element, created, oldContent, content: tags.find((tag) => tag[1] === name)?.[2] || '' };
+    });
+    const canonical = document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+    const createdCanonical = !canonical;
+    const canonicalLink = canonical || document.createElement('link');
+    if (createdCanonical) {
+      canonicalLink.rel = 'canonical';
+      document.head.appendChild(canonicalLink);
+    }
+    const previousCanonical = canonicalLink.href;
+    canonicalLink.href = new URL(`/stories/${story.slug}`, window.location.origin).href;
+    document.title = `${story.title} | HumanityBridge`;
+    previous.forEach(({ element, content }) => element.setAttribute('content', content));
+    return () => {
+      document.title = previousTitle;
+      previous.forEach(({ element, created, oldContent }) => {
+        if (created) element.remove();
+        else if (oldContent === null) element.removeAttribute('content');
+        else element.setAttribute('content', oldContent);
+      });
+      if (createdCanonical) canonicalLink.remove();
+      else canonicalLink.href = previousCanonical;
+    };
+  }, [data?.data]);
 
   if (isLoading) {
     return <div className="max-w-3xl mx-auto px-4 py-16 text-sm text-slate-500">Loading story...</div>;
@@ -183,7 +235,19 @@ export function StoryDetailsPage() {
   }
 
   const story = data.data;
-  const paragraphs = story.body.split(/\n\n+/);
+  const shareStory = async () => {
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: story.title, text: story.excerpt, url: window.location.href });
+        setShareMessage('Story shared.');
+      } else {
+        await navigator.clipboard.writeText(window.location.href);
+        setShareMessage('Story link copied.');
+      }
+    } catch (error) {
+      setShareMessage(error instanceof Error ? error.message : 'Sharing is not available in this browser.');
+    }
+  };
 
   return (
     <article className="max-w-3xl mx-auto px-4 sm:px-6 py-12">
@@ -220,7 +284,7 @@ export function StoryDetailsPage() {
           <div className="aspect-[16/10] rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800">
             <ResilientImage
               src={story.coverImageUrl}
-              alt={story.title}
+              alt={story.coverAltText || story.title}
               className="w-full h-full object-cover"
               fallbackTitle={story.title}
             />
@@ -229,6 +293,16 @@ export function StoryDetailsPage() {
             {story.regionName} · Published with documented media and narrative consent.
           </figcaption>
         </figure>
+      )}
+      {story.media && story.media.length > 0 && (
+        <div className="mt-8 grid gap-4 sm:grid-cols-2" aria-label="Story image gallery">
+          {story.media.map((image, index) => (
+            <figure key={`${story.id}-${index}`} className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800">
+              <ResilientImage src={image.url} alt={image.altText} className="w-full aspect-[4/3] object-cover" fallbackTitle={story.title} />
+              {image.caption && <figcaption className="px-3 py-2 text-xs text-slate-500">{image.caption}</figcaption>}
+            </figure>
+          ))}
+        </div>
       )}
 
       <div className="mt-8 p-4 rounded-xl bg-white dark:bg-[#0D223D] border border-slate-200 dark:border-slate-800 flex items-start gap-3">
@@ -240,18 +314,13 @@ export function StoryDetailsPage() {
       </div>
 
       <div className="mt-8 space-y-5 max-w-prose text-base sm:text-lg leading-relaxed text-[#152238] dark:text-slate-200">
-        {paragraphs.map((p, idx) => (
-          <p
-            key={idx}
-            className={
-              idx === 0
-                ? 'first-letter:font-editorial first-letter:text-5xl first-letter:font-semibold first-letter:float-left first-letter:mr-3 first-letter:leading-none'
-                : ''
-            }
-          >
-            {p}
-          </p>
-        ))}
+        {renderStoryBody(story.body)}
+      </div>
+      <div className="mt-8 flex items-center gap-3">
+        <button type="button" onClick={() => void shareStory()} className="rounded-lg border border-slate-300 dark:border-slate-700 px-4 py-2 text-sm font-medium">
+          Share story
+        </button>
+        {shareMessage && <span role="status" className="text-xs text-slate-500">{shareMessage}</span>}
       </div>
     </article>
   );

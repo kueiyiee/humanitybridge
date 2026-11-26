@@ -14,6 +14,10 @@ export function hasValidMagicSignature(buffer: Buffer, mimeType: string): boolea
       buffer.subarray(0, 4).toString('ascii') === 'RIFF' &&
       buffer.subarray(8, 12).toString('ascii') === 'WEBP';
   }
+  if (mimeType === 'image/avif') {
+    return buffer.length >= 12 &&
+      buffer.subarray(4, 12).toString('ascii').includes('avif');
+  }
   if (mimeType === 'application/pdf') {
     return buffer.length >= 8 && buffer.subarray(0, 5).toString('ascii') === '%PDF-';
   }

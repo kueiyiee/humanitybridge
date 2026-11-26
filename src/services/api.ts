@@ -53,3 +53,27 @@ export async function apiRequest<T>(
 
   return payload;
 }
+
+export async function apiBlob(path: string, options: RequestInit = {}): Promise<Blob> {
+  const method = (options.method || 'GET').toUpperCase();
+  const headers = new Headers(options.headers || {});
+  if (!(options.body instanceof FormData) && options.body && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
+  if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+    const csrf = readCookie('hb_csrf');
+    if (csrf) headers.set('X-CSRF-Token', csrf);
+  }
+
+  const response = await fetch(`/api/v1${path}`, {
+    ...options,
+    method,
+    headers,
+    credentials: 'include',
+  });
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => null)) as { message?: string; data?: unknown } | null;
+    throw new ApiClientError(response.status, payload?.message || 'The requested file could not be retrieved.', payload?.data);
+  }
+  return response.blob();
+}

@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import {
   decryptMfaSecret,
   encryptMfaSecret,
+  MfaSecretAuthenticationError,
   signHmac,
   verifyHmac,
 } from '../src/server/utils/crypto';
@@ -28,7 +29,19 @@ test('tampered MFA ciphertext is rejected', () => {
   const encrypted = encryptMfaSecret('JBSWY3DPEHPK3PXP');
   const parts = encrypted.split(':');
   parts[3] = `${parts[3].slice(0, -2)}00`;
-  assert.throws(() => decryptMfaSecret(parts.join(':')));
+  assert.throws(() => decryptMfaSecret(parts.join(':')), MfaSecretAuthenticationError);
+});
+
+test('MFA secrets encrypted with a different key fail with an actionable error', () => {
+  const encrypted = encryptMfaSecret('JBSWY3DPEHPK3PXP');
+  const originalKey = process.env.MFA_ENCRYPTION_KEY;
+  process.env.MFA_ENCRYPTION_KEY = 'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789';
+
+  try {
+    assert.throws(() => decryptMfaSecret(encrypted), MfaSecretAuthenticationError);
+  } finally {
+    process.env.MFA_ENCRYPTION_KEY = originalKey;
+  }
 });
 
 test('HMAC verification rejects modified payloads', () => {
@@ -58,4 +71,11 @@ test('JPEG and PNG signatures require their complete file markers', () => {
   assert.equal(hasValidMagicSignature(jpeg, 'image/jpeg'), true);
   assert.equal(hasValidMagicSignature(png, 'image/png'), true);
   assert.equal(hasValidMagicSignature(truncatedPng, 'image/png'), false);
+});
+
+test('AVIF uploads require the ISO base media file type marker', () => {
+  const avif = Buffer.from('000000186674797061766966', 'hex');
+  const nonAvif = Buffer.from('00000018667479706d69736f', 'hex');
+  assert.equal(hasValidMagicSignature(avif, 'image/avif'), true);
+  assert.equal(hasValidMagicSignature(nonAvif, 'image/avif'), false);
 });

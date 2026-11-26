@@ -10,7 +10,8 @@ export function HumanitarianParticles() {
     const context = canvas?.getContext('2d', { alpha: true });
     if (!canvas || !context) return;
 
-    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+    const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let reducedMotion = motionPreference.matches;
     let width = 0;
     let height = 0;
     let frame = 0;
@@ -108,6 +109,15 @@ export function HumanitarianParticles() {
         start();
       }
     };
+    const onMotionPreferenceChange = (event: MediaQueryListEvent) => {
+      reducedMotion = event.matches;
+      if (reducedMotion) {
+        if (frame) window.cancelAnimationFrame(frame);
+        frame = 0;
+      } else {
+        start();
+      }
+    };
 
     const themeObserver = new MutationObserver(() => draw(0, false));
     themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
@@ -116,10 +126,12 @@ export function HumanitarianParticles() {
     start();
     window.addEventListener('resize', resize, { passive: true });
     document.addEventListener('visibilitychange', onVisibilityChange);
+    motionPreference.addEventListener('change', onMotionPreferenceChange);
 
     return () => {
       window.removeEventListener('resize', resize);
       document.removeEventListener('visibilitychange', onVisibilityChange);
+      motionPreference.removeEventListener('change', onMotionPreferenceChange);
       themeObserver.disconnect();
       if (frame) window.cancelAnimationFrame(frame);
     };
