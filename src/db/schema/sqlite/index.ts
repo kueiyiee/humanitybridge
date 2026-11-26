@@ -1,5 +1,6 @@
 import { sqliteTable, integer, text, real, uniqueIndex, index } from 'drizzle-orm/sqlite-core';
 export * from './documents';
+export * from './content';
 
 // Identity & Access
 export const roles = sqliteTable('roles', {
