@@ -1,84 +1,167 @@
-# HumanityBridge Architecture
+# HumanityBridge — System Architecture
 
-HumanityBridge is a humanitarian coordination, safeguarding and financial-accountability platform. The system separates public information from authenticated operational workflows and private beneficiary records.
+**Document status:** Current repository architecture  
+**Architecture style:** Modular monolith  
+**Primary concern:** Safe coordination of humanitarian operations, consent-led public information, safeguarding and financial accountability.
 
-## Logical architecture
+## 1. System context
 
-```text
-Browser clients
-  └── React 19 + TypeScript + Vite
-       ├── Public information and campaigns
-       ├── Administrator workspace
-       └── Community coordinator workspace
-              │ HTTPS / JSON API
-              ▼
-Node.js 22 + Express API
-  ├── Authentication, sessions, CSRF and RBAC
-  ├── Public content and consent policy
-  ├── Case and coordinator workflows
-  ├── Safeguarding and media access
-  ├── Donations, payment verification and financial ledger
-  └── Audit, notification and translation services
-              │ Drizzle ORM
-              ▼
-Database and storage
-  ├── MySQL 8 (production)
-  ├── SQLite (local development / tests)
-  ├── Private file storage (outside static web root)
-  └── Public media storage (consent-gated delivery)
+HumanityBridge separates three trust zones:
+
+1. **Public experience** — published information, approved stories, public case summaries, campaigns, institutional content and public document verification.
+2. **Authenticated operational workspaces** — administrators, specialist reviewers and community coordinators operating within server-enforced permissions.
+3. **Restricted records and evidence** — beneficiary contact information, safeguarding reports, private case documents, financial evidence and audit data.
+
+```
+Public visitors ─┐
+Administrators ──┼── React + TypeScript web application
+Coordinators ────┘                 │
+                                   │ HTTPS / JSON
+                                   ▼
+                         Express + TypeScript API
+                                   │
+              ┌────────────────────┼────────────────────┐
+              ▼                    ▼                    ▼
+       Identity and RBAC     Domain workflows     Public content
+              │                    │                    │
+              └────────────────────┼────────────────────┘
+                                   ▼
+                            Drizzle ORM
+                                   │
+                       SQLite (local/test)
+                         MySQL (production)
+                                   │
+                         Media storage layer
 ```
 
-## Repository boundaries
+## 2. Technology and runtime
 
-- `src/`: current Vite application source and shared source tree.
-- `src/server/`: Express API, middleware, routes, services and configuration.
-- `src/db/`: Drizzle schemas, database connection and SQLite bootstrap.
-- `packages/shared/`: shared types and validation contracts.
-- `database/migrations/`: versioned MySQL migrations.
-- `database/seeds/`: development-only sample data.
-- `frontend/`: frontend ownership and boundary documentation.
-- `backend/`: backend ownership and boundary documentation.
-- `database/`: database operations, migrations and seed ownership.
+| Layer | Current implementation | Responsibility |
+|---|---|---|
+| Web client | React 19, TypeScript, Vite, React Router | Public pages and role-based workspaces |
+| UI state | TanStack Query, React Hook Form, Zod | Server state, forms and client-side validation |
+| API | Node.js 22+, Express, TypeScript | Authentication, domain workflows and API contracts |
+| Data access | Drizzle ORM | Typed queries against the selected SQL dialect |
+| Local database | SQLite via Node node:sqlite and Drizzle SQLite proxy | Local development and automated tests |
+| Production database | MySQL 8 via mysql2 and Drizzle MySQL | Production persistence |
+| Media | Local adapter for development; S3-compatible adapter for production | Public media and restricted evidence |
+| Tests | Node test runner, tsx, TypeScript and Vite build | Regression, acceptance, type and build verification |
 
-The top-level frontend and backend documentation folders establish clear domain ownership. Existing source paths are intentionally retained for this hardening branch so that imports and Vite/TypeScript resolution are not broken by an unverified mass move. A physical move into `frontend/src` and `backend/src` should be a separate refactor with a full build and integration-test run.
+The browser communicates with the backend through the shared API client. Browser code must never connect directly to SQLite or MySQL.
 
-## Dashboard architecture
+## 3. Repository map and source-of-truth boundaries
 
-- `src/pages/admin/AdminDashboard.tsx` owns administrator navigation and dashboard data queries; tab-specific workspaces remain in focused panel modules.
-- `src/pages/admin/AdminDashboardTypes.ts` defines the typed API view contract consumed by the administrator dashboard.
-- `src/pages/admin/AdminDashboardOverview.tsx` owns the executive overview presentation and receives typed data, loading/error state, retry, and navigation callbacks.
-- `src/pages/coordinator/CoordinatorDashboard.tsx` owns coordinator workflows and tab navigation.
-- `src/components/dashboard/DashboardMetricCard.tsx` is the shared accessible metric-card primitive used by both dashboards.
-- Dashboard cards navigate to existing role-authorized workspaces; authorization remains enforced by the API and is not inferred from presentation state.
+The current import graph intentionally keeps application implementation under src/. The top-level frontend/ and backend/ directories are ownership and onboarding documentation boundaries, not duplicate application source trees.
 
-Keep dashboard orchestration, data contracts, and presentation separate when adding features. Reuse shared primitives for common interaction patterns, but keep role-specific queues and metrics in their respective dashboard modules.
+```
+src/
+  App.tsx                    Route composition
+  main.tsx                   Browser entry point
+  assets/                    Bundled visual assets
+  components/                Shared accessible UI primitives
+  contexts/                  Authentication, locale and theme state
+  layouts/                   Public and dashboard shells
+  pages/
+    public/                  Public pages and CMS rendering
+    admin/                   Administrator workspaces and panels
+    coordinator/             Community coordinator workspace
+  services/api.ts            Browser API client
+  db/
+    index.ts                 Database dialect selection and lifecycle
+    bootstrapSqlite.ts       Idempotent SQLite schema bootstrap
+    schema/sqlite/           SQLite Drizzle schema
+    schema/mysql/            MySQL Drizzle schema
+  server/
+    app.ts                   Express middleware and route composition
+    config/                  Environment, logging and OpenAPI
+    middleware/              Authentication, CSRF and error handling
+    routes/                  HTTP route adapters
+    services/                Domain and infrastructure services
+    utils/                   Security and file utilities
+packages/shared/             Shared roles, types and validation contracts
+database/migrations/         Versioned MySQL migration history
+database/seeds/              Synthetic development/test seed only
+scripts/                     Explicit operator and database utilities
+tests/                       Acceptance and security regression tests
+docs/                        Architecture, UX, security and operations records
+```
 
-## Production deployment sequence
+**Do not create a second frontend/src or backend/src implementation.** A physical source-tree migration requires coordinated path aliases, Vite configuration, TypeScript project references, test imports and deployment changes. It should be a separate refactor with a verified build.
 
-1. Provision MySQL 8 and private persistent storage.
-2. Configure independent production secrets and TLS termination.
-3. Back up the database.
-4. Encrypt existing MFA secrets with `npm run db:encrypt-mfa` before deploying the code that decrypts them.
-5. Apply reviewed SQL migrations with `npm run db:migrate`.
-6. Start the application only after database readiness succeeds.
-7. Verify `/api/health/live` and `/api/health/ready`.
-8. Keep online payment processing disabled. The organisation completes bank transfers externally; authorised staff record the transfer and supporting bank evidence in the coordinator dashboard, and a separate administrator reviews it before a numbered organisational receipt is issued.
+## 4. Backend module boundaries
 
-If `MFA_ENCRYPTION_KEY` is lost, restore the original key from a secure backup whenever possible. If it cannot be recovered, an operator can reset one affected user's MFA with `npm run db:reset-mfa -- --user-id <id> --confirm`; this revokes that user's sessions, records an audit event, and requires MFA to be enrolled again after signing in.
+The application is a modular monolith. Keep one deployable API process while enforcing domain ownership:
 
-## Security invariants
+- **Identity and access:** users, profiles, sessions, MFA, password recovery, role and permission policy.
+- **Humanitarian operations:** cases, requirements, assignments, verification and assistance records.
+- **Storytelling:** story drafts, media, consent, moderation, version history and publication.
+- **Campaigns and finance:** campaigns, external contribution records, transfer review and reconciliations.
+- **Content management:** announcements, publications, events, vacancies, projects and other generic editorial content.
+- **Documents:** templates, approvals, issuance, immutable document snapshots and public verification.
+- **Safeguarding and privacy:** restricted reports, consent records and privacy requests.
+- **Platform operations:** notifications, audit trail, reporting, media and system settings.
 
-- No demo account or sample data is created during production startup.
-- Production requires MySQL and independently generated secrets.
-- MFA TOTP secrets are encrypted at rest using AES-256-GCM.
-- Public story media requires active narrative and media consent; minor-related stories additionally require guardian consent.
-- Private media signatures are bound to the authorised user and ownership is rechecked when serving the file.
-- No online payment gateway, card collection, payment webhook or automated refund flow is enabled.
-- External bank transfers are recorded against verified beneficiary cases, with bank reference, amount, currency and private evidence attachment.
-- Transfer references are unique per bank; a separate administrator must review the evidence before a receipt is issued.
-- Receipts are organisational acknowledgements of reviewed evidence, not bank-issued receipts or independent proof of settlement.
-- Coordinator API responses do not include internal administrator notes.
+Routes should remain HTTP adapters: parse and validate input, authenticate the request, apply policy and delegate business transitions to domain services. Avoid moving business logic into React or using dashboard visibility as an authorisation control.
 
-## Operational limitations
+## 5. Database policy
 
-This branch is a security-hardening foundation, not a certification of production readiness. Transactional email delivery, malware scanning and image re-encoding, backup/restore drills, staging deployment, database integration tests, MFA recovery codes and independent security review remain release gates. The bank-transfer review workflow should also be exercised with real bank-issued evidence in staging before operational use.
+### Local development and tests
+
+SQLite is the default when USE_MYSQL is not true and DATABASE_URL is not a MySQL URL. The application creates data/humanitybridge.db and bootstraps its tables through ensureSqliteSchema().
+
+- SQLite bootstrap is idempotent and owns local schema creation.
+- src/db/schema/sqlite/ provides the Drizzle table descriptors used by application queries.
+- MySQL migration files are not SQLite migrations; do not run drizzle-kit migrate against SQLite.
+- Keep both dialect schemas logically aligned and add regression tests whenever a table or column changes.
+- The SQLite file and its WAL files are local state and must remain untracked.
+
+### Production
+
+Production remains MySQL 8. The startup validator intentionally rejects SQLite in production. Before switching environments, back up data, review dialect-specific migrations, migrate records, verify foreign keys and counts, and test restore procedures.
+
+## 6. Content publication lifecycle
+
+Generic CMS content and specialist records have separate lifecycles.
+
+- CMS content is stored in cms_content; its type maps to a defined public section and route.
+- Stories use dedicated story, media, consent and moderation records. A story must satisfy publication and consent policy before it is returned publicly.
+- Campaigns use dedicated campaign and publication records.
+- Public routes must return only published, non-deleted and non-expired records. Public responses must not expose internal editorial notes, private evidence or beneficiary identifiers.
+- Unpublishing or withdrawing consent must remove the content from public discovery without relying on client-side hiding.
+
+Do not merge distinct domain models merely to make the dashboard appear simpler.
+
+## 7. Dashboard composition
+
+AdminDashboard.tsx coordinates role-aware navigation and server queries. AdminDashboardOverview.tsx renders the executive overview. Domain panels remain in focused files under src/pages/admin/.
+
+The UI may hide actions the current role cannot use, but every API mutation and read must still enforce server-side permissions and region scope. Metrics and charts must be derived from API/database responses; never fabricate values to fill empty dashboard states.
+
+## 8. Security invariants
+
+- Argon2id password hashing; HTTP-only session cookies; server-side session validation.
+- CSRF validation on authenticated mutations.
+- Server-side RBAC and region scoping; client route guards are not a security boundary.
+- Private evidence remains outside the static public web root and is served only after authorisation.
+- Public story content and media require current consent and publication eligibility.
+- Beneficiary contact data, safeguarding reports and internal notes are not public.
+- Financial records are not presented as settled unless the relevant review state supports that claim.
+- Audit events must not contain passwords, tokens, MFA secrets or unnecessary beneficiary details.
+- Online payment processing remains disabled; bank-transfer records represent externally completed transfers subject to review.
+
+## 9. Architecture evolution
+
+Keep the modular monolith until there is measured evidence that a domain needs independent deployment or scaling. Prioritise route decomposition, service boundaries, consistent validation, database parity, observable workflows and test coverage before introducing microservices.
+
+## 10. Release gates
+
+1. SQLite schema smoke test and acceptance tests pass.
+2. Type-check and production frontend build pass.
+3. Security regression tests pass.
+4. Database migration has been reviewed and backed up.
+5. Public publishing and unpublishing have been checked end-to-end.
+6. Role/region access tests cover both allowed and denied cases.
+7. Media storage, email delivery, backups and hosting topology are verified for the target environment.
+8. Staging smoke tests and independent security review are complete.
+
+A passing CI run is evidence of those automated checks only; it is not a security certification or proof that every production integration is configured.
