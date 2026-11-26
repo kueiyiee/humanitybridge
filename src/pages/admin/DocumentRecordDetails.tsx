@@ -116,7 +116,7 @@ export function DocumentRecordDetails({ record }: { record: DocumentRecord }) {
         </section>
       )}
 
-      {record.pdfSha256 && (
+      {Boolean(record.pdfSha256) && (
         <section className="rounded-xl border border-slate-200 p-4 dark:border-white/10">
           <p className="text-[10px] font-bold uppercase tracking-[0.13em] text-slate-500 dark:text-slate-400">PDF integrity · SHA-256</p>
           <p className="mt-2 break-all font-mono text-[11px] leading-5 text-slate-700 dark:text-slate-300">{display(record.pdfSha256)}</p>
