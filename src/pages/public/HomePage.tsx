@@ -1,0 +1,519 @@
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import {
+  ArrowRight,
+  ArrowUpRight,
+  BadgeCheck,
+  BookOpen,
+  CalendarDays,
+  Gift,
+  HandHeart,
+  HeartHandshake,
+  MapPin,
+  ShieldCheck,
+  UsersRound,
+} from 'lucide-react';
+import { apiRequest } from '../../services/api';
+import { useLocale } from '../../contexts/LocaleContext';
+import { ResilientImage } from '../../components/ResilientImage';
+import { AnimatedNumber, MotionReveal } from '../../components/motion/MotionPrimitives';
+import heroWater from '../../assets/images/hero_community_water_1794840710503.jpg';
+
+interface PublicCase {
+  id: number;
+  referenceCode: string;
+  title: string;
+  publicSummary: string;
+  assistanceNeeded: string;
+  urgencyLevel: string;
+  estimatedCostUsd: number;
+  verifiedAt: string | null;
+  categoryName: string;
+  regionName: string;
+  country: string;
+}
+
+interface OverviewResponse {
+  statistics: {
+    peopleSupported: number;
+    verifiedCases: number;
+    activeCampaigns: number;
+    completedProjects: number;
+  };
+  featuredStories: Array<{
+    id: number;
+    slug: string;
+    title: string;
+    regionName: string;
+    excerpt: string;
+    coverImageUrl: string | null;
+    publishedAt: string | null;
+    categoryName: string;
+  }>;
+  featuredCampaigns: Array<{
+    id: number;
+    slug: string;
+    title: string;
+    summary: string;
+    targetAmount: number;
+    raisedAmount: number;
+    currency: string;
+    coverImageUrl: string | null;
+    status: string;
+  }>;
+}
+
+interface PublicAnnouncement {
+  id: number;
+  slug: string;
+  title: string;
+  summary: string;
+  publishedAt: string | null;
+}
+
+const steps = [
+  {
+    number: '01',
+    title: 'Identify',
+    description: 'Explore needs identified with local communities.',
+    icon: BookOpen,
+  },
+  {
+    number: '02',
+    title: 'Assess',
+    description: 'Authorised reviewers assess each case and its safeguarding requirements.',
+    icon: ShieldCheck,
+  },
+  {
+    number: '03',
+    title: 'Connect',
+    description: 'Direct support through the organisation’s approved channels.',
+    icon: HandHeart,
+  },
+  {
+    number: '04',
+    title: 'Report',
+    description: 'Coordinators document assistance and provide accountable updates.',
+    icon: UsersRound,
+  },
+];
+
+const principles = [
+  {
+    title: 'Consent-led stories',
+    description: 'People choose how their experiences and images are shared.',
+  },
+  {
+    title: 'Human review',
+    description: 'Authorised reviewers assess cases before public listing.',
+  },
+  {
+    title: 'Financial records',
+    description: 'Published contribution totals rely on confirmed records.',
+  },
+  {
+    title: 'Community safeguarding',
+    description: 'Private details are protected, with added care for children.',
+  },
+];
+
+function SectionHeading({
+  eyebrow,
+  title,
+  description,
+  action,
+}: {
+  eyebrow: string;
+  title: string;
+  description?: string;
+  action?: { label: string; to: string };
+}) {
+  return (
+    <div className="mb-9 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+      <div className="max-w-2xl">
+        <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#52745d]">{eyebrow}</p>
+        <h2 className="mt-3 font-editorial text-3xl font-semibold leading-tight tracking-tight text-[#183b2b] sm:text-4xl">
+          {title}
+        </h2>
+        {description && <p className="mt-3 max-w-xl text-base leading-7 text-[#59675d]">{description}</p>}
+      </div>
+      {action && (
+        <Link
+          to={action.to}
+          className="inline-flex min-h-11 shrink-0 items-center gap-2 text-sm font-semibold text-[#24583b] transition-colors hover:text-[#173d29] focus-visible:outline"
+        >
+          {action.label}
+          <ArrowRight className="h-4 w-4" aria-hidden="true" />
+        </Link>
+      )}
+    </div>
+  );
+}
+
+function EmptyState({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="rounded-2xl border border-[#e5e5dc] bg-white/80 px-6 py-10 text-center text-sm leading-6 text-[#657168] sm:px-10">
+      {children}
+    </div>
+  );
+}
+
+function SectionError({ children }: { children: React.ReactNode }) {
+  return (
+    <EmptyState>
+      <span role="status">{children}</span>
+    </EmptyState>
+  );
+}
+
+export function HomePage() {
+  const { t } = useLocale();
+  const { data: overviewResult, isLoading: overviewLoading, isError: overviewError } = useQuery({
+    queryKey: ['public-overview'],
+    queryFn: () => apiRequest<OverviewResponse>('/public/overview'),
+  });
+  const { data: caseResult, isLoading: casesLoading, isError: casesError } = useQuery({
+    queryKey: ['homepage-public-cases'],
+    queryFn: () => apiRequest<PublicCase[]>('/cases'),
+  });
+  const { data: announcementResult } = useQuery({
+    queryKey: ['homepage-public-announcements'],
+    queryFn: () => apiRequest<PublicAnnouncement[]>('/cms-content/ANNOUNCEMENT?limit=3'),
+    staleTime: 60_000,
+  });
+
+  const overview = overviewResult?.data;
+  const stats = overview?.statistics;
+  const stories = overview?.featuredStories || [];
+  const campaigns = overview?.featuredCampaigns || [];
+  const cases = caseResult?.data || [];
+  const announcements = announcementResult?.data || [];
+  const visibleMetrics = [
+    { label: 'Verified cases', value: stats?.verifiedCases ?? 0 },
+    { label: 'Active campaigns', value: stats?.activeCampaigns ?? 0 },
+    { label: 'Completed cases and programmes', value: stats?.completedProjects ?? 0 },
+  ].filter((metric) => metric.value > 0);
+
+  return (
+    <div className="hb-home bg-[#f8f7f1] text-[#26382d]">
+      <section className="overflow-hidden bg-[#f1f0e7]">
+        <div className="mx-auto grid max-w-7xl items-center gap-10 px-5 py-12 sm:px-8 sm:py-16 lg:grid-cols-2 lg:gap-16 lg:px-10 lg:py-20">
+          <div className="max-w-xl">
+            <MotionReveal trigger="mount">
+              <p className="hb-home-kicker inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.15em]">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#b38b45]" aria-hidden="true" />
+                HumanityBridge · Local stories, accountable support
+              </p>
+            </MotionReveal>
+            <MotionReveal trigger="mount" delay={0.06}>
+              <h1 className="hb-home-headline mt-7 font-editorial text-[2.65rem] font-semibold leading-[1.08] tracking-tight sm:text-6xl">
+                {t('heroHeadline')}
+              </h1>
+            </MotionReveal>
+            <MotionReveal trigger="mount" delay={0.12}>
+              <p className="hb-home-copy mt-6 max-w-lg text-base leading-7 sm:text-lg sm:leading-8">
+                {t('heroSub')}
+              </p>
+            </MotionReveal>
+            <MotionReveal trigger="mount" delay={0.18}>
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                <Link
+                  to="/stories"
+                  className="hb-home-primary-action inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                >
+                  {t('ctaStories')}
+                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                </Link>
+                <Link
+                  to="/cases"
+                  className="hb-home-secondary-action inline-flex min-h-12 items-center justify-center rounded-xl border px-5 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                >
+                  {t('ctaDifference')}
+                </Link>
+              </div>
+            </MotionReveal>
+            <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-[#d9ded3] pt-5 text-xs font-medium text-[#57695b]">
+              <span className="inline-flex items-center gap-1.5">
+                <BadgeCheck className="h-4 w-4 text-[#52745d]" aria-hidden="true" />
+                Human review
+              </span>
+              <span>Consent-led storytelling</span>
+              <span>Accountable assistance</span>
+            </div>
+          </div>
+
+          <MotionReveal trigger="mount" delay={0.14} className="relative min-h-[330px] overflow-hidden rounded-[1.4rem] bg-[#d7dfd1] shadow-[0_24px_70px_-38px_rgba(27,54,36,0.55)] sm:min-h-[470px]">
+            <img
+              src={heroWater}
+              alt="Community members gathered around a solar-powered clean water point"
+              className="absolute inset-0 h-full w-full object-cover"
+              fetchPriority="high"
+            />
+            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#142c20]/75 via-[#142c20]/25 to-transparent px-6 pb-6 pt-20 sm:px-8 sm:pb-8">
+              <p className="max-w-sm text-lg font-medium leading-snug text-white sm:text-xl">
+                Stronger futures begin with communities leading the way.
+              </p>
+            </div>
+            <div className="absolute right-4 top-4 inline-flex items-center gap-2 rounded-full bg-white/95 px-3 py-2 text-xs font-semibold text-[#31513a] shadow-sm sm:right-6 sm:top-6">
+              <HeartHandshake className="h-4 w-4 text-[#b18a48]" aria-hidden="true" />
+              With communities, not for them
+            </div>
+          </MotionReveal>
+        </div>
+      </section>
+
+      <section aria-label="Published programme figures" className="border-y border-[#e4e4d9] bg-white">
+        <div className="mx-auto max-w-7xl px-5 py-7 sm:px-8 lg:px-10">
+          {overviewLoading ? (
+            <div className="grid gap-4 sm:grid-cols-3" aria-label="Loading published figures">
+              {[1, 2, 3].map((item) => (
+                <div key={item} className="h-16 animate-pulse rounded-lg bg-[#f2f2eb]" />
+              ))}
+            </div>
+          ) : overviewError ? (
+            <p role="status" className="py-2 text-center text-sm text-[#68756b]">
+              Current programme figures are temporarily unavailable.
+            </p>
+          ) : visibleMetrics.length ? (
+            <div className="grid gap-6 sm:grid-cols-3 sm:divide-x sm:divide-[#e8e8df]">
+              {visibleMetrics.map((metric, index) => (
+                <div key={metric.label} className="text-center sm:px-5">
+                  <MotionReveal delay={index * 0.06}>
+                    <p className="font-editorial text-3xl font-semibold tabular-nums text-[#244b33]">
+                      <AnimatedNumber value={metric.value} />
+                    </p>
+                    <p className="mt-1 text-xs font-medium uppercase tracking-wide text-[#718076]">{metric.label}</p>
+                  </MotionReveal>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="py-2 text-center text-sm leading-6 text-[#68756b]">
+              Verified programme figures will appear here as work is reviewed and published.
+            </p>
+          )}
+        </div>
+      </section>
+
+      {announcements.length > 0 && (
+        <section className="mx-auto max-w-7xl px-5 py-12 sm:px-8 lg:px-10" aria-labelledby="latest-updates-heading">
+          <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.15em] text-[#718076]">From HumanityBridge</p>
+              <h2 id="latest-updates-heading" className="mt-2 font-editorial text-2xl font-semibold text-[#244b33]">Latest updates</h2>
+            </div>
+            <Link to="/announcements" className="inline-flex items-center gap-2 text-sm font-semibold text-[#244b33] hover:underline">All updates <ArrowRight className="h-4 w-4" /></Link>
+          </div>
+          <div className="grid gap-4 md:grid-cols-3">
+            {announcements.slice(0, 3).map((announcement) => (
+              <article key={announcement.id} className="rounded-xl border border-[#e5e5dc] bg-white p-5">
+                {announcement.publishedAt && <time dateTime={announcement.publishedAt} className="text-xs text-[#68776b]">{new Date(announcement.publishedAt).toLocaleDateString()}</time>}
+                <h3 className="mt-2 text-lg font-semibold text-[#244b33]">{announcement.title}</h3>
+                <p className="mt-2 line-clamp-3 text-sm leading-6 text-[#68776b]">{announcement.summary || 'Read the latest organisation update.'}</p>
+                <Link to={`/announcements/${announcement.slug}`} className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-[#244b33] hover:underline">Read update <ArrowRight className="h-4 w-4" /></Link>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <section className="mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-20 lg:px-10">
+        <SectionHeading
+          eyebrow="Community voices"
+          title="Stories of resilience, shared with dignity"
+          description="Community experiences shared with informed consent and respect."
+          action={{ label: 'All stories', to: '/stories' }}
+        />
+        {overviewLoading ? (
+          <div className="grid gap-5 md:grid-cols-3" aria-label="Loading stories">
+            {[1, 2, 3].map((item) => (
+              <div key={item} className="h-80 animate-pulse rounded-2xl bg-[#e9e9df]" />
+            ))}
+          </div>
+        ) : overviewError ? (
+          <SectionError>Stories are temporarily unavailable. Please try again later.</SectionError>
+        ) : stories.length === 0 ? (
+          <EmptyState>New community stories will appear here after publication and consent review.</EmptyState>
+        ) : (
+          <div className="grid gap-5 md:grid-cols-3">
+            {stories.map((story, index) => (
+              <MotionReveal key={story.id} delay={index * 0.06}>
+                <article className="group flex h-full flex-col overflow-hidden rounded-2xl border border-[#e5e5dc] bg-white">
+                  <div className="aspect-[8/5] overflow-hidden bg-[#e8e8de]">
+                    <ResilientImage
+                      src={story.coverImageUrl}
+                      alt={story.title}
+                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.025]"
+                      fallbackTitle={story.title}
+                    />
+                  </div>
+                  <div className="flex flex-1 flex-col p-5 sm:p-6">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[#68776b]">
+                      <span className="font-semibold text-[#52745d]">{story.categoryName}</span>
+                      <span aria-hidden="true">·</span>
+                      <span className="inline-flex items-center gap-1">
+                        <MapPin className="h-3.5 w-3.5" aria-hidden="true" />
+                        {story.regionName}
+                      </span>
+                      {story.publishedAt && (
+                        <>
+                          <span aria-hidden="true">·</span>
+                          <time dateTime={story.publishedAt} className="inline-flex items-center gap-1">
+                            <CalendarDays className="h-3.5 w-3.5" aria-hidden="true" />
+                            {new Date(story.publishedAt).toLocaleDateString()}
+                          </time>
+                        </>
+                      )}
+                    </div>
+                    <h3 className="mt-3 font-editorial text-xl font-semibold leading-snug text-[#223b2b]">{story.title}</h3>
+                    <p className="mt-2 flex-1 text-sm leading-6 text-[#657168]">{story.excerpt}</p>
+                    <Link
+                      to={`/stories/${story.slug}`}
+                      className="mt-5 inline-flex min-h-10 items-center gap-2 text-sm font-semibold text-[#28583c] hover:text-[#173d29] focus-visible:outline"
+                    >
+                      Read story <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                    </Link>
+                  </div>
+                </article>
+              </MotionReveal>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="border-y border-[#e6e5db] bg-[#f1f0e7]">
+        <div className="mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-20 lg:px-10">
+          <SectionHeading
+            eyebrow="Public case directory"
+            title="Where support can make a difference"
+            description="Explore needs reviewed by authorised staff. Personal contact details and precise locations remain private."
+            action={{ label: 'People in need', to: '/cases' }}
+          />
+          {casesLoading ? (
+            <div className="grid gap-5 md:grid-cols-2" aria-label="Loading public cases">
+              {[1, 2].map((item) => (
+                <div key={item} className="h-52 animate-pulse rounded-2xl bg-white/70" />
+              ))}
+            </div>
+          ) : casesError ? (
+            <SectionError>Public case information is temporarily unavailable. Please try again later.</SectionError>
+          ) : cases.length === 0 ? (
+            <EmptyState>There are no public cases to display at this time. New listings will appear after review and approval.</EmptyState>
+          ) : (
+            <div className="grid gap-5 md:grid-cols-2">
+              {cases.slice(0, 4).map((item, index) => (
+                <MotionReveal key={item.id} delay={index * 0.06}>
+                  <article className="flex h-full flex-col rounded-2xl border border-[#e4e5da] bg-white p-5 sm:p-6">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#3b6847]">
+                        <BadgeCheck className="h-4 w-4" aria-hidden="true" />
+                        Reviewed public case
+                      </span>
+                      <span className="rounded-full bg-[#f3f2eb] px-3 py-1 text-xs font-medium text-[#667266]">
+                        {item.categoryName}
+                      </span>
+                    </div>
+                    <h3 className="mt-4 font-editorial text-xl font-semibold leading-snug text-[#223b2b]">{item.title}</h3>
+                    <p className="mt-2 inline-flex items-center gap-1.5 text-xs text-[#68776b]">
+                      <MapPin className="h-3.5 w-3.5" aria-hidden="true" />
+                      {item.regionName}, {item.country}
+                    </p>
+                    <p className="mt-3 flex-1 text-sm leading-6 text-[#657168]">{item.publicSummary}</p>
+                    <Link
+                      to={`/cases/${item.referenceCode}`}
+                      className="mt-5 inline-flex min-h-10 items-center gap-2 text-sm font-semibold text-[#28583c] hover:text-[#173d29] focus-visible:outline"
+                    >
+                      View case <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                    </Link>
+                  </article>
+                </MotionReveal>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section className="hb-trust-section mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-20 lg:px-10" aria-labelledby="trust-care-heading">
+        <div className="hb-trust-panel">
+          <div className="hb-trust-intro">
+            <p className="hb-trust-eyebrow">
+              <ShieldCheck className="h-4 w-4" aria-hidden="true" />
+              Trust and care
+            </p>
+            <h2 id="trust-care-heading" className="hb-trust-heading">
+              Every action must be accountable.
+            </h2>
+            <p className="hb-trust-summary">
+              Clear safeguards, careful review and reliable records guide how HumanityBridge works with communities.
+            </p>
+            <nav aria-label="Trust and safeguarding resources" className="hb-trust-links">
+              <Link to="/impact" className="hb-trust-link">
+                Explore our accountability framework <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
+              </Link>
+              <Link to="/policies/safeguarding" className="hb-trust-link">
+                Read our safeguarding policy <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
+              </Link>
+            </nav>
+          </div>
+          <ul className="hb-trust-principles">
+            {principles.map((principle, index) => (
+              <li key={principle.title} className="hb-trust-principle">
+                <span className="hb-trust-index" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
+                <div className="min-w-0">
+                  <h3>{principle.title}</h3>
+                  <p>{principle.description}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      <section className="border-y border-[#d9dee1] bg-transparent">
+        <div className="mx-auto grid max-w-7xl gap-8 px-5 py-14 sm:px-8 sm:py-16 lg:grid-cols-[1fr_auto] lg:items-center lg:px-10">
+          <div className="max-w-3xl">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#697278]">Our purpose</p>
+            <h2 className="mt-3 font-editorial text-3xl font-semibold leading-tight tracking-tight text-[#252a2e] sm:text-4xl">
+              Technology in service of human dignity.
+            </h2>
+            <p className="mt-4 max-w-2xl text-base leading-7 text-[#697278]">
+              HumanityBridge was created to help communities document humanitarian needs, share their stories with consent, and connect with responsible support. Learn about the people, principles and work behind the initiative.
+            </p>
+          </div>
+          <Link to="/about" className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-[#30373c] underline decoration-[#aeb5ba] underline-offset-4 hover:text-[#111518] focus-visible:outline">
+            About HumanityBridge <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
+          </Link>
+        </div>
+      </section>
+
+      <section className="bg-[#1e4932] text-white">
+        <div className="mx-auto flex max-w-7xl flex-col gap-7 px-5 py-14 sm:px-8 sm:py-16 lg:flex-row lg:items-center lg:justify-between lg:px-10">
+          <div className="max-w-2xl">
+            <p className="text-xs font-bold uppercase tracking-[0.17em] text-[#d7c08c]">Take part</p>
+            <h2 className="mt-3 font-editorial text-3xl font-semibold leading-tight sm:text-4xl">
+              Help turn community needs into meaningful action.
+            </h2>
+            <p className="mt-3 max-w-xl text-sm leading-6 text-[#e2e8df] sm:text-base">
+              Your time, expertise, and partnerships can help communities access responsible support.
+            </p>
+          </div>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Link
+              to="/cases"
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-[#f1e7ce] px-5 text-sm font-semibold text-[#294633] transition-colors hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+            >
+              Find a case to support <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
+            <Link
+              to="/get-involved"
+              className="inline-flex min-h-12 items-center justify-center rounded-lg border border-white/40 px-5 text-sm font-semibold text-white transition-colors hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+            >
+              Get involved
+            </Link>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}

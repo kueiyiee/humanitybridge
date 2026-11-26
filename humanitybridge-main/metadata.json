@@ -1,0 +1,6 @@
+{
+  "name": "HumanityBridge",
+  "description": "Together for a Dignified and Hopeful Tomorrow. Humanitarian storytelling, verified community assistance, and transparent impact reporting.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
