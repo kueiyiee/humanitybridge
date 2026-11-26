@@ -1,25 +1,48 @@
-# Database architecture
+# Database Architecture and Operations
 
-The database layer is implemented under `src/db/`; migration history and seed tooling live under this directory.
+The database implementation lives under src/db/. This directory contains versioned MySQL migration history and database operations documentation.
 
-## Source ownership
+## Source of truth
 
-- `src/db/index.ts`: database connection lifecycle, dialect selection and readiness.
-- `src/db/schema/mysql/`: production MySQL 8 Drizzle schema.
-- `src/db/schema/sqlite/`: local-development and test SQLite schema.
-- `src/db/bootstrapSqlite.ts`: SQLite schema bootstrap.
-- `database/migrations/`: versioned MySQL migration history.
-- `database/seeds/`: development-only demonstration data.
+- src/db/index.ts: dialect selection, connection lifecycle, diagnostics and document sequence allocation.
+- src/db/schema/sqlite/: SQLite Drizzle descriptors for local development and tests.
+- src/db/schema/mysql/: MySQL Drizzle descriptors for production.
+- src/db/bootstrapSqlite.ts: idempotent SQLite schema bootstrap and additive compatibility changes.
+- database/migrations/: MySQL 8 migration history only.
+- database/seeds/: synthetic development and acceptance-test fixtures only.
 
-## Operational rules
+## Local SQLite
 
-1. MySQL 8 is the production database. SQLite is for local development and tests.
-2. Apply reviewed migrations with `npm run db:migrate`; do not use schema push in production.
-3. Back up the database before migrations and before the one-time MFA-secret encryption operation.
-4. Never commit database files, WAL files, private storage, credentials or production exports.
-5. Keep MySQL and SQLite logical schemas aligned and run the acceptance suite against both.
-6. Do not expose beneficiary personal information in public reporting tables or API responses.
+Set USE_MYSQL=false, leave DATABASE_URL empty and optionally set SQLITE_DB_PATH. The application creates the database and bootstraps tables automatically.
 
-## Existing database migration
+Run:
 
-Before deploying the encrypted-MFA-secret code, set `MFA_ENCRYPTION_KEY`, back up the database, and run `npm run db:encrypt-mfa` once against the target database. Verify that all MFA records use the versioned `v1:` envelope before starting the new application version.
+```bash
+npm run db:sqlite:check
+npm run test:sqlite
+```
+
+Do not run Drizzle Kit's MySQL migration commands against SQLite.
+
+## MySQL production
+
+Set USE_MYSQL=true and a valid MySQL DATABASE_URL. Back up the target database, review migration SQL, apply migrations in staging, validate data and constraints, then schedule production migration and rollback procedures.
+
+## Schema parity
+
+When adding or changing a persisted field:
+
+1. Update both dialect-specific Drizzle schemas.
+2. Update SQLite bootstrap creation or additive migration logic.
+3. Add/update the MySQL migration and journal/snapshot as required.
+4. Add tests for required columns, constraints and query behaviour in both supported dialects.
+5. Never silently drop or rename a field that may contain user or beneficiary data.
+
+SQLite and MySQL share logical table/property names but use dialect-specific types and migration mechanisms.
+
+## Data protection
+
+- Never commit .env, database files, WAL/SHM files, backups or production exports.
+- Keep beneficiary and safeguarding data restricted to authorised roles.
+- Do not seed synthetic records into a public or production database.
+- Test backup restoration, not only backup creation.
