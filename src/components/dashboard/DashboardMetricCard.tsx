@@ -15,11 +15,11 @@ interface DashboardMetricCardProps {
 const toneStyles: Record<MetricTone, string> = {
   neutral: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200',
   attention: 'bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-200',
-  success: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200',
-  finance: 'bg-sky-100 text-sky-800 dark:bg-sky-950/50 dark:text-sky-200',
+  success: 'bg-cyan-50 text-cyan-800 dark:bg-cyan-950/40 dark:text-cyan-200',
+  finance: 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200',
 };
 
-const cardStyles = 'hb-metric-card group min-w-0 rounded-2xl border border-slate-200 bg-white/80 p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md dark:border-slate-800 dark:bg-[#0D223D]/90 dark:hover:border-slate-700 sm:p-5';
+const cardStyles = 'hb-metric-card group min-w-0 rounded-2xl border border-slate-200 bg-white/80 p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md dark:border-slate-800 dark:bg-[#171b1e]/90 dark:hover:border-slate-700 sm:p-5';
 
 function AnimatedMetricValue({ value }: { value: ReactNode }) {
   const source = typeof value === 'string' ? value : null;
@@ -94,7 +94,7 @@ export function DashboardMetricCard({
       </p>
       {hint && <p className="mt-1 text-[11px] leading-4 text-slate-500 dark:text-slate-400">{hint}</p>}
       {onClick && actionLabel && (
-        <span className="hb-metric-action mt-3 inline-flex text-xs font-semibold text-[#20583a] group-hover:underline dark:text-cyan-300">
+        <span className="hb-metric-action mt-3 inline-flex text-xs font-semibold text-[var(--hb-accent-strong)] group-hover:underline dark:text-cyan-300">
           {actionLabel}
         </span>
       )}
@@ -106,7 +106,7 @@ export function DashboardMetricCard({
       <button
         type="button"
         onClick={onClick}
-        className={`${cardStyles} w-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#51745a]`}
+        className={`${cardStyles} w-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--hb-accent)]`}
       >
         {content}
       </button>
