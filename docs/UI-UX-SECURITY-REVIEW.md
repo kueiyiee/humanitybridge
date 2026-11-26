@@ -1,24 +1,55 @@
-# HumanityBridge UI and security review
+# HumanityBridge UI, Accessibility and Security Review
 
-**Review date:** 21 November 2026  
-**Scope:** Public website, administrator/coordinator shell, theme rendering, authentication controls, and media-upload handling.
+**Review scope:** Source-level inspection of the public layout, public navigation, administrator shell, executive overview, shared metric cards, global theme CSS, environment configuration and SQLite persistence path.
 
-## Changes in this update
+**Review method:** Static repository inspection. No browser screenshot session, device lab, assistive-technology session, production database or penetration test was available during this review. Findings below distinguish source-level observations from runtime verification.
 
-- Replaced the static decorative particle SVG with a lightweight canvas network. It caps the particle count and device-pixel ratio, limits redraw frequency, pauses while the tab is hidden, and honours `prefers-reduced-motion`.
-- Mounted the same ambient background behind public pages and both role-based workspaces. Content, navigation, and the mobile dock remain above the decorative layer.
-- Added a single graphite/black/silver visual token layer with restrained cyan accents for light and dark themes, glass surfaces, navigation, forms, dashboard panels, and the public footer.
-- Reduced account-enumeration and denial-of-service risk in sign-in handling by querying only the matching account and removing the global five-failure account lockout. Added stricter per-IP sign-in and MFA action rate limits.
-- Strengthened upload validation: MIME type must match the extension, and JPEG, PNG, WebP, and PDF signatures are checked more strictly.
-- Made file writes asynchronous and exclusive, applied restrictive permissions to private evidence, cleaned up files if metadata persistence fails, and added no-store/nosniff response headers. Private evidence is returned as an attachment.
-- Added regression tests for file-signature validation.
+## 1. UI/UX observations and improvements
 
-## Production risks that remain
+### Design system
 
-1. **Persistent media storage:** the current media route writes to the local filesystem. Vercel serverless filesystems are not durable storage. Private case evidence and public media need a persistent object-storage adapter with separate public/private buckets or access policies before production uploads can be relied upon.
-2. **Distributed rate limiting:** the current Express rate-limiters use their default in-memory store. A multi-instance or serverless production deployment needs a shared rate-limit store to enforce limits consistently.
-3. **Vercel API deployment:** this repository currently builds the Vite frontend with `vite build`; the Express API is started by `server.ts`. No Vercel serverless API entry point or API rewrite is present in this repository. A static Vercel deployment alone does not host the Express API routes used by `/api/v1`.
-4. **Production configuration:** the API requires MySQL and independently generated production secrets. Those values must be configured in the hosting environment; they must never be committed to Git.
-5. **Password-reset delivery:** the API currently creates reset tokens but does not have a production email-delivery integration configured.
+The previous theme stylesheet contained broad element selectors that flattened every article, list item, section and rounded container. This could remove meaningful card surfaces and list hierarchy across unrelated pages. It also carried conflicting legacy palette rules.
 
-These operational items cannot be truthfully marked fixed without the storage provider, hosting configuration, and production credentials. The code changes above improve the current implementation but are not a substitute for a deployment-specific security assessment or penetration test.
+The updated design system uses explicit graphite, silver and restrained cyan tokens. Surface styling is applied to named components and application shells rather than indiscriminately changing semantic HTML elements. Light and dark themes share the same semantic tokens.
+
+### Accessibility and responsive behaviour
+
+- Added a keyboard-accessible skip link to the main public and workspace content.
+- Added consistent focus indicators for links, buttons and form controls.
+- Added reduced-motion handling at the design-system level.
+- Kept existing mobile navigation and collapsed administrator navigation.
+- Preserved component-level empty and error states rather than substituting invented content.
+
+### Executive overview
+
+The administrator overview consumes API metrics, permission-gated queues, campaign performance and audit activity. Shared metric cards are retained. Palette inconsistencies are aligned to the graphite/silver/cyan system; attention states remain distinguishable.
+
+## 2. SQLite development readiness
+
+Local development defaults to SQLite when USE_MYSQL is false and DATABASE_URL is empty. SQLite schema creation is handled by ensureSqliteSchema() and the Drizzle SQLite descriptors.
+
+The example environment now selects SQLite explicitly. A repeatable schema smoke test and a local integrity-check command validate required tables, SQLite integrity and foreign-key consistency.
+
+Production validation remains MySQL-only. SQLite is not being promoted as a production database by this change.
+
+## 3. Architecture and documentation
+
+The repository remains a modular monolith. The physical source tree is deliberately not being moved into the documentation-only frontend/ and backend/ directories. Architecture, module boundaries, database dialect rules, development setup and production handover requirements are documented in dedicated guides.
+
+## 4. Security and operational limitations
+
+- MySQL migration history is separate from SQLite bootstrap logic.
+- Local file storage is suitable only for local development; production requires durable storage configured for the hosting environment.
+- In-memory rate limiting is not a distributed control for horizontally scaled deployments.
+- Transactional email delivery must be configured before password-reset workflows can be relied upon.
+- Public publishing must be tested with the actual role permissions and consent states used by the organisation.
+- Automated tests are not a penetration test, legal review or safeguarding certification.
+
+## 5. Required validation before operational use
+
+1. Run SQLite schema tests, acceptance tests, security regression tests, type-check and frontend build.
+2. Exercise draft, preview, publish, edit, unpublish and consent-withdrawal workflows.
+3. Test role and region boundaries with positive and negative API cases.
+4. Test private media access and public response field allow-lists.
+5. Validate database backup and restore.
+6. Complete browser/device accessibility testing and an independent security review before importing real beneficiary records.

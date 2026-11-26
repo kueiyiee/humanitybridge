@@ -17,7 +17,9 @@
     "db:encrypt-mfa": "tsx scripts/encrypt-mfa-secrets.ts",
     "db:reset-mfa": "tsx scripts/reset-mfa-after-key-loss.ts",
     "owner:configure": "tsx scripts/configure-owner-admin.ts",
-    "test:security": "node --import tsx --test tests/security-hardening.test.ts"
+    "test:security": "node --import tsx --test tests/security-hardening.test.ts",
+    "test:sqlite": "node --import tsx --test tests/sqlite-schema.test.ts",
+    "db:sqlite:check": "tsx scripts/check-sqlite.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1175.0",

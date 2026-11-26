@@ -17,9 +17,10 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="hb-public-shell relative min-h-screen flex flex-col overflow-x-clip text-[var(--color-text)]">
+      <a className="hb-skip-link" href="#main-content">Skip to main content</a>
       <HumanitarianParticles />
       <PublicHeader />
-      <main className="relative z-10 flex-1">
+      <main id="main-content" tabIndex={-1} className="relative z-10 flex-1">
         <PageTransition key={location.pathname}>{children}</PageTransition>
       </main>
       <PublicFooter settings={data?.data?.settings} />
