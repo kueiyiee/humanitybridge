@@ -24,8 +24,6 @@ import {
   GetInvolvedPage,
   HowItWorksPage,
   MissionVisionPage,
-  NewsDetailsPage,
-  NewsPage,
 } from './pages/public/InstitutionalPages';
 import { ContactPage, PartnershipPage, VolunteerPage } from './pages/public/ParticipationPages';
 import {
@@ -95,8 +93,8 @@ export default function App() {
                       <Route path="/get-involved" element={<PublicLayout><GetInvolvedPage /></PublicLayout>} />
                       <Route path="/volunteer" element={<PublicLayout><VolunteerPage /></PublicLayout>} />
                       <Route path="/partnerships" element={<PublicLayout><PartnershipPage /></PublicLayout>} />
-                      <Route path="/news" element={<PublicLayout><NewsPage /></PublicLayout>} />
-                      <Route path="/news/:slug" element={<PublicLayout><NewsDetailsPage /></PublicLayout>} />
+                      <Route path="/news" element={<PublicLayout><CmsContentListingPage type="PUBLICATION" /></PublicLayout>} />
+                      <Route path="/news/:slug" element={<PublicLayout><CmsContentDetailPage type="PUBLICATION" /></PublicLayout>} />
                       <Route path="/contact" element={<PublicLayout><ContactPage /></PublicLayout>} />
                       <Route path="/faq" element={<PublicLayout><FAQPage /></PublicLayout>} />
                       <Route path="/policies/privacy" element={<PublicLayout><PrivacyPolicyPage /></PublicLayout>} />
