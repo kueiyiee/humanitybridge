@@ -62,7 +62,7 @@ export function validateProductionEnvironment(): void {
 
   for (const [name, value] of requiredSecrets) {
     if (value.length < 32) {
-      throw new Error(\`Production requires \${name} to contain at least 32 characters.\`);
+      throw new Error('Production requires ' + name + ' to contain at least 32 characters.');
     }
   }
 
