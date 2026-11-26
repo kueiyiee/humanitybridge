@@ -44,8 +44,8 @@ function createSqliteDb() {
       const stmt = sqliteInstance.prepare(sql);
       const cleanParams = sanitizeParams(params);
       if (method === 'run') {
-        stmt.run(...cleanParams);
-        return { rows: [] };
+        const result = stmt.run(...cleanParams);
+        return { rows: [], rowsAffected: Number(result.changes) };
       }
       stmt.setReturnArrays(true);
       if (method === 'get') {
@@ -107,6 +107,70 @@ export function getDbDiagnostics() {
     mysqlConfigured: Boolean(mysqlUrl),
     status: 'configured',
   };
+}
+
+export async function allocateDocumentSequence(prefix: string, year: number): Promise<number> {
+  const timestamp = nowUtc();
+
+  if (activeDialect === 'mysql') {
+    if (!mysqlPool) throw new Error('MySQL pool has not been initialised');
+    const connection = await mysqlPool.getConnection();
+    try {
+      await connection.beginTransaction();
+      await connection.execute(
+        `INSERT INTO document_sequences (reference_prefix, sequence_year, next_number, updated_at)
+         VALUES (?, ?, 1, ?)
+         ON DUPLICATE KEY UPDATE updated_at = VALUES(updated_at)`,
+        [prefix, year, timestamp],
+      );
+      const [rows] = await connection.execute<mysql.RowDataPacket[]>(
+        `SELECT next_number FROM document_sequences
+         WHERE reference_prefix = ? AND sequence_year = ? FOR UPDATE`,
+        [prefix, year],
+      );
+      const sequence = rows[0]?.next_number;
+      if (typeof sequence !== 'number' || sequence < 1) {
+        throw new Error('Document reference sequence could not be allocated.');
+      }
+      await connection.execute(
+        `UPDATE document_sequences SET next_number = next_number + 1, updated_at = ?
+         WHERE reference_prefix = ? AND sequence_year = ?`,
+        [timestamp, prefix, year],
+      );
+      await connection.commit();
+      return sequence;
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+  }
+
+  if (!sqliteInstance) throw new Error('SQLite database has not been initialised');
+  sqliteInstance.exec('BEGIN IMMEDIATE');
+  try {
+    sqliteInstance.prepare(
+      `INSERT OR IGNORE INTO document_sequences (reference_prefix, sequence_year, next_number, updated_at)
+       VALUES (?, ?, 1, ?)`,
+    ).run(prefix, year, timestamp);
+    const row = sqliteInstance.prepare(
+      `SELECT next_number FROM document_sequences
+       WHERE reference_prefix = ? AND sequence_year = ?`,
+    ).get(prefix, year) as { next_number?: number } | undefined;
+    if (typeof row?.next_number !== 'number' || row.next_number < 1) {
+      throw new Error('Document reference sequence could not be allocated.');
+    }
+    sqliteInstance.prepare(
+      `UPDATE document_sequences SET next_number = next_number + 1, updated_at = ?
+       WHERE reference_prefix = ? AND sequence_year = ?`,
+    ).run(timestamp, prefix, year);
+    sqliteInstance.exec('COMMIT');
+    return row.next_number;
+  } catch (error) {
+    sqliteInstance.exec('ROLLBACK');
+    throw error;
+  }
 }
 
 export function nowUtc(): any {

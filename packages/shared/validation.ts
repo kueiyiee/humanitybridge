@@ -49,11 +49,19 @@ export const createCaseSchema = z.object({
 
 export const createStorySchema = z.object({
   title: z.string().trim().min(6, 'Story title must be at least 6 characters').max(200),
+  slug: z.string().trim().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'Use a lowercase URL slug with hyphen-separated words').max(180).optional(),
   categoryId: z.coerce.number().int().positive('Select a story category'),
   regionName: z.string().trim().min(2, 'Specify general community or region').max(120),
+  countryName: z.string().trim().max(120).optional(),
+  stateRegionName: z.string().trim().max(120).optional(),
+  communityName: z.string().trim().max(120).optional(),
   excerpt: z.string().trim().min(20, 'Short introduction must be at least 20 characters').max(400),
-  body: z.string().trim().min(80, 'Story narrative must be at least 80 characters').max(12000),
+  body: z.string().trim().min(80, 'Story narrative must be at least 80 characters').max(200000),
+  tags: z.array(z.string().trim().min(2).max(40)).max(12).optional(),
+  isFeatured: z.boolean().default(false),
+  internalEditorialNotes: z.string().trim().max(4000).optional(),
   coverImageUrl: z.string().trim().optional(),
+  coverAltText: z.string().trim().max(255).optional(),
   anonymousPublication: z.boolean().default(false),
   consentStory: z.boolean().refine((v) => v === true, {
     message: 'Story publication consent must be recorded',
@@ -62,6 +70,8 @@ export const createStorySchema = z.object({
   consentIdentity: z.boolean().default(false),
   isMinorSubject: z.boolean().default(false),
   guardianConsentRecorded: z.boolean().default(false),
+  consentReference: z.string().trim().max(180).optional(),
+  consentExpiresAt: z.string().trim().max(40).optional(),
   saveAsDraft: z.boolean().default(false),
 });
 
@@ -91,7 +101,22 @@ export const createCampaignSchema = z.object({
   startDate: z.string().trim().min(8),
   endDate: z.string().trim().min(8),
   linkedCaseIds: z.array(z.coerce.number().int().positive()).optional(),
-  status: z.enum(['DRAFT', 'ACTIVE', 'PAUSED', 'COMPLETED', 'CLOSED']).default('ACTIVE'),
+  coordinatorId: z.coerce.number().int().positive().optional(),
+  assignmentReason: z.string().trim().max(1500).optional(),
+}).superRefine((campaign, context) => {
+  const start = Date.parse(campaign.startDate);
+  const end = Date.parse(campaign.endDate);
+  if (!Number.isFinite(start)) {
+    context.addIssue({ code: 'custom', path: ['startDate'], message: 'Enter a valid campaign start date' });
+  }
+  if (!Number.isFinite(end)) {
+    context.addIssue({ code: 'custom', path: ['endDate'], message: 'Enter a valid campaign end date' });
+  } else if (Number.isFinite(start) && end <= start) {
+    context.addIssue({ code: 'custom', path: ['endDate'], message: 'End date must be after the start date' });
+  }
+  if (campaign.coordinatorId && (campaign.assignmentReason?.length || 0) < 8) {
+    context.addIssue({ code: 'custom', path: ['assignmentReason'], message: 'Provide a reason for coordinator assignment' });
+  }
 });
 
 export const createDonationSchema = z.object({

@@ -64,9 +64,8 @@ export function AdminBankTransfersPanel() {
   return (
     <div className="space-y-6">
       <header>
-        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-700 dark:text-cyan-300">Financial control · offline bank transfers</p>
-        <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-950 dark:text-white">Bank transfers & organisational receipts</h1>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600 dark:text-slate-400">Review transfer records submitted by Community Coordinators. Open the private bank evidence, compare the reference and amount with the organisation's bank statement, and issue a numbered organisational receipt only after independent verification. This workspace does not initiate, receive or process payments.</p>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-950 dark:text-white">Bank transfers & organisational receipts</h1>
+        <p className="mt-1 max-w-3xl text-[10px] leading-4 text-slate-600 dark:text-slate-400">Compare bank evidence with the statement before issuing a receipt. Payments are not processed here.</p>
       </header>
       {message && <p role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-300">{message}</p>}
       {error && <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-800 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-300">{error}</p>}

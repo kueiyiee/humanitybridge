@@ -358,7 +358,6 @@ router.patch(
   requireAuth,
   asyncHandler(async (req: AuthenticatedRequest, res) => {
     const displayName = String(req.body?.displayName || '').trim();
-    const region = String(req.body?.region || '').trim();
     const organization = String(req.body?.organization || '').trim();
     const bio = String(req.body?.bio || '').trim();
 
@@ -370,7 +369,6 @@ router.patch(
       .update(schema.userProfiles)
       .set({
         displayName,
-        region: region || null,
         organization: organization || null,
         bio: bio || null,
         updatedAt: nowUtc(),
@@ -402,10 +400,18 @@ router.post(
       throw new AppError(401, 'Current password is incorrect');
     }
 
+    const changedAt = nowUtc();
     await db
       .update(schema.users)
-      .set({ passwordHash: hashPasswordArgon2id(newPassword), updatedAt: nowUtc() })
+      .set({ passwordHash: hashPasswordArgon2id(newPassword), updatedAt: changedAt })
       .where(eq(schema.users.id, user.id));
+
+    // A password change invalidates every active session, including the current one.
+    await db
+      .update(schema.userSessions)
+      .set({ revokedAt: changedAt })
+      .where(and(eq(schema.userSessions.userId, user.id), isNull(schema.userSessions.revokedAt)));
+    clearAuthCookies(res);
 
     await writeAuditLog({
       actorUserId: user.id,
@@ -416,7 +422,7 @@ router.post(
       ipAddress: req.ip,
     });
 
-    return res.json({ success: true, message: 'Password updated cleanly', data: null });
+    return res.json({ success: true, message: 'Password updated. All sessions have been revoked; please sign in again.', data: null });
   }),
 );
 

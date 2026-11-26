@@ -24,7 +24,7 @@ export const campaigns = mysqlTable(
     raisedAmount: decimal('raised_amount', { precision: 14, scale: 2 }).notNull().default('0.00'),
     currency: varchar('currency', { length: 3 }).notNull().default('USD'),
     coverImageUrl: varchar('cover_image_url', { length: 500 }),
-    status: varchar('status', { length: 32 }).notNull().default('ACTIVE'),
+    status: varchar('status', { length: 32 }).notNull().default('DRAFT'),
     startDate: timestamp('start_date', { fsp: 3 }).notNull(),
     endDate: timestamp('end_date', { fsp: 3 }).notNull(),
     createdBy: bigint('created_by', { mode: 'number', unsigned: true })
@@ -49,6 +49,46 @@ export const campaignCases = mysqlTable('campaign_cases', {
     .notNull()
     .references(() => humanitarianCases.id, { onDelete: 'cascade' }),
 });
+
+export const campaignPublications = mysqlTable(
+  'campaign_publications',
+  {
+    id: bigint('id', { mode: 'number', unsigned: true }).autoincrement().primaryKey(),
+    campaignId: bigint('campaign_id', { mode: 'number', unsigned: true })
+      .notNull()
+      .references(() => campaigns.id, { onDelete: 'cascade' }),
+    publishedBy: bigint('published_by', { mode: 'number', unsigned: true })
+      .notNull()
+      .references(() => users.id),
+    publishedAt: timestamp('published_at', { fsp: 3 }).defaultNow().notNull(),
+  },
+  (table) => ({
+    campaignUnique: uniqueIndex('ux_campaign_publications_campaign').on(table.campaignId),
+  }),
+);
+
+export const campaignAssignments = mysqlTable(
+  'campaign_assignments',
+  {
+    id: bigint('id', { mode: 'number', unsigned: true }).autoincrement().primaryKey(),
+    campaignId: bigint('campaign_id', { mode: 'number', unsigned: true })
+      .notNull()
+      .references(() => campaigns.id, { onDelete: 'cascade' }),
+    coordinatorId: bigint('coordinator_id', { mode: 'number', unsigned: true })
+      .notNull()
+      .references(() => users.id),
+    assignedBy: bigint('assigned_by', { mode: 'number', unsigned: true })
+      .notNull()
+      .references(() => users.id),
+    assignmentReason: text('assignment_reason').notNull(),
+    assignedAt: timestamp('assigned_at', { fsp: 3 }).defaultNow().notNull(),
+    endedAt: timestamp('ended_at', { fsp: 3 }),
+  },
+  (table) => ({
+    campaignIdx: index('ix_campaign_assignments_campaign').on(table.campaignId),
+    coordinatorIdx: index('ix_campaign_assignments_coordinator').on(table.coordinatorId),
+  }),
+);
 
 export const donations = mysqlTable(
   'donations',

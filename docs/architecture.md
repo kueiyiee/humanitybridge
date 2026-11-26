@@ -42,6 +42,17 @@ Database and storage
 
 The top-level frontend and backend documentation folders establish clear domain ownership. Existing source paths are intentionally retained for this hardening branch so that imports and Vite/TypeScript resolution are not broken by an unverified mass move. A physical move into `frontend/src` and `backend/src` should be a separate refactor with a full build and integration-test run.
 
+## Dashboard architecture
+
+- `src/pages/admin/AdminDashboard.tsx` owns administrator navigation and dashboard data queries; tab-specific workspaces remain in focused panel modules.
+- `src/pages/admin/AdminDashboardTypes.ts` defines the typed API view contract consumed by the administrator dashboard.
+- `src/pages/admin/AdminDashboardOverview.tsx` owns the executive overview presentation and receives typed data, loading/error state, retry, and navigation callbacks.
+- `src/pages/coordinator/CoordinatorDashboard.tsx` owns coordinator workflows and tab navigation.
+- `src/components/dashboard/DashboardMetricCard.tsx` is the shared accessible metric-card primitive used by both dashboards.
+- Dashboard cards navigate to existing role-authorized workspaces; authorization remains enforced by the API and is not inferred from presentation state.
+
+Keep dashboard orchestration, data contracts, and presentation separate when adding features. Reuse shared primitives for common interaction patterns, but keep role-specific queues and metrics in their respective dashboard modules.
+
 ## Production deployment sequence
 
 1. Provision MySQL 8 and private persistent storage.
@@ -52,6 +63,8 @@ The top-level frontend and backend documentation folders establish clear domain 
 6. Start the application only after database readiness succeeds.
 7. Verify `/api/health/live` and `/api/health/ready`.
 8. Keep online payment processing disabled. The organisation completes bank transfers externally; authorised staff record the transfer and supporting bank evidence in the coordinator dashboard, and a separate administrator reviews it before a numbered organisational receipt is issued.
+
+If `MFA_ENCRYPTION_KEY` is lost, restore the original key from a secure backup whenever possible. If it cannot be recovered, an operator can reset one affected user's MFA with `npm run db:reset-mfa -- --user-id <id> --confirm`; this revokes that user's sessions, records an audit event, and requires MFA to be enrolled again after signing in.
 
 ## Security invariants
 

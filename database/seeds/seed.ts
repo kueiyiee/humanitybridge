@@ -1,6 +1,11 @@
 import { db, schema, nowUtc } from '../../src/db/index';
 import { hashPasswordArgon2id, generateTotpSecret, encryptMfaSecret } from '../../src/server/utils/crypto';
-import { DASHBOARD_ROLES, ROLE_PERMISSIONS } from '../../packages/shared/types';
+import {
+  ALL_DASHBOARD_ROLES,
+  DASHBOARD_ROLES,
+  ROLE_DISPLAY_NAMES,
+  ROLE_PERMISSIONS,
+} from '../../packages/shared/types';
 import { count } from 'drizzle-orm';
 
 export async function seedIfEmpty() {
@@ -15,20 +20,16 @@ export async function seedIfEmpty() {
   const ts = nowUtc();
 
   // 1. Roles & Permissions
-  await db.insert(schema.roles).values([
-    {
-      code: DASHBOARD_ROLES.PLATFORM_ADMIN,
-      displayName: 'Platform Administrator',
-      description: 'Full governance, verification, editorial, financial, and safeguarding authority.',
-      createdAt: ts,
-    },
-    {
-      code: DASHBOARD_ROLES.COMMUNITY_COORDINATOR,
-      displayName: 'Community Coordinator',
-      description: 'Field intake, case submission, story authoring, and community outreach reporting.',
-      createdAt: ts,
-    },
-  ]);
+  await db.insert(schema.roles).values(ALL_DASHBOARD_ROLES.map((code) => ({
+    code,
+    displayName: ROLE_DISPLAY_NAMES[code],
+    description: code === DASHBOARD_ROLES.PLATFORM_ADMIN
+      ? 'Full governance, verification, editorial, financial, and safeguarding authority.'
+      : code === DASHBOARD_ROLES.COMMUNITY_COORDINATOR
+        ? 'Field intake, case submission, story authoring, and community outreach reporting.'
+        : `${ROLE_DISPLAY_NAMES[code]} access is limited to its assigned operational permissions and region.`,
+    createdAt: ts,
+  })));
 
   const permissionRows = Object.entries(ROLE_PERMISSIONS).flatMap(([roleCode, perms]) =>
     perms.map((permissionKey) => ({

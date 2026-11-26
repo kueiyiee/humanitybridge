@@ -27,6 +27,10 @@
     inset 0 1px 0 rgb(255 255 255 / 82%);
   --hb-blur: 28px;
   --hb-ease: cubic-bezier(.2,.75,.25,1);
+  --hb-motion-duration-quick: 180ms;
+  --hb-motion-duration-page: 300ms;
+  --hb-motion-duration-reveal: 480ms;
+  --hb-motion-duration-number: 720ms;
 
   /* Compatibility aliases used by existing components. */
   --color-primary: var(--hb-text-strong);

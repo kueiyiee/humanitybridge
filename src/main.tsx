@@ -3,5 +3,6 @@ import App from './App.tsx';
 import './index.css';
 
 import './styles/unified-theme.css';
+import './styles/admin-console.css';
 
 createRoot(document.getElementById('root')!).render(<App />);

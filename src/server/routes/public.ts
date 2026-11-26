@@ -1,6 +1,7 @@
 import { Router } from 'express';
-import { and, desc, eq, isNull, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNull, notExists, or, sql } from 'drizzle-orm';
 import { db, schema, nowUtc } from '../../db/index';
+import { getImpactSummary, type ImpactReportingPeriod } from '../services/impactReporting';
 import {
   contactMessageSchema,
   partnershipEnquirySchema,
@@ -74,6 +75,7 @@ router.get(
         regionName: schema.stories.regionName,
         excerpt: schema.stories.excerpt,
         coverImageUrl: schema.stories.coverImageUrl,
+        coverAltText: schema.stories.coverAltText,
         publishedAt: schema.stories.publishedAt,
         categoryName: schema.storyCategories.name,
         categorySlug: schema.storyCategories.slug,
@@ -85,7 +87,14 @@ router.get(
         and(
           eq(schema.stories.status, 'PUBLISHED'),
           eq(schema.storyConsents.consentStory, true),
-          eq(schema.storyConsents.consentMedia, true),
+          or(
+            eq(schema.storyConsents.consentMedia, true),
+            and(
+              isNull(schema.stories.coverImageUrl),
+              notExists(db.select({ value: sql<number>`1` }).from(schema.storyMedia)
+                .where(eq(schema.storyMedia.storyId, schema.stories.id))),
+            ),
+          ),
           or(eq(schema.stories.isMinorSubject, false), eq(schema.storyConsents.guardianConsentRecorded, true)),
           isNull(schema.storyConsents.withdrawnAt),
           isNull(schema.stories.deletedAt),
@@ -176,6 +185,7 @@ router.get(
         regionName: schema.stories.regionName,
         excerpt: schema.stories.excerpt,
         coverImageUrl: schema.stories.coverImageUrl,
+        coverAltText: schema.stories.coverAltText,
         anonymousPublication: schema.stories.anonymousPublication,
         publishedAt: schema.stories.publishedAt,
         categoryName: schema.storyCategories.name,
@@ -188,7 +198,14 @@ router.get(
         and(
           eq(schema.stories.status, 'PUBLISHED'),
           eq(schema.storyConsents.consentStory, true),
-          eq(schema.storyConsents.consentMedia, true),
+          or(
+            eq(schema.storyConsents.consentMedia, true),
+            and(
+              isNull(schema.stories.coverImageUrl),
+              notExists(db.select({ value: sql<number>`1` }).from(schema.storyMedia)
+                .where(eq(schema.storyMedia.storyId, schema.stories.id))),
+            ),
+          ),
           or(eq(schema.stories.isMinorSubject, false), eq(schema.storyConsents.guardianConsentRecorded, true)),
           isNull(schema.storyConsents.withdrawnAt),
           isNull(schema.stories.deletedAt),
@@ -210,10 +227,24 @@ router.get(
     });
 
     const start = (page - 1) * limit;
+    const pageRows = filtered.slice(start, start + limit);
+    const galleryRows = pageRows.length
+      ? await db.select({
+          storyId: schema.storyMedia.storyId,
+          url: schema.storyMedia.url,
+          altText: schema.storyMedia.altText,
+          caption: schema.storyMedia.caption,
+        }).from(schema.storyMedia)
+          .where(inArray(schema.storyMedia.storyId, pageRows.map((story) => story.id)))
+          .orderBy(asc(schema.storyMedia.position), asc(schema.storyMedia.id))
+      : [];
     return res.json({
       success: true,
       message: 'Published stories',
-      data: filtered.slice(start, start + limit),
+      data: pageRows.map((story) => ({
+        ...story,
+        media: galleryRows.filter((item) => item.storyId === story.id),
+      })),
       meta: {
         page,
         limit,
@@ -237,6 +268,7 @@ router.get(
         excerpt: schema.stories.excerpt,
         body: schema.stories.body,
         coverImageUrl: schema.stories.coverImageUrl,
+        coverAltText: schema.stories.coverAltText,
         anonymousPublication: schema.stories.anonymousPublication,
         isMinorSubject: schema.stories.isMinorSubject,
         publishedAt: schema.stories.publishedAt,
@@ -257,7 +289,14 @@ router.get(
           eq(schema.stories.slug, slug),
           eq(schema.stories.status, 'PUBLISHED'),
           eq(schema.storyConsents.consentStory, true),
-          eq(schema.storyConsents.consentMedia, true),
+          or(
+            eq(schema.storyConsents.consentMedia, true),
+            and(
+              isNull(schema.stories.coverImageUrl),
+              notExists(db.select({ value: sql<number>`1` }).from(schema.storyMedia)
+                .where(eq(schema.storyMedia.storyId, schema.stories.id))),
+            ),
+          ),
           or(eq(schema.stories.isMinorSubject, false), eq(schema.storyConsents.guardianConsentRecorded, true)),
           isNull(schema.storyConsents.withdrawnAt),
           isNull(schema.stories.deletedAt),
@@ -267,6 +306,13 @@ router.get(
 
     const story = rows[0];
     if (!story) throw new AppError(404, 'Story not found');
+    const media = await db.select({
+      url: schema.storyMedia.url,
+      altText: schema.storyMedia.altText,
+      caption: schema.storyMedia.caption,
+    }).from(schema.storyMedia)
+      .where(eq(schema.storyMedia.storyId, story.id))
+      .orderBy(asc(schema.storyMedia.position), asc(schema.storyMedia.id));
 
     return res.json({
       success: true,
@@ -275,6 +321,7 @@ router.get(
         ...story,
         authorName: story.anonymousPublication || !story.consentIdentity ? 'Community Contributor (Identity Protected)' : story.authorName,
         coverImageUrl: story.consentMedia ? story.coverImageUrl : null,
+        media: story.consentMedia ? media : [],
       },
     });
   }),
@@ -548,184 +595,24 @@ router.get(
   }),
 );
 
-router.get(
-  '/impact',
-  asyncHandler(async (req, res) => {
-    const period = String(req.query.period || '12m');
-    if (!['30d', '90d', '12m', 'all'].includes(period)) {
-      throw new AppError(400, 'Unsupported reporting period');
-    }
+const impactHandler = asyncHandler(async (req, res) => {
+  const period = String(req.query.period || '12m');
+  if (!['30d', '90d', '12m', 'all'].includes(period)) {
+    throw new AppError(400, 'Unsupported reporting period');
+  }
+  const data = await getImpactSummary(period as ImpactReportingPeriod);
+  res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=15, stale-while-revalidate=30');
+  return res.json({
+    success: true,
+    message: data.reportingStatus === 'EMPTY'
+      ? 'No verified public impact records are currently available'
+      : 'Impact summary loaded',
+    data,
+  });
+});
 
-    const regionalImpact = await db
-      .select({
-        regionName: schema.communityLocations.regionName,
-        country: schema.communityLocations.country,
-        verifiedCases: sql<number>`count(${schema.humanitarianCases.id})`,
-        peopleSupported: sql<number>`coalesce(sum(${schema.humanitarianCases.affectedCount}), 0)`,
-      })
-      .from(schema.communityLocations)
-      .leftJoin(
-        schema.humanitarianCases,
-        and(
-          eq(schema.communityLocations.id, schema.humanitarianCases.locationId),
-          eq(schema.humanitarianCases.status, 'VERIFIED'),
-          eq(schema.humanitarianCases.isPublic, true),
-          isNull(schema.humanitarianCases.deletedAt),
-        ),
-      )
-      .groupBy(schema.communityLocations.id);
-
-    const regionalRows = regionalImpact
-      .map((row) => ({
-        regionName: row.regionName,
-        country: row.country,
-        verifiedCases: Number(row.verifiedCases || 0),
-        peopleSupported: Number(row.peopleSupported || 0),
-      }))
-      .filter((row) => row.verifiedCases > 0 && row.peopleSupported >= 5)
-      .sort((a, b) => b.peopleSupported - a.peopleSupported);
-
-    const categoryBreakdown = await db
-      .select({
-        categoryName: schema.caseCategories.name,
-        caseCount: sql<number>`count(${schema.humanitarianCases.id})`,
-        peopleCount: sql<number>`coalesce(sum(${schema.humanitarianCases.affectedCount}), 0)`,
-      })
-      .from(schema.caseCategories)
-      .leftJoin(
-        schema.humanitarianCases,
-        and(
-          eq(schema.caseCategories.id, schema.humanitarianCases.categoryId),
-          eq(schema.humanitarianCases.status, 'VERIFIED'),
-          eq(schema.humanitarianCases.isPublic, true),
-          isNull(schema.humanitarianCases.deletedAt),
-        ),
-      )
-      .groupBy(schema.caseCategories.id);
-
-    const sectorRows = categoryBreakdown
-      .map((row) => ({
-        categoryName: row.categoryName,
-        caseCount: Number(row.caseCount || 0),
-        peopleCount: Number(row.peopleCount || 0),
-      }))
-      .filter((row) => row.caseCount > 0 && row.peopleCount > 0)
-      .sort((a, b) => b.peopleCount - a.peopleCount);
-
-    const [confirmedDonations] = await db
-      .select({ totalUsd: sql<number>`coalesce(sum(${schema.donations.amount}), 0)`, count: sql<number>`count(*)` })
-      .from(schema.donations)
-      .where(eq(schema.donations.status, 'CONFIRMED'));
-
-    const [distributedFunds] = await db
-      .select({
-        totalUsd: sql<number>`coalesce(sum(${schema.assistanceDistributions.amountUsd}), 0)`,
-        count: sql<number>`count(*)`,
-      })
-      .from(schema.assistanceDistributions)
-      .innerJoin(schema.humanitarianCases, eq(schema.assistanceDistributions.caseId, schema.humanitarianCases.id))
-      .where(and(eq(schema.humanitarianCases.status, 'VERIFIED'), eq(schema.humanitarianCases.isPublic, true), isNull(schema.humanitarianCases.deletedAt)));
-
-    const regionalDistributions = await db
-      .select({
-        locationId: schema.communityLocations.id,
-        distributedUsd: sql<number>`coalesce(sum(${schema.assistanceDistributions.amountUsd}), 0)`,
-      })
-      .from(schema.assistanceDistributions)
-      .innerJoin(schema.humanitarianCases, eq(schema.assistanceDistributions.caseId, schema.humanitarianCases.id))
-      .innerJoin(schema.communityLocations, eq(schema.humanitarianCases.locationId, schema.communityLocations.id))
-      .where(and(eq(schema.humanitarianCases.status, 'VERIFIED'), eq(schema.humanitarianCases.isPublic, true), isNull(schema.humanitarianCases.deletedAt)))
-      .groupBy(schema.communityLocations.id);
-
-    const distributionByLocation = new Map(
-      regionalDistributions.map((row) => [Number(row.locationId), Number(row.distributedUsd || 0)]),
-    );
-    const regionalDistributionRows = await db
-      .select({
-        id: schema.communityLocations.id,
-        regionName: schema.communityLocations.regionName,
-        country: schema.communityLocations.country,
-      })
-      .from(schema.communityLocations);
-    const regionalTable = regionalDistributionRows.map((row) => {
-      return {
-        regionName: row.regionName,
-        country: row.country,
-        verifiedCases: regionalImpact
-          .filter((item) => item.regionName === row.regionName && item.country === row.country)
-          .reduce((sum, item) => sum + Number(item.verifiedCases || 0), 0),
-        peopleSupported: regionalImpact
-          .filter((item) => item.regionName === row.regionName && item.country === row.country)
-          .reduce((sum, item) => sum + Number(item.peopleSupported || 0), 0),
-        assistanceDistributedUsd: distributionByLocation.get(Number(row.id)) || 0,
-        reportingStatus: 'Verified public record',
-      };
-    }).filter((row) => row.verifiedCases > 0 && row.peopleSupported >= 5);
-
-    const donationTrendRows = await db
-      .select({ amount: schema.donations.amount, confirmedAt: schema.donations.confirmedAt })
-      .from(schema.donations)
-      .where(eq(schema.donations.status, 'CONFIRMED'));
-    const distributionTrendRows = await db
-      .select({ amountUsd: schema.assistanceDistributions.amountUsd, distributedAt: schema.assistanceDistributions.distributedAt })
-      .from(schema.assistanceDistributions)
-      .innerJoin(schema.humanitarianCases, eq(schema.assistanceDistributions.caseId, schema.humanitarianCases.id))
-      .where(and(eq(schema.humanitarianCases.status, 'VERIFIED'), eq(schema.humanitarianCases.isPublic, true), isNull(schema.humanitarianCases.deletedAt)));
-
-    const now = new Date();
-    let startDate: Date | null = null;
-    if (period === '30d') startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-    if (period === '90d') startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
-    if (period === '12m') {
-      startDate = new Date(now);
-      startDate.setMonth(startDate.getMonth() - 12);
-    }
-
-    const bucketKey = (value: Date) => period === '30d' || period === '90d'
-      ? value.toISOString().slice(0, 10)
-      : `${value.getUTCFullYear()}-${String(value.getUTCMonth() + 1).padStart(2, '0')}`;
-    const trend = new Map<string, { period: string; confirmedDonations: number; assistanceDistributed: number }>();
-
-    const addTrend = (dateValue: Date | string | null, amount: number, field: 'confirmedDonations' | 'assistanceDistributed') => {
-      if (!dateValue) return;
-      const date = dateValue instanceof Date ? dateValue : new Date(dateValue);
-      if (Number.isNaN(date.getTime()) || (startDate && date < startDate)) return;
-      const key = bucketKey(date);
-      const existing = trend.get(key) || { period: key, confirmedDonations: 0, assistanceDistributed: 0 };
-      existing[field] += amount;
-      trend.set(key, existing);
-    };
-    for (const row of donationTrendRows) addTrend(row.confirmedAt, Number(row.amount || 0), 'confirmedDonations');
-    for (const row of distributionTrendRows) addTrend(row.distributedAt, Number(row.amountUsd || 0), 'assistanceDistributed');
-
-    const trendSeries = Array.from(trend.values()).sort((a, b) => a.period.localeCompare(b.period));
-    const confirmedDonationValue = Number(confirmedDonations?.totalUsd || 0);
-    const distributedAssistanceValue = Number(distributedFunds?.totalUsd || 0);
-
-    return res.json({
-      success: true,
-      message: 'Impact centre telemetry loaded',
-      data: {
-        regionalImpact: regionalTable,
-        categoryBreakdown: sectorRows,
-        financialSummary: {
-          confirmedDonationsUsd: confirmedDonationValue,
-          confirmedDonationCount: Number(confirmedDonations?.count || 0),
-          distributedAssistanceUsd: distributedAssistanceValue,
-          distributedCount: Number(distributedFunds?.count || 0),
-        },
-        peopleSupported: regionalTable.reduce((sum, row) => sum + row.peopleSupported, 0),
-        activeRegionsCount: regionalTable.length,
-        trendSeries,
-        reportingPeriod: period,
-        reportingStatus: 'Live database reporting',
-        lastUpdatedAt: nowUtc(),
-        verificationStatus: 'Verified public records',
-        privacyThreshold: 5,
-      },
-    });
-  }),
-);
+router.get('/impact', impactHandler);
+router.get('/public/impact/summary', impactHandler);
 
 router.post(
   '/public/volunteers',

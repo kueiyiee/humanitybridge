@@ -4,7 +4,12 @@ import { db, schema, nowUtc } from '../../db/index';
 import { hashToken, generateRandomToken, signHmac, verifyHmac } from '../utils/crypto';
 import { env } from '../config/env';
 import { AppError } from './errorHandler';
-import { DASHBOARD_ROLES, hasPermission, type AuthUser, type DashboardRole } from '../../../packages/shared/types';
+import {
+  DASHBOARD_ROLES,
+  hasPermission,
+  type AuthUser,
+  type DashboardRole,
+} from '../../../packages/shared/types';
 
 export const SESSION_COOKIE_NAME = 'hb_session';
 export const CSRF_COOKIE_NAME = 'hb_csrf';
@@ -77,10 +82,7 @@ export async function attachSessionUser(req: AuthenticatedRequest, _res: Respons
         : new Date(expiresAtValue).getTime();
     if (!Number.isFinite(expiresAtMs) || expiresAtMs <= Date.now()) return next();
     if (record.status !== 'ACTIVE') return next();
-    if (
-      record.role !== DASHBOARD_ROLES.PLATFORM_ADMIN &&
-      record.role !== DASHBOARD_ROLES.COMMUNITY_COORDINATOR
-    ) {
+    if (!Object.values(DASHBOARD_ROLES).includes(record.role as DashboardRole)) {
       return next();
     }
 

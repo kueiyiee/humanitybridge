@@ -5,6 +5,8 @@ interface OverflowPopoverProps {
   trigger: React.ReactNode;
   triggerClassName: string;
   panelClassName?: string;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   children: React.ReactNode;
 }
 
@@ -13,9 +15,13 @@ export function OverflowPopover({
   trigger,
   triggerClassName,
   panelClassName = '',
+  open: controlledOpen,
+  onOpenChange,
   children,
 }: OverflowPopoverProps) {
-  const [open, setOpen] = useState(false);
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const open = controlledOpen ?? uncontrolledOpen;
+  const setOpen = onOpenChange ?? setUncontrolledOpen;
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -106,7 +112,7 @@ export function OverflowPopover({
           aria-label={label}
           aria-modal="false"
           onKeyDown={moveFocus}
-          onClickCapture={closeAfterSelection}
+          onClick={closeAfterSelection}
           className={`hb-popover-enter absolute right-0 top-full z-[70] mt-2 max-h-[min(75vh,36rem)] w-[min(22rem,calc(100vw-1.5rem))] overflow-y-auto rounded-xl border border-slate-200 bg-white p-2 shadow-xl dark:border-slate-700 dark:bg-slate-900 ${panelClassName}`}
         >
           {children}

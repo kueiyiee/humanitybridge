@@ -137,7 +137,7 @@ export const articles = mysqlTable(
     summary: text('summary').notNull(),
     body: text('body').notNull(),
     coverImageUrl: varchar('cover_image_url', { length: 500 }),
-    status: varchar('status', { length: 32 }).notNull().default('PUBLISHED'),
+    status: varchar('status', { length: 32 }).notNull().default('DRAFT'),
     publishedAt: timestamp('published_at', { fsp: 3 }).defaultNow().notNull(),
   },
   (table) => ({

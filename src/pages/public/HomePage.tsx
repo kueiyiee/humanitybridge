@@ -17,6 +17,7 @@ import {
 import { apiRequest } from '../../services/api';
 import { useLocale } from '../../contexts/LocaleContext';
 import { ResilientImage } from '../../components/ResilientImage';
+import { AnimatedNumber, MotionReveal } from '../../components/motion/MotionPrimitives';
 import heroWater from '../../assets/images/hero_community_water_1794840710503.jpg';
 
 interface PublicCase {
@@ -61,6 +62,14 @@ interface OverviewResponse {
     coverImageUrl: string | null;
     status: string;
   }>;
+}
+
+interface PublicAnnouncement {
+  id: number;
+  slug: string;
+  title: string;
+  summary: string;
+  publishedAt: string | null;
 }
 
 const steps = [
@@ -168,12 +177,18 @@ export function HomePage() {
     queryKey: ['homepage-public-cases'],
     queryFn: () => apiRequest<PublicCase[]>('/cases'),
   });
+  const { data: announcementResult } = useQuery({
+    queryKey: ['homepage-public-announcements'],
+    queryFn: () => apiRequest<PublicAnnouncement[]>('/cms-content/ANNOUNCEMENT?limit=3'),
+    staleTime: 60_000,
+  });
 
   const overview = overviewResult?.data;
   const stats = overview?.statistics;
   const stories = overview?.featuredStories || [];
   const campaigns = overview?.featuredCampaigns || [];
   const cases = caseResult?.data || [];
+  const announcements = announcementResult?.data || [];
   const visibleMetrics = [
     { label: 'Verified cases', value: stats?.verifiedCases ?? 0 },
     { label: 'Active campaigns', value: stats?.activeCampaigns ?? 0 },
@@ -185,31 +200,39 @@ export function HomePage() {
       <section className="overflow-hidden bg-[#f1f0e7]">
         <div className="mx-auto grid max-w-7xl items-center gap-10 px-5 py-12 sm:px-8 sm:py-16 lg:grid-cols-2 lg:gap-16 lg:px-10 lg:py-20">
           <div className="max-w-xl">
-            <p className="hb-home-kicker inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.15em]">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#b38b45]" aria-hidden="true" />
-              HumanityBridge · Local stories, accountable support
-            </p>
-            <h1 className="hb-home-headline mt-7 font-editorial text-[2.65rem] font-semibold leading-[1.08] tracking-tight sm:text-6xl">
-              {t('heroHeadline')}
-            </h1>
-            <p className="hb-home-copy mt-6 max-w-lg text-base leading-7 sm:text-lg sm:leading-8">
-              {t('heroSub')}
-            </p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Link
-                to="/stories"
-                className="hb-home-primary-action inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
-              >
-                {t('ctaStories')}
-                <ArrowRight className="h-4 w-4" aria-hidden="true" />
-              </Link>
-              <Link
-                to="/cases"
-                className="hb-home-secondary-action inline-flex min-h-12 items-center justify-center rounded-xl border px-5 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
-              >
-                {t('ctaDifference')}
-              </Link>
-            </div>
+            <MotionReveal trigger="mount">
+              <p className="hb-home-kicker inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.15em]">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#b38b45]" aria-hidden="true" />
+                HumanityBridge · Local stories, accountable support
+              </p>
+            </MotionReveal>
+            <MotionReveal trigger="mount" delay={0.06}>
+              <h1 className="hb-home-headline mt-7 font-editorial text-[2.65rem] font-semibold leading-[1.08] tracking-tight sm:text-6xl">
+                {t('heroHeadline')}
+              </h1>
+            </MotionReveal>
+            <MotionReveal trigger="mount" delay={0.12}>
+              <p className="hb-home-copy mt-6 max-w-lg text-base leading-7 sm:text-lg sm:leading-8">
+                {t('heroSub')}
+              </p>
+            </MotionReveal>
+            <MotionReveal trigger="mount" delay={0.18}>
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                <Link
+                  to="/stories"
+                  className="hb-home-primary-action inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                >
+                  {t('ctaStories')}
+                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                </Link>
+                <Link
+                  to="/cases"
+                  className="hb-home-secondary-action inline-flex min-h-12 items-center justify-center rounded-xl border px-5 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                >
+                  {t('ctaDifference')}
+                </Link>
+              </div>
+            </MotionReveal>
             <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-[#d9ded3] pt-5 text-xs font-medium text-[#57695b]">
               <span className="inline-flex items-center gap-1.5">
                 <BadgeCheck className="h-4 w-4 text-[#52745d]" aria-hidden="true" />
@@ -220,7 +243,7 @@ export function HomePage() {
             </div>
           </div>
 
-          <div className="relative min-h-[330px] overflow-hidden rounded-[1.4rem] bg-[#d7dfd1] shadow-[0_24px_70px_-38px_rgba(27,54,36,0.55)] sm:min-h-[470px]">
+          <MotionReveal trigger="mount" delay={0.14} className="relative min-h-[330px] overflow-hidden rounded-[1.4rem] bg-[#d7dfd1] shadow-[0_24px_70px_-38px_rgba(27,54,36,0.55)] sm:min-h-[470px]">
             <img
               src={heroWater}
               alt="Community members gathered around a solar-powered clean water point"
@@ -236,7 +259,7 @@ export function HomePage() {
               <HeartHandshake className="h-4 w-4 text-[#b18a48]" aria-hidden="true" />
               With communities, not for them
             </div>
-          </div>
+          </MotionReveal>
         </div>
       </section>
 
@@ -254,12 +277,14 @@ export function HomePage() {
             </p>
           ) : visibleMetrics.length ? (
             <div className="grid gap-6 sm:grid-cols-3 sm:divide-x sm:divide-[#e8e8df]">
-              {visibleMetrics.map((metric) => (
+              {visibleMetrics.map((metric, index) => (
                 <div key={metric.label} className="text-center sm:px-5">
-                  <p className="font-editorial text-3xl font-semibold tabular-nums text-[#244b33]">
-                    {metric.value.toLocaleString()}
-                  </p>
-                  <p className="mt-1 text-xs font-medium uppercase tracking-wide text-[#718076]">{metric.label}</p>
+                  <MotionReveal delay={index * 0.06}>
+                    <p className="font-editorial text-3xl font-semibold tabular-nums text-[#244b33]">
+                      <AnimatedNumber value={metric.value} />
+                    </p>
+                    <p className="mt-1 text-xs font-medium uppercase tracking-wide text-[#718076]">{metric.label}</p>
+                  </MotionReveal>
                 </div>
               ))}
             </div>
@@ -270,6 +295,28 @@ export function HomePage() {
           )}
         </div>
       </section>
+
+      {announcements.length > 0 && (
+        <section className="mx-auto max-w-7xl px-5 py-12 sm:px-8 lg:px-10" aria-labelledby="latest-updates-heading">
+          <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.15em] text-[#718076]">From HumanityBridge</p>
+              <h2 id="latest-updates-heading" className="mt-2 font-editorial text-2xl font-semibold text-[#244b33]">Latest updates</h2>
+            </div>
+            <Link to="/announcements" className="inline-flex items-center gap-2 text-sm font-semibold text-[#244b33] hover:underline">All updates <ArrowRight className="h-4 w-4" /></Link>
+          </div>
+          <div className="grid gap-4 md:grid-cols-3">
+            {announcements.slice(0, 3).map((announcement) => (
+              <article key={announcement.id} className="rounded-xl border border-[#e5e5dc] bg-white p-5">
+                {announcement.publishedAt && <time dateTime={announcement.publishedAt} className="text-xs text-[#68776b]">{new Date(announcement.publishedAt).toLocaleDateString()}</time>}
+                <h3 className="mt-2 text-lg font-semibold text-[#244b33]">{announcement.title}</h3>
+                <p className="mt-2 line-clamp-3 text-sm leading-6 text-[#68776b]">{announcement.summary || 'Read the latest organisation update.'}</p>
+                <Link to={`/announcements/${announcement.slug}`} className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-[#244b33] hover:underline">Read update <ArrowRight className="h-4 w-4" /></Link>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="mx-auto max-w-7xl px-5 py-16 sm:px-8 sm:py-20 lg:px-10">
         <SectionHeading
@@ -290,44 +337,46 @@ export function HomePage() {
           <EmptyState>New community stories will appear here after publication and consent review.</EmptyState>
         ) : (
           <div className="grid gap-5 md:grid-cols-3">
-            {stories.map((story) => (
-              <article key={story.id} className="group flex flex-col overflow-hidden rounded-2xl border border-[#e5e5dc] bg-white">
-                <div className="aspect-[8/5] overflow-hidden bg-[#e8e8de]">
-                  <ResilientImage
-                    src={story.coverImageUrl}
-                    alt={story.title}
-                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.025]"
-                    fallbackTitle={story.title}
-                  />
-                </div>
-                <div className="flex flex-1 flex-col p-5 sm:p-6">
-                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[#68776b]">
-                    <span className="font-semibold text-[#52745d]">{story.categoryName}</span>
-                    <span aria-hidden="true">·</span>
-                    <span className="inline-flex items-center gap-1">
-                      <MapPin className="h-3.5 w-3.5" aria-hidden="true" />
-                      {story.regionName}
-                    </span>
-                    {story.publishedAt && (
-                      <>
-                        <span aria-hidden="true">·</span>
-                        <time dateTime={story.publishedAt} className="inline-flex items-center gap-1">
-                          <CalendarDays className="h-3.5 w-3.5" aria-hidden="true" />
-                          {new Date(story.publishedAt).toLocaleDateString()}
-                        </time>
-                      </>
-                    )}
+            {stories.map((story, index) => (
+              <MotionReveal key={story.id} delay={index * 0.06}>
+                <article className="group flex h-full flex-col overflow-hidden rounded-2xl border border-[#e5e5dc] bg-white">
+                  <div className="aspect-[8/5] overflow-hidden bg-[#e8e8de]">
+                    <ResilientImage
+                      src={story.coverImageUrl}
+                      alt={story.title}
+                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.025]"
+                      fallbackTitle={story.title}
+                    />
                   </div>
-                  <h3 className="mt-3 font-editorial text-xl font-semibold leading-snug text-[#223b2b]">{story.title}</h3>
-                  <p className="mt-2 flex-1 text-sm leading-6 text-[#657168]">{story.excerpt}</p>
-                  <Link
-                    to={`/stories/${story.slug}`}
-                    className="mt-5 inline-flex min-h-10 items-center gap-2 text-sm font-semibold text-[#28583c] hover:text-[#173d29] focus-visible:outline"
-                  >
-                    Read story <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                  </Link>
-                </div>
-              </article>
+                  <div className="flex flex-1 flex-col p-5 sm:p-6">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[#68776b]">
+                      <span className="font-semibold text-[#52745d]">{story.categoryName}</span>
+                      <span aria-hidden="true">·</span>
+                      <span className="inline-flex items-center gap-1">
+                        <MapPin className="h-3.5 w-3.5" aria-hidden="true" />
+                        {story.regionName}
+                      </span>
+                      {story.publishedAt && (
+                        <>
+                          <span aria-hidden="true">·</span>
+                          <time dateTime={story.publishedAt} className="inline-flex items-center gap-1">
+                            <CalendarDays className="h-3.5 w-3.5" aria-hidden="true" />
+                            {new Date(story.publishedAt).toLocaleDateString()}
+                          </time>
+                        </>
+                      )}
+                    </div>
+                    <h3 className="mt-3 font-editorial text-xl font-semibold leading-snug text-[#223b2b]">{story.title}</h3>
+                    <p className="mt-2 flex-1 text-sm leading-6 text-[#657168]">{story.excerpt}</p>
+                    <Link
+                      to={`/stories/${story.slug}`}
+                      className="mt-5 inline-flex min-h-10 items-center gap-2 text-sm font-semibold text-[#28583c] hover:text-[#173d29] focus-visible:outline"
+                    >
+                      Read story <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                    </Link>
+                  </div>
+                </article>
+              </MotionReveal>
             ))}
           </div>
         )}
@@ -353,30 +402,32 @@ export function HomePage() {
             <EmptyState>There are no public cases to display at this time. New listings will appear after review and approval.</EmptyState>
           ) : (
             <div className="grid gap-5 md:grid-cols-2">
-              {cases.slice(0, 4).map((item) => (
-                <article key={item.id} className="flex flex-col rounded-2xl border border-[#e4e5da] bg-white p-5 sm:p-6">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#3b6847]">
-                      <BadgeCheck className="h-4 w-4" aria-hidden="true" />
-                      Reviewed public case
-                    </span>
-                    <span className="rounded-full bg-[#f3f2eb] px-3 py-1 text-xs font-medium text-[#667266]">
-                      {item.categoryName}
-                    </span>
-                  </div>
-                  <h3 className="mt-4 font-editorial text-xl font-semibold leading-snug text-[#223b2b]">{item.title}</h3>
-                  <p className="mt-2 inline-flex items-center gap-1.5 text-xs text-[#68776b]">
-                    <MapPin className="h-3.5 w-3.5" aria-hidden="true" />
-                    {item.regionName}, {item.country}
-                  </p>
-                  <p className="mt-3 flex-1 text-sm leading-6 text-[#657168]">{item.publicSummary}</p>
-                  <Link
-                    to={`/cases/${item.referenceCode}`}
-                    className="mt-5 inline-flex min-h-10 items-center gap-2 text-sm font-semibold text-[#28583c] hover:text-[#173d29] focus-visible:outline"
-                  >
-                    View case <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                  </Link>
-                </article>
+              {cases.slice(0, 4).map((item, index) => (
+                <MotionReveal key={item.id} delay={index * 0.06}>
+                  <article className="flex h-full flex-col rounded-2xl border border-[#e4e5da] bg-white p-5 sm:p-6">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#3b6847]">
+                        <BadgeCheck className="h-4 w-4" aria-hidden="true" />
+                        Reviewed public case
+                      </span>
+                      <span className="rounded-full bg-[#f3f2eb] px-3 py-1 text-xs font-medium text-[#667266]">
+                        {item.categoryName}
+                      </span>
+                    </div>
+                    <h3 className="mt-4 font-editorial text-xl font-semibold leading-snug text-[#223b2b]">{item.title}</h3>
+                    <p className="mt-2 inline-flex items-center gap-1.5 text-xs text-[#68776b]">
+                      <MapPin className="h-3.5 w-3.5" aria-hidden="true" />
+                      {item.regionName}, {item.country}
+                    </p>
+                    <p className="mt-3 flex-1 text-sm leading-6 text-[#657168]">{item.publicSummary}</p>
+                    <Link
+                      to={`/cases/${item.referenceCode}`}
+                      className="mt-5 inline-flex min-h-10 items-center gap-2 text-sm font-semibold text-[#28583c] hover:text-[#173d29] focus-visible:outline"
+                    >
+                      View case <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                    </Link>
+                  </article>
+                </MotionReveal>
               ))}
             </div>
           )}

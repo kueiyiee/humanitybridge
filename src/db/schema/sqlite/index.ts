@@ -1,4 +1,6 @@
 import { sqliteTable, integer, text, real, uniqueIndex, index } from 'drizzle-orm/sqlite-core';
+export * from './documents';
+export * from './content';
 
 // Identity & Access
 export const roles = sqliteTable('roles', {
@@ -295,9 +297,16 @@ export const stories = sqliteTable(
       .notNull()
       .references(() => users.id),
     regionName: text('region_name').notNull(),
+    countryName: text('country_name'),
+    stateRegionName: text('state_region_name'),
+    communityName: text('community_name'),
+    tagsJson: text('tags_json'),
+    isFeatured: integer('is_featured', { mode: 'boolean' }).notNull().default(false),
+    internalEditorialNotes: text('internal_editorial_notes'),
     excerpt: text('excerpt').notNull(),
     body: text('body').notNull(),
     coverImageUrl: text('cover_image_url'),
+    coverAltText: text('cover_alt_text'),
     anonymousPublication: integer('anonymous_publication', { mode: 'boolean' }).notNull().default(false),
     isMinorSubject: integer('is_minor_subject', { mode: 'boolean' }).notNull().default(false),
     status: text('status').notNull().default('SUBMITTED'),
@@ -322,6 +331,8 @@ export const storyMedia = sqliteTable('story_media', {
   mediaType: text('media_type').notNull(),
   url: text('url').notNull(),
   altText: text('alt_text').notNull(),
+  caption: text('caption'),
+  position: integer('position').notNull().default(0),
   createdAt: text('created_at').notNull(),
 });
 
@@ -334,6 +345,10 @@ export const storyConsents = sqliteTable('story_consents', {
   consentMedia: integer('consent_media', { mode: 'boolean' }).notNull().default(false),
   consentIdentity: integer('consent_identity', { mode: 'boolean' }).notNull().default(false),
   guardianConsentRecorded: integer('guardian_consent_recorded', { mode: 'boolean' }).notNull().default(false),
+  consentReference: text('consent_reference'),
+  consentVerifiedBy: integer('consent_verified_by').references(() => users.id),
+  consentVerifiedAt: text('consent_verified_at'),
+  consentExpiresAt: text('consent_expires_at'),
   withdrawnAt: text('withdrawn_at'),
   recordedAt: text('recorded_at').notNull(),
 });
@@ -363,6 +378,68 @@ export const storyPublications = sqliteTable('story_publications', {
   publishedAt: text('published_at').notNull(),
 });
 
+export const storyAssignments = sqliteTable(
+  'story_assignments',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    storyId: integer('story_id')
+      .notNull()
+      .references(() => stories.id, { onDelete: 'cascade' }),
+    reviewerId: integer('reviewer_id')
+      .notNull()
+      .references(() => users.id),
+    assignedBy: integer('assigned_by')
+      .notNull()
+      .references(() => users.id),
+    assignmentReason: text('assignment_reason').notNull(),
+    assignedAt: text('assigned_at').notNull(),
+    endedAt: text('ended_at'),
+  },
+  (table) => ({
+    storyIdx: index('ix_story_assignments_story').on(table.storyId),
+  }),
+);
+
+export const storyComments = sqliteTable(
+  'story_comments',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    storyId: integer('story_id')
+      .notNull()
+      .references(() => stories.id, { onDelete: 'cascade' }),
+    authorId: integer('author_id')
+      .notNull()
+      .references(() => users.id),
+    commentBody: text('comment_body').notNull(),
+    resolvedAt: text('resolved_at'),
+    resolvedBy: integer('resolved_by').references(() => users.id),
+    createdAt: text('created_at').notNull(),
+  },
+  (table) => ({
+    storyIdx: index('ix_story_comments_story').on(table.storyId),
+  }),
+);
+
+export const storyVersions = sqliteTable(
+  'story_versions',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    storyId: integer('story_id')
+      .notNull()
+      .references(() => stories.id, { onDelete: 'cascade' }),
+    versionNumber: integer('version_number').notNull(),
+    snapshotJson: text('snapshot_json').notNull(),
+    changedBy: integer('changed_by')
+      .notNull()
+      .references(() => users.id),
+    createdAt: text('created_at').notNull(),
+  },
+  (table) => ({
+    storyVersionUnique: uniqueIndex('ux_story_versions_story_version').on(table.storyId, table.versionNumber),
+    storyVersionIdx: index('ix_story_versions_story').on(table.storyId),
+  }),
+);
+
 // Fundraising
 export const campaigns = sqliteTable(
   'campaigns',
@@ -376,7 +453,7 @@ export const campaigns = sqliteTable(
     raisedAmount: real('raised_amount').notNull().default(0),
     currency: text('currency').notNull().default('USD'),
     coverImageUrl: text('cover_image_url'),
-    status: text('status').notNull().default('ACTIVE'),
+    status: text('status').notNull().default('DRAFT'),
     startDate: text('start_date').notNull(),
     endDate: text('end_date').notNull(),
     createdBy: integer('created_by')
@@ -401,6 +478,46 @@ export const campaignCases = sqliteTable('campaign_cases', {
     .notNull()
     .references(() => humanitarianCases.id, { onDelete: 'cascade' }),
 });
+
+export const campaignPublications = sqliteTable(
+  'campaign_publications',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    campaignId: integer('campaign_id')
+      .notNull()
+      .references(() => campaigns.id, { onDelete: 'cascade' }),
+    publishedBy: integer('published_by')
+      .notNull()
+      .references(() => users.id),
+    publishedAt: text('published_at').notNull(),
+  },
+  (table) => ({
+    campaignUnique: uniqueIndex('ux_campaign_publications_campaign').on(table.campaignId),
+  }),
+);
+
+export const campaignAssignments = sqliteTable(
+  'campaign_assignments',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    campaignId: integer('campaign_id')
+      .notNull()
+      .references(() => campaigns.id, { onDelete: 'cascade' }),
+    coordinatorId: integer('coordinator_id')
+      .notNull()
+      .references(() => users.id),
+    assignedBy: integer('assigned_by')
+      .notNull()
+      .references(() => users.id),
+    assignmentReason: text('assignment_reason').notNull(),
+    assignedAt: text('assigned_at').notNull(),
+    endedAt: text('ended_at'),
+  },
+  (table) => ({
+    campaignIdx: index('ix_campaign_assignments_campaign').on(table.campaignId),
+    coordinatorIdx: index('ix_campaign_assignments_coordinator').on(table.coordinatorId),
+  }),
+);
 
 export const donations = sqliteTable(
   'donations',
@@ -625,11 +742,49 @@ export const articles = sqliteTable(
     summary: text('summary').notNull(),
     body: text('body').notNull(),
     coverImageUrl: text('cover_image_url'),
-    status: text('status').notNull().default('PUBLISHED'),
+    status: text('status').notNull().default('DRAFT'),
     publishedAt: text('published_at').notNull(),
   },
   (table) => ({
     slugUnique: uniqueIndex('ux_articles_slug').on(table.slug),
+  }),
+);
+
+export const cmsContent = sqliteTable(
+  'cms_content',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    type: text('type').notNull(),
+    slug: text('slug').notNull(),
+    title: text('title').notNull(),
+    subtitle: text('subtitle'),
+    summary: text('summary').notNull(),
+    bodyJson: text('body_json').notNull(),
+    category: text('category'),
+    authorId: integer('author_id').notNull().references(() => users.id),
+    authorDepartment: text('author_department'),
+    location: text('location'),
+    coverImageUrl: text('cover_image_url'),
+    coverAltText: text('cover_alt_text'),
+    tagsJson: text('tags_json'),
+    attachmentsJson: text('attachments_json'),
+    externalUrl: text('external_url'),
+    status: text('status').notNull().default('DRAFT'),
+    scheduledAt: text('scheduled_at'),
+    publishedAt: text('published_at'),
+    expiresAt: text('expires_at'),
+    isFeatured: integer('is_featured', { mode: 'boolean' }).notNull().default(false),
+    seoTitle: text('seo_title'),
+    seoDescription: text('seo_description'),
+    deletedAt: text('deleted_at'),
+    createdAt: text('created_at').notNull(),
+    updatedAt: text('updated_at').notNull(),
+  },
+  (table) => ({
+    typeSlugUnique: uniqueIndex('ux_cms_content_type_slug').on(table.type, table.slug),
+    typeStatusIdx: index('ix_cms_content_type_status').on(table.type, table.status),
+    publishedIdx: index('ix_cms_content_published_at').on(table.publishedAt),
+    authorIdx: index('ix_cms_content_author').on(table.authorId),
   }),
 );
 

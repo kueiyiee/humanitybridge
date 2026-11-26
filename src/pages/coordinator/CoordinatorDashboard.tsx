@@ -12,9 +12,11 @@ import {
   Settings,
 } from 'lucide-react';
 import { DashboardLayout, type DashboardNavItem } from '../../layouts/DashboardLayout';
+import { DashboardMetricCard } from '../../components/dashboard/DashboardMetricCard';
 import { apiRequest } from '../../services/api';
 import { MfaSettingsPanel } from '../../components/security/MfaSettingsPanel';
 import { CoordinatorBankTransfersPanel } from './CoordinatorBankTransfersPanel';
+import { ContentStudioPanel } from '../admin/ContentStudioPanel';
 import { useAuth } from '../../contexts/AuthContext';
 import {
   CoordinatorAssistanceAndReports,
@@ -48,6 +50,7 @@ const NAV_ITEMS: DashboardNavItem[] = [
   { id: 'overview', label: 'Community Overview', icon: <LayoutDashboard className="w-4 h-4" />, group: 'Overview', permission: 'coordinator:dashboard:read' },
   { id: 'register-case', label: 'Register Case', icon: <FilePlus2 className="w-4 h-4" />, group: 'Submissions', permission: 'coordinator:cases:create' },
   { id: 'submit-story', label: 'Submit Story', icon: <BookOpen className="w-4 h-4" />, group: 'Submissions', permission: 'coordinator:stories:submit' },
+  { id: 'content', label: 'Content Submissions', icon: <BookOpen className="w-4 h-4" />, group: 'Submissions', permission: 'coordinator:content:submit' },
   { id: 'assistance', label: 'Assistance Requests', icon: <HandHeart className="w-4 h-4" />, group: 'Field work', permission: 'coordinator:assistance:submit' },
   { id: 'bank-transfers', label: 'Bank Transfer Evidence', icon: <Landmark className="w-4 h-4" />, group: 'Field work' },
   { id: 'reports', label: 'Field Reports', icon: <MapPin className="w-4 h-4" />, group: 'Field work', permission: 'coordinator:reports:submit' },
@@ -248,21 +251,38 @@ export function CoordinatorDashboard() {
             </p>
           </div>
 
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {[
-              ['Submitted Cases', summary?.totalSubmittedCases ?? 0],
-              ['Pending Verification', summary?.pendingVerification ?? 0],
-              ['Verified Cases', summary?.approvedCases ?? 0],
-              ['Published Stories', summary?.publishedStories ?? 0],
-            ].map(([label, val]) => (
-              <div
-                key={String(label)}
-                className="bg-white dark:bg-[#0D223D] border border-slate-200 dark:border-slate-800 rounded-xl p-5"
-              >
-                <p className="text-xs text-[#748196] dark:text-slate-400">{label}</p>
-                <p className="mt-2 font-mono-tabular text-2xl font-semibold">{val}</p>
-              </div>
-            ))}
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <DashboardMetricCard
+              label="Submitted cases"
+              value={(summary?.totalSubmittedCases ?? 0).toLocaleString()}
+              icon={<ClipboardList className="h-4 w-4" />}
+              actionLabel="View submissions"
+              onClick={() => setActiveTab('submissions')}
+            />
+            <DashboardMetricCard
+              label="Pending verification"
+              value={(summary?.pendingVerification ?? 0).toLocaleString()}
+              icon={<FilePlus2 className="h-4 w-4" />}
+              tone="attention"
+              actionLabel="View submissions"
+              onClick={() => setActiveTab('submissions')}
+            />
+            <DashboardMetricCard
+              label="Verified cases"
+              value={(summary?.approvedCases ?? 0).toLocaleString()}
+              icon={<HandHeart className="h-4 w-4" />}
+              tone="success"
+              actionLabel="View submissions"
+              onClick={() => setActiveTab('submissions')}
+            />
+            <DashboardMetricCard
+              label="Published stories"
+              value={(summary?.publishedStories ?? 0).toLocaleString()}
+              icon={<BookOpen className="h-4 w-4" />}
+              tone="success"
+              actionLabel="View submissions"
+              onClick={() => setActiveTab('submissions')}
+            />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -318,6 +338,7 @@ export function CoordinatorDashboard() {
       )}
 
       {activeTab === 'submit-story' && <CoordinatorStoryForm taxonomy={taxData?.data} />}
+      {activeTab === 'content' && <ContentStudioPanel mode="coordinator" />}
 
       {activeTab === 'assistance' && (
         <div className="space-y-6">

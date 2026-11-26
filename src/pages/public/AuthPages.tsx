@@ -43,7 +43,7 @@ export function LoginPage() {
       }
 
       await refreshSession();
-      const target = res.data.user?.role === DASHBOARD_ROLES.PLATFORM_ADMIN ? '/admin' : '/coordinator';
+      const target = res.data.user?.role === DASHBOARD_ROLES.COMMUNITY_COORDINATOR ? '/coordinator' : '/admin';
       navigate(target, { replace: true });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Sign-in failed');

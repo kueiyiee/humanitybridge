@@ -97,6 +97,43 @@
 .dark header button { color:#d3decf; }
 .dark header button:hover { background-color:#26372a; }
 
+.hb-doc-page { width: 100%; }
+.hb-doc-prosemirror { min-height: 100%; color: #161819; font-family: Arial, sans-serif; font-size: 12pt; line-height: 1.5; overflow-wrap: anywhere; }
+.hb-doc-prosemirror.rm-with-pagination { margin: 0 auto; background: #fff; box-shadow: 0 3px 18px rgb(0 0 0 / 18%); }
+.hb-doc-brand { display: flex; align-items: center; gap: 12px; color: #202526; font: 9px/1.35 Arial, sans-serif; }
+.hb-doc-brand img { width: 56px; max-height: 42px; object-fit: contain; }
+.hb-doc-brand span { display: block; }
+.hb-doc-prosemirror .rm-page-header, .hb-doc-prosemirror .rm-page-footer { color: #333; font: 9px/1.35 Arial, sans-serif; }
+.hb-doc-prosemirror > * + * { margin-top: .75em; }
+.hb-doc-prosemirror h1 { margin: 0 0 .45em; font-size: 2em; font-weight: 700; line-height: 1.2; }
+.hb-doc-prosemirror h2 { margin: 0 0 .4em; font-size: 1.5em; font-weight: 700; line-height: 1.25; }
+.hb-doc-prosemirror h3 { margin: 0 0 .35em; font-size: 1.2em; font-weight: 700; line-height: 1.3; }
+.hb-doc-prosemirror ul, .hb-doc-prosemirror ol { padding-left: 1.7em; }
+.hb-doc-prosemirror ul { list-style: disc; }
+.hb-doc-prosemirror ol { list-style: decimal; }
+.hb-doc-prosemirror li p { margin: 0; }
+.hb-doc-prosemirror a { color: #1d4ed8; text-decoration: underline; }
+.hb-doc-prosemirror table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.hb-doc-prosemirror th, .hb-doc-prosemirror td { min-width: 1em; border: 1px solid #9ca3af; padding: .35em .5em; vertical-align: top; }
+.hb-doc-prosemirror th { background: #f1f3f5; font-weight: 700; }
+.hb-doc-prosemirror img { display: block; max-width: 100%; height: auto; }
+.hb-doc-prosemirror img.hb-doc-image { cursor: move; }
+.hb-doc-page-break { height: 1.5rem; border-top: 1px dashed #cbd0d5; margin: 1.5rem 0; }
+@media print {
+  @page { size: A4; margin: 0; }
+  html, body { min-width: 0 !important; background: #fff !important; }
+  body * { visibility: hidden !important; }
+  .hb-doc-editor, .hb-doc-editor * { visibility: visible !important; }
+  .hb-doc-editor { position: absolute !important; inset: 0 !important; width: 100% !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important; overflow: visible !important; background: #fff !important; }
+  .hb-doc-editor header, .hb-doc-editor footer, .hb-doc-editor [role="alert"] { display: none !important; }
+  .hb-doc-editor section[aria-label="A4 document workspace"] { display: block !important; min-height: 0 !important; overflow: visible !important; padding: 0 !important; }
+  .hb-doc-page { width: 100% !important; margin: 0 !important; }
+  .hb-doc-prosemirror.rm-with-pagination { box-shadow: none !important; }
+  .hb-doc-prosemirror .rm-pagination-gap { border-color: transparent !important; }
+  .hb-doc-page-break { height: 0 !important; border: 0 !important; break-before: page; page-break-before: always; }
+  .hb-doc-prosemirror { overflow: visible !important; }
+}
+
 :root {
   --hb-glass-surface: rgb(255 255 255 / 62%);
   --hb-glass-border: rgb(255 255 255 / 78%);
@@ -481,14 +518,6 @@ body,
   border-color: var(--hb-glass-border);
   box-shadow: var(--hb-glass-shadow);
 }
-.hb-dashboard-shell main > * {
-  animation: hb-dashboard-arrive 760ms var(--hb-motion-ease) both;
-}
-.hb-dashboard-shell main > *:nth-child(2) { animation-delay: 70ms; }
-.hb-dashboard-shell main > *:nth-child(3) { animation-delay: 130ms; }
-.hb-dashboard-shell main > *:nth-child(4) { animation-delay: 190ms; }
-.hb-dashboard-shell main > *:nth-child(5) { animation-delay: 250ms; }
-
 .hb-dashboard-shell .hb-nav-item {
   border-radius: .9rem;
   transition:

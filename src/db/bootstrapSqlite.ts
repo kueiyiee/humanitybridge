@@ -232,9 +232,16 @@ export function ensureSqliteSchema(sqlite: DatabaseSync) {
       category_id INTEGER NOT NULL REFERENCES story_categories(id),
       author_id INTEGER NOT NULL REFERENCES users(id),
       region_name TEXT NOT NULL,
+      country_name TEXT,
+      state_region_name TEXT,
+      community_name TEXT,
+      tags_json TEXT,
+      is_featured INTEGER NOT NULL DEFAULT 0,
+      internal_editorial_notes TEXT,
       excerpt TEXT NOT NULL,
       body TEXT NOT NULL,
       cover_image_url TEXT,
+      cover_alt_text TEXT,
       anonymous_publication INTEGER NOT NULL DEFAULT 0,
       is_minor_subject INTEGER NOT NULL DEFAULT 0,
       status TEXT NOT NULL DEFAULT 'SUBMITTED',
@@ -254,6 +261,8 @@ export function ensureSqliteSchema(sqlite: DatabaseSync) {
       media_type TEXT NOT NULL,
       url TEXT NOT NULL,
       alt_text TEXT NOT NULL,
+      caption TEXT,
+      position INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL
     );
 
@@ -264,6 +273,10 @@ export function ensureSqliteSchema(sqlite: DatabaseSync) {
       consent_media INTEGER NOT NULL DEFAULT 0,
       consent_identity INTEGER NOT NULL DEFAULT 0,
       guardian_consent_recorded INTEGER NOT NULL DEFAULT 0,
+      consent_reference TEXT,
+      consent_verified_by INTEGER REFERENCES users(id),
+      consent_verified_at TEXT,
+      consent_expires_at TEXT,
       withdrawn_at TEXT,
       recorded_at TEXT NOT NULL
     );
@@ -285,6 +298,39 @@ export function ensureSqliteSchema(sqlite: DatabaseSync) {
       published_at TEXT NOT NULL
     );
 
+    CREATE TABLE IF NOT EXISTS story_assignments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      story_id INTEGER NOT NULL REFERENCES stories(id) ON DELETE CASCADE,
+      reviewer_id INTEGER NOT NULL REFERENCES users(id),
+      assigned_by INTEGER NOT NULL REFERENCES users(id),
+      assignment_reason TEXT NOT NULL,
+      assigned_at TEXT NOT NULL,
+      ended_at TEXT
+    );
+    CREATE INDEX IF NOT EXISTS ix_story_assignments_story ON story_assignments(story_id);
+
+    CREATE TABLE IF NOT EXISTS story_comments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      story_id INTEGER NOT NULL REFERENCES stories(id) ON DELETE CASCADE,
+      author_id INTEGER NOT NULL REFERENCES users(id),
+      comment_body TEXT NOT NULL,
+      resolved_at TEXT,
+      resolved_by INTEGER REFERENCES users(id),
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS ix_story_comments_story ON story_comments(story_id);
+
+    CREATE TABLE IF NOT EXISTS story_versions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      story_id INTEGER NOT NULL REFERENCES stories(id) ON DELETE CASCADE,
+      version_number INTEGER NOT NULL,
+      snapshot_json TEXT NOT NULL,
+      changed_by INTEGER NOT NULL REFERENCES users(id),
+      created_at TEXT NOT NULL,
+      CONSTRAINT ux_story_versions_story_version UNIQUE(story_id, version_number)
+    );
+    CREATE INDEX IF NOT EXISTS ix_story_versions_story ON story_versions(story_id);
+
     CREATE TABLE IF NOT EXISTS campaigns (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       slug TEXT NOT NULL,
@@ -295,7 +341,7 @@ export function ensureSqliteSchema(sqlite: DatabaseSync) {
       raised_amount REAL NOT NULL DEFAULT 0,
       currency TEXT NOT NULL DEFAULT 'USD',
       cover_image_url TEXT,
-      status TEXT NOT NULL DEFAULT 'ACTIVE',
+      status TEXT NOT NULL DEFAULT 'DRAFT',
       start_date TEXT NOT NULL,
       end_date TEXT NOT NULL,
       created_by INTEGER NOT NULL REFERENCES users(id),
@@ -311,6 +357,26 @@ export function ensureSqliteSchema(sqlite: DatabaseSync) {
       campaign_id INTEGER NOT NULL REFERENCES campaigns(id) ON DELETE CASCADE,
       case_id INTEGER NOT NULL REFERENCES humanitarian_cases(id) ON DELETE CASCADE
     );
+
+    CREATE TABLE IF NOT EXISTS campaign_publications (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      campaign_id INTEGER NOT NULL REFERENCES campaigns(id) ON DELETE CASCADE,
+      published_by INTEGER NOT NULL REFERENCES users(id),
+      published_at TEXT NOT NULL,
+      CONSTRAINT ux_campaign_publications_campaign UNIQUE(campaign_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS campaign_assignments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      campaign_id INTEGER NOT NULL REFERENCES campaigns(id) ON DELETE CASCADE,
+      coordinator_id INTEGER NOT NULL REFERENCES users(id),
+      assigned_by INTEGER NOT NULL REFERENCES users(id),
+      assignment_reason TEXT NOT NULL,
+      assigned_at TEXT NOT NULL,
+      ended_at TEXT
+    );
+    CREATE INDEX IF NOT EXISTS ix_campaign_assignments_campaign ON campaign_assignments(campaign_id);
+    CREATE INDEX IF NOT EXISTS ix_campaign_assignments_coordinator ON campaign_assignments(coordinator_id);
 
     CREATE TABLE IF NOT EXISTS donations (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -488,10 +554,43 @@ export function ensureSqliteSchema(sqlite: DatabaseSync) {
       summary TEXT NOT NULL,
       body TEXT NOT NULL,
       cover_image_url TEXT,
-      status TEXT NOT NULL DEFAULT 'PUBLISHED',
+      status TEXT NOT NULL DEFAULT 'DRAFT',
       published_at TEXT NOT NULL
     );
     CREATE UNIQUE INDEX IF NOT EXISTS ux_articles_slug ON articles(slug);
+
+    CREATE TABLE IF NOT EXISTS cms_content (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      type TEXT NOT NULL,
+      slug TEXT NOT NULL,
+      title TEXT NOT NULL,
+      subtitle TEXT,
+      summary TEXT NOT NULL,
+      body_json TEXT NOT NULL,
+      category TEXT,
+      author_id INTEGER NOT NULL REFERENCES users(id),
+      author_department TEXT,
+      location TEXT,
+      cover_image_url TEXT,
+      cover_alt_text TEXT,
+      tags_json TEXT,
+      attachments_json TEXT,
+      external_url TEXT,
+      status TEXT NOT NULL DEFAULT 'DRAFT',
+      scheduled_at TEXT,
+      published_at TEXT,
+      expires_at TEXT,
+      is_featured INTEGER NOT NULL DEFAULT 0,
+      seo_title TEXT,
+      seo_description TEXT,
+      deleted_at TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS ux_cms_content_type_slug ON cms_content(type, slug);
+    CREATE INDEX IF NOT EXISTS ix_cms_content_type_status ON cms_content(type, status);
+    CREATE INDEX IF NOT EXISTS ix_cms_content_published_at ON cms_content(published_at);
+    CREATE INDEX IF NOT EXISTS ix_cms_content_author ON cms_content(author_id);
 
     CREATE TABLE IF NOT EXISTS contact_messages (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -608,7 +707,156 @@ export function ensureSqliteSchema(sqlite: DatabaseSync) {
       location_label TEXT NOT NULL,
       recorded_at TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS document_types (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      type_code TEXT NOT NULL UNIQUE,
+      display_name TEXT NOT NULL,
+      reference_prefix TEXT NOT NULL UNIQUE,
+      is_approved INTEGER NOT NULL DEFAULT 0,
+      requires_approval INTEGER NOT NULL DEFAULT 1,
+      public_verification INTEGER NOT NULL DEFAULT 0,
+      public_recipient INTEGER NOT NULL DEFAULT 0,
+      created_by INTEGER NOT NULL REFERENCES users(id),
+      updated_by INTEGER NOT NULL REFERENCES users(id),
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS ix_document_types_approved ON document_types(is_approved);
+
+    CREATE TABLE IF NOT EXISTS document_sequences (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      reference_prefix TEXT NOT NULL,
+      sequence_year INTEGER NOT NULL,
+      next_number INTEGER NOT NULL DEFAULT 1,
+      updated_at TEXT NOT NULL,
+      UNIQUE(reference_prefix, sequence_year)
+    );
+
+    CREATE TABLE IF NOT EXISTS document_templates (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      document_type_id INTEGER NOT NULL REFERENCES document_types(id),
+      name TEXT NOT NULL,
+      is_active INTEGER NOT NULL DEFAULT 0,
+      current_version INTEGER NOT NULL DEFAULT 1,
+      created_by INTEGER NOT NULL REFERENCES users(id),
+      updated_by INTEGER NOT NULL REFERENCES users(id),
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS ix_document_templates_type ON document_templates(document_type_id);
+    CREATE INDEX IF NOT EXISTS ix_document_templates_active ON document_templates(is_active);
+
+    CREATE TABLE IF NOT EXISTS document_template_versions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      template_id INTEGER NOT NULL REFERENCES document_templates(id),
+      version_number INTEGER NOT NULL,
+      configuration_json TEXT NOT NULL,
+      created_by INTEGER NOT NULL REFERENCES users(id),
+      created_at TEXT NOT NULL,
+      UNIQUE(template_id, version_number)
+    );
+    CREATE INDEX IF NOT EXISTS ix_document_template_versions_template ON document_template_versions(template_id);
+
+    CREATE TABLE IF NOT EXISTS document_organisation_profiles (
+      id INTEGER PRIMARY KEY CHECK (id = 1),
+      official_name TEXT,
+      registered_address TEXT,
+      country TEXT,
+      telephone TEXT,
+      email TEXT,
+      website TEXT,
+      registration_information TEXT,
+      approved_tagline TEXT,
+      issuing_department TEXT,
+      footer_disclaimer TEXT,
+      logo_storage_key TEXT,
+      updated_by INTEGER REFERENCES users(id),
+      updated_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS document_signatories (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      full_name TEXT NOT NULL,
+      position TEXT NOT NULL,
+      department TEXT,
+      authorised_type_codes_json TEXT NOT NULL,
+      is_authorised INTEGER NOT NULL DEFAULT 0,
+      valid_from TEXT,
+      valid_until TEXT,
+      created_by INTEGER NOT NULL REFERENCES users(id),
+      updated_by INTEGER NOT NULL REFERENCES users(id),
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS ix_document_signatories_authorised ON document_signatories(is_authorised);
+
+    CREATE TABLE IF NOT EXISTS document_editor_drafts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL,
+      content_json TEXT NOT NULL,
+      page_settings_json TEXT NOT NULL,
+      created_by INTEGER NOT NULL REFERENCES users(id),
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS ix_document_editor_drafts_creator ON document_editor_drafts(created_by);
+    CREATE INDEX IF NOT EXISTS ix_document_editor_drafts_updated ON document_editor_drafts(updated_at);
+
+    CREATE TABLE IF NOT EXISTS issued_documents (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      reference_code TEXT UNIQUE,
+      document_type_id INTEGER NOT NULL REFERENCES document_types(id),
+      template_version_id INTEGER NOT NULL REFERENCES document_template_versions(id),
+      status TEXT NOT NULL DEFAULT 'DRAFT',
+      recipient_name TEXT NOT NULL,
+      subject TEXT NOT NULL,
+      payload_json TEXT NOT NULL,
+      content_json TEXT,
+      organisation_snapshot_json TEXT,
+      public_recipient_name TEXT,
+      storage_key TEXT,
+      pdf_sha256 TEXT,
+      created_by INTEGER NOT NULL REFERENCES users(id),
+      approved_by INTEGER REFERENCES users(id),
+      issued_by INTEGER REFERENCES users(id),
+      created_at TEXT NOT NULL,
+      issued_at TEXT,
+      expires_at TEXT,
+      revoked_at TEXT,
+      archived_at TEXT
+    );
+    CREATE INDEX IF NOT EXISTS ix_issued_documents_type ON issued_documents(document_type_id);
+    CREATE INDEX IF NOT EXISTS ix_issued_documents_status ON issued_documents(status);
+    CREATE INDEX IF NOT EXISTS ix_issued_documents_recipient ON issued_documents(recipient_name);
+    CREATE INDEX IF NOT EXISTS ix_issued_documents_issued_at ON issued_documents(issued_at);
+    CREATE INDEX IF NOT EXISTS ix_issued_documents_creator ON issued_documents(created_by);
+
+    CREATE TABLE IF NOT EXISTS document_status_history (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      document_id INTEGER NOT NULL REFERENCES issued_documents(id),
+      previous_status TEXT,
+      new_status TEXT NOT NULL,
+      reason TEXT,
+      changed_by INTEGER NOT NULL REFERENCES users(id),
+      changed_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS ix_document_status_history_document ON document_status_history(document_id);
+
+    CREATE TABLE IF NOT EXISTS document_verification_events (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      document_id INTEGER NOT NULL REFERENCES issued_documents(id),
+      verified_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS ix_document_verifications_document ON document_verification_events(document_id);
+    CREATE INDEX IF NOT EXISTS ix_document_verifications_time ON document_verification_events(verified_at);
+
   `);
+
+  const documentColumns = sqlite.prepare('PRAGMA table_info(issued_documents)').all() as Array<{ name: string }>;
+  if (!documentColumns.some((column) => column.name === 'content_json')) {
+    sqlite.exec('ALTER TABLE issued_documents ADD COLUMN content_json TEXT');
+  }
 
   const caseColumnRows = sqlite.prepare('PRAGMA table_info(humanitarian_cases)').all() as Array<{ name: string }>;
   const existingCaseColumns = new Set(caseColumnRows.map((column: { name: string }) => column.name));
@@ -618,4 +866,41 @@ export function ensureSqliteSchema(sqlite: DatabaseSync) {
     ['beneficiary_preferred_language', 'TEXT'], ['beneficiary_needs_notes', 'TEXT'],
   ];
   for (const [column, definition] of additiveColumns) if (!existingCaseColumns.has(column)) sqlite.exec(`ALTER TABLE humanitarian_cases ADD COLUMN ${column} ${definition}`);
+
+  const storyMediaColumns = sqlite.prepare('PRAGMA table_info(story_media)').all() as Array<{ name: string }>;
+  if (!storyMediaColumns.some((column) => column.name === 'caption')) {
+    sqlite.exec('ALTER TABLE story_media ADD COLUMN caption TEXT');
+  }
+  if (!storyMediaColumns.some((column) => column.name === 'position')) {
+    sqlite.exec('ALTER TABLE story_media ADD COLUMN position INTEGER NOT NULL DEFAULT 0');
+  }
+  const storyColumns = sqlite.prepare('PRAGMA table_info(stories)').all() as Array<{ name: string }>;
+  if (!storyColumns.some((column) => column.name === 'cover_alt_text')) {
+    sqlite.exec('ALTER TABLE stories ADD COLUMN cover_alt_text TEXT');
+  }
+  const storyAdditiveColumns: Array<[string, string]> = [
+    ['country_name', 'TEXT'],
+    ['state_region_name', 'TEXT'],
+    ['community_name', 'TEXT'],
+    ['tags_json', 'TEXT'],
+    ['is_featured', 'INTEGER NOT NULL DEFAULT 0'],
+    ['internal_editorial_notes', 'TEXT'],
+  ];
+  for (const [column, definition] of storyAdditiveColumns) {
+    if (!storyColumns.some((item) => item.name === column)) {
+      sqlite.exec(`ALTER TABLE stories ADD COLUMN ${column} ${definition}`);
+    }
+  }
+  const consentColumns = sqlite.prepare('PRAGMA table_info(story_consents)').all() as Array<{ name: string }>;
+  const consentAdditiveColumns: Array<[string, string]> = [
+    ['consent_reference', 'TEXT'],
+    ['consent_verified_by', 'INTEGER'],
+    ['consent_verified_at', 'TEXT'],
+    ['consent_expires_at', 'TEXT'],
+  ];
+  for (const [column, definition] of consentAdditiveColumns) {
+    if (!consentColumns.some((item) => item.name === column)) {
+      sqlite.exec(`ALTER TABLE story_consents ADD COLUMN ${column} ${definition}`);
+    }
+  }
 }
