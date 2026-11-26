@@ -17,12 +17,12 @@ try {
 
   const integrity = sqlite.prepare('PRAGMA integrity_check').get() as { integrity_check: string };
   if (integrity.integrity_check !== 'ok') {
-    throw new Error(\`SQLite integrity check failed: \${integrity.integrity_check}\`);
+    throw new Error(`SQLite integrity check failed: ${integrity.integrity_check}`);
   }
 
   const foreignKeyViolations = sqlite.prepare('PRAGMA foreign_key_check').all();
   if (foreignKeyViolations.length > 0) {
-    throw new Error(\`SQLite contains \${foreignKeyViolations.length} foreign-key violation(s).\`);
+    throw new Error(`SQLite contains ${foreignKeyViolations.length} foreign-key violation(s).`);
   }
 
   const tableCount = sqlite.prepare(
@@ -30,8 +30,8 @@ try {
   ).get() as { count: number };
 
   console.log('SQLite database check passed.');
-  console.log(\`Database: \${databasePath}\`);
-  console.log(\`Tables: \${tableCount.count}\`);
+  console.log(`Database: ${databasePath}`);
+  console.log(`Tables: ${tableCount.count}`);
   console.log('Integrity: ok');
   console.log('Foreign keys: ok');
 } finally {
