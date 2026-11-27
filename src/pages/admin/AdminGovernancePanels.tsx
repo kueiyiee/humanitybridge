@@ -594,7 +594,13 @@ export function AdminSafeguardingAndSettingsPanel({ mode }: { mode: 'safeguardin
     },
   });
 
-  const { data: settingsData } = useQuery({
+  const {
+    data: settingsData,
+    isPending: settingsPending,
+    isError: settingsIsError,
+    error: settingsQueryError,
+    refetch: refetchSettings,
+  } = useQuery({
     queryKey: ['admin-settings'],
     queryFn: () =>
       apiRequest<{
@@ -604,7 +610,13 @@ export function AdminSafeguardingAndSettingsPanel({ mode }: { mode: 'safeguardin
     enabled: mode === 'settings',
   });
 
-  const { data: auditData } = useQuery({
+  const {
+    data: auditData,
+    isPending: auditPending,
+    isError: auditIsError,
+    error: auditQueryError,
+    refetch: refetchSettingsAudit,
+  } = useQuery({
     queryKey: ['admin-audit'],
     queryFn: () =>
       apiRequest<Array<{ id: number; action: string; resourceType: string; resourceId: string | null; actorRole: string | null; createdAt: string }>>(
@@ -876,17 +888,41 @@ export function AdminSafeguardingAndSettingsPanel({ mode }: { mode: 'safeguardin
           </button>
         </form>
 
-        <div className="bg-white dark:bg-[#0D223D] border border-slate-200 dark:border-slate-800 rounded-xl p-6 space-y-3">
-          <h3 className="font-editorial text-lg font-semibold">Configurable Public Identity</h3>
-          <dl className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
+        <section className="bg-white dark:bg-[#0D223D] border border-slate-200 dark:border-slate-800 rounded-xl p-6 space-y-3" aria-labelledby="public-identity-heading">
+          <div>
+            <h3 id="public-identity-heading" className="font-editorial text-lg font-semibold">Public identity configuration</h3>
+            <p className="mt-1 text-xs leading-5 text-slate-500">Current values from the system settings registry. This view is read-only; changes are not implied until an approved settings workflow is available.</p>
+          </div>
+          {settingsPending && <p role="status" className="text-xs text-slate-500">Loading platform settings…</p>}
+          {settingsIsError && <div role="alert" className="space-y-2 text-xs text-rose-700 dark:text-rose-300"><p>{settingsQueryError instanceof Error ? settingsQueryError.message : 'Platform settings could not be loaded.'}</p><button type="button" onClick={() => void refetchSettings()} className="rounded-lg border border-current px-3 py-2 font-semibold">Retry settings</button></div>}
+          {!settingsPending && !settingsIsError && (settingsData?.data?.settings || []).length === 0 && <p className="text-xs text-slate-500">No public identity settings have been configured.</p>}
+          {!settingsIsError && <dl className="divide-y divide-slate-100 text-xs dark:divide-slate-800">
             {(settingsData?.data?.settings || []).map((s) => (
-              <div key={s.settingKey} className="py-2 flex justify-between gap-4">
+              <div key={s.settingKey} className="flex flex-wrap justify-between gap-2 py-2">
                 <dt className="font-mono-tabular text-[#748196]">{s.settingKey}</dt>
-                <dd className="text-right font-medium">{s.settingValue}</dd>
+                <dd className="max-w-[70%] break-words text-right font-medium">{s.settingValue}</dd>
               </div>
             ))}
-          </dl>
-        </div>
+          </dl>}
+        </section>
+
+        <section className="bg-white dark:bg-[#0D223D] border border-slate-200 dark:border-slate-800 rounded-xl p-6 space-y-3" aria-labelledby="backup-register-heading">
+          <div>
+            <h3 id="backup-register-heading" className="font-editorial text-lg font-semibold">Backup register</h3>
+            <p className="mt-1 text-xs leading-5 text-slate-500">Recorded backup events returned by the platform. This registry does not itself run or verify a backup job.</p>
+          </div>
+          {settingsPending && <p role="status" className="text-xs text-slate-500">Loading backup records…</p>}
+          {settingsIsError && <p role="alert" className="text-xs text-rose-700 dark:text-rose-300">Backup records could not be loaded.</p>}
+          {!settingsPending && !settingsIsError && (settingsData?.data?.backups || []).length === 0 && <p className="text-xs text-slate-500">No backup events have been recorded.</p>}
+          {!settingsIsError && <ul className="divide-y divide-slate-100 text-xs dark:divide-slate-800">
+            {(settingsData?.data?.backups || []).map((backup) => (
+              <li key={backup.id} className="flex flex-wrap items-start justify-between gap-3 py-3">
+                <span className="min-w-0"><strong className="block">{backup.backupType.replaceAll('_', ' ')}</strong><span className="mt-1 block break-all text-slate-500">{backup.locationLabel}</span><time className="mt-1 block text-[11px] text-slate-500" dateTime={backup.recordedAt}>{formatGovernanceDate(backup.recordedAt)}</time></span>
+                <span className="rounded-full border border-slate-300 px-2 py-1 text-[10px] font-semibold dark:border-slate-700">{backup.status.replaceAll('_', ' ')}</span>
+              </li>
+            ))}
+          </ul>}
+        </section>
       </div>
 
       <div className="bg-white dark:bg-[#0D223D] border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
@@ -909,6 +945,8 @@ export function AdminSafeguardingAndSettingsPanel({ mode }: { mode: 'safeguardin
             </button>
           </div>
         </div>
+        {auditPending && <p role="status" className="px-6 py-4 text-sm text-slate-500">Loading security audit records…</p>}
+        {auditIsError && <div role="alert" className="flex flex-wrap items-center justify-between gap-3 px-6 py-4 text-sm text-rose-700 dark:text-rose-300"><span>{auditQueryError instanceof Error ? auditQueryError.message : 'Security audit records could not be loaded.'}</span><button type="button" onClick={() => void refetchSettingsAudit()} className="rounded-lg border border-current px-3 py-2 text-xs font-semibold">Retry audit logs</button></div>}
         <div className="overflow-x-auto">
           <table className="w-full text-xs text-left">
             <thead className="bg-[#F7F9FC] dark:bg-[#071324] text-[#748196]">
@@ -928,6 +966,7 @@ export function AdminSafeguardingAndSettingsPanel({ mode }: { mode: 'safeguardin
                   <td className="px-5 py-2.5 font-mono-tabular">{log.resourceType}:{log.resourceId || '-'}</td>
                 </tr>
               ))}
+              {!auditPending && !auditIsError && auditRows.length === 0 && <tr><td colSpan={4} className="px-5 py-5 text-center text-slate-500">No audit events match this filter.</td></tr>}
             </tbody>
           </table>
         </div>
