@@ -304,8 +304,8 @@ export function AdminUsersPanel() {
 
 export function AdminFinancialsPanel() {
   const qc = useQueryClient();
-  const [ledgerRef, setLedgerRef] = useState('');
-  const [reconciliationNote, setReconciliationNote] = useState('');
+  const [ledgerRefs, setLedgerRefs] = useState<Record<number, string>>({});
+  const [reconciliationNotes, setReconciliationNotes] = useState<Record<number, string>>({});
   const [msg, setMsg] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<number | null>(null);
@@ -364,8 +364,8 @@ export function AdminFinancialsPanel() {
   };
 
   const reconcile = async (id: number) => {
-    const externalLedgerRef = ledgerRef.trim();
-    const note = reconciliationNote.trim();
+    const externalLedgerRef = (ledgerRefs[id] || '').trim();
+    const note = (reconciliationNotes[id] || '').trim();
     if (!externalLedgerRef || note.length < 8) {
       setActionError('Enter the actual external settlement reference and at least eight characters of reconciliation notes.');
       return;
@@ -379,8 +379,8 @@ export function AdminFinancialsPanel() {
         body: JSON.stringify({ externalLedgerRef, reconciliationNote: note }),
       });
       setMsg(response.message);
-      setLedgerRef('');
-      setReconciliationNote('');
+      setLedgerRefs((current) => ({ ...current, [id]: '' }));
+      setReconciliationNotes((current) => ({ ...current, [id]: '' }));
       await Promise.all([
         qc.invalidateQueries({ queryKey: ['admin-donations'] }),
         qc.invalidateQueries({ queryKey: ['admin-dashboard'] }),
@@ -441,9 +441,9 @@ export function AdminFinancialsPanel() {
                     <td className="px-5 py-3">
                       {donation.status === 'CONFIRMED' ? (
                         <div className="flex min-w-64 flex-col gap-2">
-                          <input value={ledgerRef} onChange={(event) => setLedgerRef(event.target.value)} maxLength={120} aria-label={`External settlement reference for ${donation.donationReference}`} placeholder="External bank / ledger reference" className="min-h-9 rounded-lg border border-slate-300 bg-white px-2.5 text-xs dark:border-slate-700 dark:bg-slate-950" />
-                          <textarea value={reconciliationNote} onChange={(event) => setReconciliationNote(event.target.value)} minLength={8} maxLength={1500} rows={2} aria-label={`Reconciliation note for ${donation.donationReference}`} placeholder="What was checked against the settlement statement?" className="rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-xs dark:border-slate-700 dark:bg-slate-950" />
-                          <button type="button" disabled={busyId !== null || !ledgerRef.trim() || reconciliationNote.trim().length < 8} onClick={() => void reconcile(donation.id)} className="inline-flex min-h-9 items-center justify-center rounded-lg bg-slate-900 px-3 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40 dark:bg-slate-100 dark:text-slate-950">
+                          <input value={ledgerRefs[donation.id] || ''} onChange={(event) => setLedgerRefs((current) => ({ ...current, [donation.id]: event.target.value }))} maxLength={120} aria-label={`External settlement reference for ${donation.donationReference}`} placeholder="External bank / ledger reference" className="min-h-9 rounded-lg border border-slate-300 bg-white px-2.5 text-xs dark:border-slate-700 dark:bg-slate-950" />
+                          <textarea value={reconciliationNotes[donation.id] || ''} onChange={(event) => setReconciliationNotes((current) => ({ ...current, [donation.id]: event.target.value }))} minLength={8} maxLength={1500} rows={2} aria-label={`Reconciliation note for ${donation.donationReference}`} placeholder="What was checked against the settlement statement?" className="rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-xs dark:border-slate-700 dark:bg-slate-950" />
+                          <button type="button" disabled={busyId !== null || !(ledgerRefs[donation.id] || '').trim() || (reconciliationNotes[donation.id] || '').trim().length < 8} onClick={() => void reconcile(donation.id)} className="inline-flex min-h-9 items-center justify-center rounded-lg bg-slate-900 px-3 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40 dark:bg-slate-100 dark:text-slate-950">
                             {busyId === donation.id ? 'Saving reconciliation…' : 'Reconcile record'}
                           </button>
                         </div>
