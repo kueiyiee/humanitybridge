@@ -304,10 +304,12 @@ export function AdminUsersPanel() {
 
 export function AdminFinancialsPanel() {
   const qc = useQueryClient();
-  const [ledgerRef, setLedgerRef] = useState('');
+  const [ledgerRefs, setLedgerRefs] = useState<Record<number, string>>({});
+  const [reconciliationNotes, setReconciliationNotes] = useState<Record<number, string>>({});
   const [msg, setMsg] = useState<string | null>(null);
-
-  const { data } = useQuery({
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<number | null>(null);
+  const { data, isPending, isError, error, refetch, isFetching } = useQuery({
     queryKey: ['admin-donations'],
     queryFn: () =>
       apiRequest<{
@@ -333,107 +335,142 @@ export function AdminFinancialsPanel() {
       }>('/admin/donations'),
   });
 
+  const donations = data?.data?.donations || [];
+  const distributions = data?.data?.distributions || [];
+
   const exportCsv = () => {
-    const rows = data?.data?.donations || [];
-    const header = 'Reference,Amount,Currency,Donor,Status,Channel,Created\n';
-    const body = rows
-      .map((r) => `${r.donationReference},${r.amount},${r.currency},"${r.donorName}",${r.status},${r.paymentChannel},${r.createdAt}`)
-      .join('\n');
-    const blob = new Blob([header + body], { type: 'text/csv' });
+    if (donations.length === 0) return;
+    const quote = (value: unknown) => {
+      const text = String(value ?? '');
+      const safe = /^[=+@-]/.test(text) ? `'${text}` : text;
+      return `"${safe.replace(/"/g, '""')}"`;
+    };
+    const rows = [
+      ['Reference', 'Amount', 'Currency', 'Donor', 'Status', 'Channel', 'Created'],
+      ...donations.map((row) => [
+        row.donationReference, row.amount, row.currency, row.donorName, row.status, row.paymentChannel, row.createdAt,
+      ]),
+    ];
+    const csv = rows.map((row) => row.map(quote).join(',')).join('\r\n');
+    const blob = new Blob(['\uFEFF', csv], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `humanitybridge-financial-ledger-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `humanitybridge-financial-ledger-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
     URL.revokeObjectURL(url);
   };
 
   const reconcile = async (id: number) => {
-    const ref = ledgerRef.trim() || `BANK-REC-${Date.now()}`;
-    const res = await apiRequest(`/admin/donations/${id}/reconcile`, {
-      method: 'POST',
-      body: JSON.stringify({ externalLedgerRef: ref, reconciliationNote: 'Verified against settlement statement' }),
-    });
-    setMsg(res.message);
-    qc.invalidateQueries({ queryKey: ['admin-donations'] });
+    const externalLedgerRef = (ledgerRefs[id] || '').trim();
+    const note = (reconciliationNotes[id] || '').trim();
+    if (!externalLedgerRef || note.length < 8) {
+      setActionError('Enter the actual external settlement reference and at least eight characters of reconciliation notes.');
+      return;
+    }
+    setBusyId(id);
+    setActionError(null);
+    setMsg(null);
+    try {
+      const response = await apiRequest(`/admin/donations/${id}/reconcile`, {
+        method: 'POST',
+        body: JSON.stringify({ externalLedgerRef, reconciliationNote: note }),
+      });
+      setMsg(response.message);
+      setLedgerRefs((current) => ({ ...current, [id]: '' }));
+      setReconciliationNotes((current) => ({ ...current, [id]: '' }));
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ['admin-donations'] }),
+        qc.invalidateQueries({ queryKey: ['admin-dashboard'] }),
+      ]);
+    } catch (reconciliationError) {
+      setActionError(reconciliationError instanceof Error ? reconciliationError.message : 'The donation could not be reconciled.');
+    } finally {
+      setBusyId(null);
+    }
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h2 className="font-editorial text-2xl font-semibold">Donations & Financial Accountability</h2>
-          {msg && <p className="text-xs text-[#16865D] mt-1">{msg}</p>}
-          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-            Online refunds are disabled. Reconcile confirmed records here; handle any refund externally through the organisation's bank.
+          <p className="text-xs font-bold uppercase tracking-[0.15em] text-slate-500">Finance & accountability</p>
+          <h2 className="mt-1 font-editorial text-2xl font-semibold">Donations & Financial Accountability</h2>
+          <p className="mt-1 max-w-3xl text-xs leading-5 text-slate-500 dark:text-slate-400">
+            Review recorded donations and reconcile confirmed records against an independently verified external settlement statement. Online refunds and payment processing are disabled.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={exportCsv}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 text-xs font-semibold"
-        >
-          <Download className="w-4 h-4" />
-          <span>Export Financial CSV</span>
-        </button>
-      </div>
-
-      <div className="bg-white dark:bg-[#0D223D] border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
-        <div className="px-6 py-3 border-b border-slate-200 dark:border-slate-800 flex items-center gap-3">
-          <input
-            value={ledgerRef}
-            onChange={(e) => setLedgerRef(e.target.value)}
-            placeholder="External bank/ledger settlement ref for reconciliation..."
-            className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-[#F7F9FC] dark:bg-[#071324] text-xs w-80"
-          />
+        <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={() => void refetch()} disabled={isFetching} className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-slate-300 px-3 text-xs font-semibold disabled:opacity-50 dark:border-slate-700">
+            <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} /> {isFetching ? 'Refreshing…' : 'Refresh ledger'}
+          </button>
+          <button type="button" onClick={exportCsv} disabled={donations.length === 0 || isPending || isError} className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-slate-300 px-3 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700">
+            <Download className="h-4 w-4" /> Export financial CSV
+          </button>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left">
-            <thead className="bg-[#F7F9FC] dark:bg-[#071324] text-xs text-[#748196]">
-              <tr>
-                <th className="px-5 py-3">Reference</th>
-                <th className="px-5 py-3">Donor</th>
-                <th className="px-5 py-3">Campaign</th>
-                <th className="px-5 py-3 text-right">Amount</th>
-                <th className="px-5 py-3">Status</th>
-                <th className="px-5 py-3 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {(data?.data?.donations || []).map((d) => (
-                <tr key={d.id}>
-                  <td className="px-5 py-3 font-mono-tabular text-xs font-semibold">{d.donationReference}</td>
-                  <td className="px-5 py-3 text-xs">{d.donorName}</td>
-                  <td className="px-5 py-3 text-xs">{d.campaignTitle || 'General Fund'}</td>
-                  <td className="px-5 py-3 text-right font-mono-tabular">${d.amount.toLocaleString()}</td>
-                  <td className="px-5 py-3 text-xs font-semibold">{d.status}</td>
-                  <td className="px-5 py-3 text-right space-x-2">
-                    {d.status === 'CONFIRMED' && (
-                      <>
-                        <button type="button" onClick={() => reconcile(d.id)} className="text-xs font-semibold text-[#123F69] dark:text-[#00BCEB]">
-                          Reconcile
-                        </button>
-                      </>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      </header>
+      {msg && <p role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-300">{msg}</p>}
+      {actionError && <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-800 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-300">{actionError}</p>}
 
-      <div className="bg-white dark:bg-[#0D223D] border border-slate-200 dark:border-slate-800 rounded-xl p-6">
-        <h3 className="font-editorial text-lg font-semibold mb-3">Approved Fund Distributions</h3>
-        <ul className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
-          {(data?.data?.distributions || []).map((dist) => (
-            <li key={dist.id} className="py-2.5 flex justify-between gap-4">
-              <span><strong className="font-mono-tabular">{dist.caseReference}</strong> · {dist.distributionNotes}</span>
-              <span className="font-mono-tabular font-semibold text-[#16865D]">${dist.amountUsd.toLocaleString()}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
+      <section className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-[#0D223D]" aria-labelledby="donation-ledger-heading">
+        <div className="border-b border-slate-200 px-5 py-4 dark:border-slate-800">
+          <h3 id="donation-ledger-heading" className="text-sm font-bold">Donation ledger</h3>
+          <p className="mt-1 text-xs text-slate-500">Only confirmed records can be reconciled. Each reconciliation requires a real external reference and a review note.</p>
+        </div>
+        {isPending ? <p role="status" className="p-5 text-sm text-slate-500">Loading donation ledger…</p> : isError ? (
+          <div role="alert" className="space-y-3 p-5 text-sm">
+            <p className="text-rose-700 dark:text-rose-300">{error instanceof Error ? error.message : 'The donation ledger could not be loaded.'}</p>
+            <button type="button" onClick={() => void refetch()} className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold dark:border-slate-700">Retry loading ledger</button>
+          </div>
+        ) : donations.length === 0 ? <p className="p-5 text-sm text-slate-500">No donation records are currently available.</p> : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[58rem] text-left text-sm">
+              <thead className="bg-slate-50 text-xs text-slate-500 dark:bg-slate-950/50">
+                <tr><th className="px-5 py-3">Reference</th><th className="px-5 py-3">Donor</th><th className="px-5 py-3">Campaign</th><th className="px-5 py-3 text-right">Amount</th><th className="px-5 py-3">Status</th><th className="px-5 py-3">Reconciliation</th></tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                {donations.map((donation) => (
+                  <tr key={donation.id}>
+                    <td className="px-5 py-3 font-mono-tabular text-xs font-semibold">{donation.donationReference}</td>
+                    <td className="px-5 py-3 text-xs">{donation.donorName}</td>
+                    <td className="px-5 py-3 text-xs">{donation.campaignTitle || 'General Fund'}</td>
+                    <td className="px-5 py-3 text-right font-mono-tabular text-xs">{donation.amount.toLocaleString()} {donation.currency}</td>
+                    <td className="px-5 py-3 text-xs font-semibold">{donation.status.replaceAll('_', ' ')}</td>
+                    <td className="px-5 py-3">
+                      {donation.status === 'CONFIRMED' ? (
+                        <div className="flex min-w-64 flex-col gap-2">
+                          <input value={ledgerRefs[donation.id] || ''} onChange={(event) => setLedgerRefs((current) => ({ ...current, [donation.id]: event.target.value }))} maxLength={120} aria-label={`External settlement reference for ${donation.donationReference}`} placeholder="External bank / ledger reference" className="min-h-9 rounded-lg border border-slate-300 bg-white px-2.5 text-xs dark:border-slate-700 dark:bg-slate-950" />
+                          <textarea value={reconciliationNotes[donation.id] || ''} onChange={(event) => setReconciliationNotes((current) => ({ ...current, [donation.id]: event.target.value }))} minLength={8} maxLength={1500} rows={2} aria-label={`Reconciliation note for ${donation.donationReference}`} placeholder="What was checked against the settlement statement?" className="rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-xs dark:border-slate-700 dark:bg-slate-950" />
+                          <button type="button" disabled={busyId !== null || !(ledgerRefs[donation.id] || '').trim() || (reconciliationNotes[donation.id] || '').trim().length < 8} onClick={() => void reconcile(donation.id)} className="inline-flex min-h-9 items-center justify-center rounded-lg bg-slate-900 px-3 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40 dark:bg-slate-100 dark:text-slate-950">
+                            {busyId === donation.id ? 'Saving reconciliation…' : 'Reconcile record'}
+                          </button>
+                        </div>
+                      ) : <span className="text-xs text-slate-500">No action available for this status.</span>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      <section className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-[#0D223D]" aria-labelledby="distribution-ledger-heading">
+        <h3 id="distribution-ledger-heading" className="font-editorial text-lg font-semibold">Approved fund distributions</h3>
+        <p className="mt-1 text-xs text-slate-500">Recorded distributions linked to humanitarian cases.</p>
+        {isPending ? <p role="status" className="mt-4 text-xs text-slate-500">Loading distribution records…</p> : isError ? <p role="alert" className="mt-4 text-xs text-rose-700 dark:text-rose-300">Distribution records could not be loaded.</p> : distributions.length === 0 ? <p className="mt-4 text-xs text-slate-500">No fund distributions have been recorded.</p> : (
+          <ul className="mt-3 divide-y divide-slate-100 text-xs dark:divide-slate-800">
+            {distributions.map((distribution) => (
+              <li key={distribution.id} className="flex flex-wrap justify-between gap-3 py-3">
+                <span className="min-w-0"><strong className="font-mono-tabular">{distribution.caseReference}</strong> · {distribution.distributionNotes}<span className="mt-1 block text-[11px] text-slate-500">{distribution.caseTitle} · {formatGovernanceDate(distribution.distributedAt)}</span></span>
+                <span className="font-mono-tabular font-semibold">{distribution.amountUsd.toLocaleString()} USD</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }
@@ -594,7 +631,13 @@ export function AdminSafeguardingAndSettingsPanel({ mode }: { mode: 'safeguardin
     },
   });
 
-  const { data: settingsData } = useQuery({
+  const {
+    data: settingsData,
+    isPending: settingsPending,
+    isError: settingsIsError,
+    error: settingsQueryError,
+    refetch: refetchSettings,
+  } = useQuery({
     queryKey: ['admin-settings'],
     queryFn: () =>
       apiRequest<{
@@ -604,7 +647,13 @@ export function AdminSafeguardingAndSettingsPanel({ mode }: { mode: 'safeguardin
     enabled: mode === 'settings',
   });
 
-  const { data: auditData } = useQuery({
+  const {
+    data: auditData,
+    isPending: auditPending,
+    isError: auditIsError,
+    error: auditQueryError,
+    refetch: refetchSettingsAudit,
+  } = useQuery({
     queryKey: ['admin-audit'],
     queryFn: () =>
       apiRequest<Array<{ id: number; action: string; resourceType: string; resourceId: string | null; actorRole: string | null; createdAt: string }>>(
@@ -876,17 +925,41 @@ export function AdminSafeguardingAndSettingsPanel({ mode }: { mode: 'safeguardin
           </button>
         </form>
 
-        <div className="bg-white dark:bg-[#0D223D] border border-slate-200 dark:border-slate-800 rounded-xl p-6 space-y-3">
-          <h3 className="font-editorial text-lg font-semibold">Configurable Public Identity</h3>
-          <dl className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
+        <section className="bg-white dark:bg-[#0D223D] border border-slate-200 dark:border-slate-800 rounded-xl p-6 space-y-3" aria-labelledby="public-identity-heading">
+          <div>
+            <h3 id="public-identity-heading" className="font-editorial text-lg font-semibold">Public identity configuration</h3>
+            <p className="mt-1 text-xs leading-5 text-slate-500">Current values from the system settings registry. This view is read-only; changes are not implied until an approved settings workflow is available.</p>
+          </div>
+          {settingsPending && <p role="status" className="text-xs text-slate-500">Loading platform settings…</p>}
+          {settingsIsError && <div role="alert" className="space-y-2 text-xs text-rose-700 dark:text-rose-300"><p>{settingsQueryError instanceof Error ? settingsQueryError.message : 'Platform settings could not be loaded.'}</p><button type="button" onClick={() => void refetchSettings()} className="rounded-lg border border-current px-3 py-2 font-semibold">Retry settings</button></div>}
+          {!settingsPending && !settingsIsError && (settingsData?.data?.settings || []).length === 0 && <p className="text-xs text-slate-500">No public identity settings have been configured.</p>}
+          {!settingsIsError && <dl className="divide-y divide-slate-100 text-xs dark:divide-slate-800">
             {(settingsData?.data?.settings || []).map((s) => (
-              <div key={s.settingKey} className="py-2 flex justify-between gap-4">
+              <div key={s.settingKey} className="flex flex-wrap justify-between gap-2 py-2">
                 <dt className="font-mono-tabular text-[#748196]">{s.settingKey}</dt>
-                <dd className="text-right font-medium">{s.settingValue}</dd>
+                <dd className="max-w-[70%] break-words text-right font-medium">{s.settingValue}</dd>
               </div>
             ))}
-          </dl>
-        </div>
+          </dl>}
+        </section>
+
+        <section className="bg-white dark:bg-[#0D223D] border border-slate-200 dark:border-slate-800 rounded-xl p-6 space-y-3" aria-labelledby="backup-register-heading">
+          <div>
+            <h3 id="backup-register-heading" className="font-editorial text-lg font-semibold">Backup register</h3>
+            <p className="mt-1 text-xs leading-5 text-slate-500">Recorded backup events returned by the platform. This registry does not itself run or verify a backup job.</p>
+          </div>
+          {settingsPending && <p role="status" className="text-xs text-slate-500">Loading backup records…</p>}
+          {settingsIsError && <p role="alert" className="text-xs text-rose-700 dark:text-rose-300">Backup records could not be loaded.</p>}
+          {!settingsPending && !settingsIsError && (settingsData?.data?.backups || []).length === 0 && <p className="text-xs text-slate-500">No backup events have been recorded.</p>}
+          {!settingsIsError && <ul className="divide-y divide-slate-100 text-xs dark:divide-slate-800">
+            {(settingsData?.data?.backups || []).map((backup) => (
+              <li key={backup.id} className="flex flex-wrap items-start justify-between gap-3 py-3">
+                <span className="min-w-0"><strong className="block">{backup.backupType.replaceAll('_', ' ')}</strong><span className="mt-1 block break-all text-slate-500">{backup.locationLabel}</span><time className="mt-1 block text-[11px] text-slate-500" dateTime={backup.recordedAt}>{formatGovernanceDate(backup.recordedAt)}</time></span>
+                <span className="rounded-full border border-slate-300 px-2 py-1 text-[10px] font-semibold dark:border-slate-700">{backup.status.replaceAll('_', ' ')}</span>
+              </li>
+            ))}
+          </ul>}
+        </section>
       </div>
 
       <div className="bg-white dark:bg-[#0D223D] border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
@@ -909,6 +982,8 @@ export function AdminSafeguardingAndSettingsPanel({ mode }: { mode: 'safeguardin
             </button>
           </div>
         </div>
+        {auditPending && <p role="status" className="px-6 py-4 text-sm text-slate-500">Loading security audit records…</p>}
+        {auditIsError && <div role="alert" className="flex flex-wrap items-center justify-between gap-3 px-6 py-4 text-sm text-rose-700 dark:text-rose-300"><span>{auditQueryError instanceof Error ? auditQueryError.message : 'Security audit records could not be loaded.'}</span><button type="button" onClick={() => void refetchSettingsAudit()} className="rounded-lg border border-current px-3 py-2 text-xs font-semibold">Retry audit logs</button></div>}
         <div className="overflow-x-auto">
           <table className="w-full text-xs text-left">
             <thead className="bg-[#F7F9FC] dark:bg-[#071324] text-[#748196]">
@@ -928,6 +1003,7 @@ export function AdminSafeguardingAndSettingsPanel({ mode }: { mode: 'safeguardin
                   <td className="px-5 py-2.5 font-mono-tabular">{log.resourceType}:{log.resourceId || '-'}</td>
                 </tr>
               ))}
+              {!auditPending && !auditIsError && auditRows.length === 0 && <tr><td colSpan={4} className="px-5 py-5 text-center text-slate-500">No audit events match this filter.</td></tr>}
             </tbody>
           </table>
         </div>
